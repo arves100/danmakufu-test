@@ -2,7 +2,7 @@
 #include "GstdUtility.hpp"
 #include "Logger.hpp"
 #include <cassert>
-#include "../zlib/zlib.h"
+#include <zlib.h>
 
 using namespace gstd;
 

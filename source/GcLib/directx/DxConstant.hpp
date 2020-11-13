@@ -3,16 +3,6 @@
 
 #include "../gstd/GstdLib.hpp"
 
-//lib
-#pragma comment(lib, "msacm32.lib") //for acm
-#pragma comment(lib, "d3d9.lib")
-#pragma comment(lib, "d3dx9.lib")
-#pragma comment(lib, "dxguid.lib")
-#pragma comment(lib, "dinput8.lib")
-#pragma comment(lib, "dsound.lib")
-#pragma comment(lib, "d3dxof.lib")
-#pragma comment(lib, "dxerr9.lib")
-
 //define
 #define D3D_OVERLOADS
 #define DIRECTINPUT_VERSION 0x0800
@@ -33,16 +23,11 @@
 #include <d3d9.h>
 #include <d3dx9.h>
 #include <dinput.h>
-#include <dmusici.h>
 #include <dsound.h>
-#include <dxerr9.h>
+#include <dxerr.h>
 
-#include "../ext/codec.h"
-#include "../ext/vorbisfile.h"
-
-#if defined(UNICODE) || defined(_UNICODE)
-#pragma comment(linker, "/entry:\"wWinMainCRTStartup\"")
-#endif
+#include <vorbis/codec.h>
+#include <vorbis/vorbisfile.h>
 
 #ifdef _DEBUG
 #include <crtdbg.h>
