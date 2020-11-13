@@ -156,6 +156,7 @@ protected:
 /**********************************************************
 //TaskInfoPanel
 **********************************************************/
+#if 0
 class TaskInfoPanel : public WindowLogger::Panel {
 public:
 	TaskInfoPanel();
@@ -184,6 +185,7 @@ protected:
 	void _UpdateTreeView(TaskManager* taskManager, ref_count_ptr<WTreeView::Item> item);
 	void _UpdateListView(TaskManager* taskManager);
 };
+#endif
 
 /**********************************************************
 //WorkRenderTaskManager

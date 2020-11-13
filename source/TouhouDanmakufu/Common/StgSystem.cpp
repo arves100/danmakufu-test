@@ -71,8 +71,10 @@ void StgSystemController::Work()
 	try {
 		_ControlScene();
 
+#if 0
 		ELogger* logger = ELogger::GetInstance();
 		logger->UpdateCommonDataInfoPanel(commonDataManager_);
+#endif
 	} catch (gstd::wexception e) {
 		Logger::WriteTop(e.what());
 		infoSystem_->SetError(e.what());
@@ -124,7 +126,11 @@ void StgSystemController::Work()
 		if (infoSystem_->IsError()) {
 			std::wstring error = infoSystem_->GetErrorMessage();
 			if (error.size() > 0) {
+#if 0
 				ErrorDialog::ShowErrorDialog(error);
+#else
+				MessageBoxW(nullptr, error.c_str(), L"TEST", MB_OK); // TODO replace
+#endif
 			} else {
 				//リトライ
 				bRetry = true;
@@ -136,8 +142,10 @@ void StgSystemController::Work()
 			soundManager->Clear();
 		}
 
+#if 0
 		ELogger* logger = ELogger::GetInstance();
 		logger->UpdateCommonDataInfoPanel(NULL);
+#endif
 
 		EFpsController* fpsController = EFpsController::GetInstance();
 		fpsController->SetFastModeKey(DIK_LCONTROL);
@@ -547,6 +555,7 @@ void StgSystemController::_ControlScene()
 		}
 	}
 
+#if 0
 	ELogger* logger = ELogger::GetInstance();
 	if (logger->IsWindowVisible()) {
 		//ログ関連
@@ -576,6 +585,7 @@ void StgSystemController::_ControlScene()
 		logger->SetInfo(4, L"script_task_count", StringUtility::Format(L"%d", taskCount));
 		logger->SetInfo(5, L"object_count", StringUtility::Format(L"%d", objectCount));
 	}
+#endif
 }
 void StgSystemController::StartStgScene(ref_count_ptr<StgStageInformation> infoStage, ref_count_ptr<ReplayInformation::StageData> replayStageData)
 {

@@ -3,6 +3,8 @@
 using namespace gstd;
 using namespace directx;
 
+#include <SDL_syswm.h>
+
 /**********************************************************
 //DirectInput
 **********************************************************/
@@ -41,12 +43,21 @@ DirectInput::~DirectInput()
 	Logger::WriteTop(L"DirectInput：終了完了");
 }
 
-bool DirectInput::Initialize(HWND hWnd)
+bool DirectInput::Initialize(SDL_Window* hWnd)
 {
 	if (thisBase_ != NULL)
 		return false;
+
 	Logger::WriteTop(L"DirectInput：初期化");
-	hWnd_ = hWnd;
+
+	SDL_SysWMinfo info;
+	if (!SDL_GetWindowWMInfo(hWnd, &info))
+	{
+		Logger::WriteTop(L"DirectInput: SDL_GetWindowWMInfo failed");
+		return false;
+	}
+
+	hWnd_ = info.info.win.window;
 
 	HINSTANCE hInst = ::GetModuleHandle(NULL);
 	HRESULT hrInput = DirectInput8Create(hInst, DIRECTINPUT_VERSION, IID_IDirectInput8, (void**)&pInput_, NULL);
@@ -404,10 +415,9 @@ int DirectInput::GetPadState(int padNo, int button)
 
 POINT DirectInput::GetMousePosition()
 {
-	POINT res = { 0, 0 };
-	GetCursorPos(&res);
-	ScreenToClient(hWnd_, &res);
-	return res;
+	int x, y;
+	SDL_GetMouseState(&x, &y);
+	return { x, y };
 }
 
 void DirectInput::ResetInputState()

@@ -73,12 +73,14 @@ void StgIntersectionManager::Work()
 	_ArrangePool();
 
 	ELogger* logger = ELogger::GetInstance();
+#if 0
 	if (logger->IsWindowVisible()) {
 		int countUsed = GetUsedPoolObjectCount();
 		int countCache = GetCachePoolObjectCount();
 		logger->SetInfo(9, L"stg intersection_count",
 			StringUtility::Format(L"used=%4d, cache=%4d, total=%4d check=%4d", countUsed, countCache, countUsed + countCache, totalCheck));
 	}
+#endif
 }
 void StgIntersectionManager::AddTarget(ref_count_ptr<StgIntersectionTarget>::unsync target)
 {

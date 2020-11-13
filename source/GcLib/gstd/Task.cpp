@@ -69,8 +69,10 @@ void TaskManager::_ArrangeTask()
 	}
 
 	//タスク情報パネル更新
+#if 0
 	if (panelInfo_ != NULL)
 		panelInfo_->Update(this);
+#endif
 }
 void TaskManager::_CheckInvalidFunctionDivision(int divFunc)
 {
@@ -404,6 +406,7 @@ void TaskManager::SetFunctionEnable(bool bEnable, const std::type_info& info, in
 /**********************************************************
 //TaskInfoPanel
 **********************************************************/
+#if 0
 TaskInfoPanel::TaskInfoPanel()
 {
 	addressLastFindManager_ = 0;
@@ -586,6 +589,8 @@ void TaskInfoPanel::_UpdateListView(TaskManager* taskManager)
 
 	addressLastFindManager_ = (int)taskManager;
 }
+#endif
+
 /**********************************************************
 //WorkRenderTaskManager
 **********************************************************/

@@ -25,5 +25,5 @@ Window.cpp
 Window.hpp)
 
 add_library(GcLibStd STATIC ${GCLIBSTD_SOURCES})
-target_link_libraries(GcLibStd PUBLIC ZLIB::ZLIB Vorbis::vorbis Vorbis::vorbisenc Vorbis::vorbisfile)
+target_link_libraries(GcLibStd PUBLIC ZLIB::ZLIB Vorbis::vorbis Vorbis::vorbisenc Vorbis::vorbisfile SDL2::SDL2-static SDL2::SDL2main)
 target_include_directories(GcLibStd PUBLIC ${ZLIB_INCLUDE_DIRS} ${VORBIS_INCLUDE_DIR})

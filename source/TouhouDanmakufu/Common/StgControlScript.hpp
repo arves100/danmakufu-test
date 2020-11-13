@@ -160,6 +160,7 @@ protected:
 /**********************************************************
 //ScriptInfoPanel
 **********************************************************/
+#if 0
 class ScriptInfoPanel : public WindowLogger::Panel {
 public:
 	ScriptInfoPanel();
@@ -172,5 +173,6 @@ protected:
 
 	WButton buttonTerminateScript_;
 };
+#endif
 
 #endif

@@ -578,6 +578,8 @@ public:
 	bool HasProperty(std::wstring key);
 	std::wstring GetString(std::wstring key) { return GetString(key, L""); }
 	std::wstring GetString(std::wstring key, std::wstring def);
+	std::string GetString(std::string key) { return GetString(key, ""); }
+	std::string GetString(std::string key, std::string def);
 	int GetInteger(std::wstring key) { return GetInteger(key, 0); }
 	int GetInteger(std::wstring key, int def);
 	double GetReal(std::wstring key) { return GetReal(key, 0.0); }

@@ -12,81 +12,64 @@ namespace gstd {
 **********************************************************/
 class WindowBase {
 public:
-	class Style;
-
-public:
 	WindowBase();
 	virtual ~WindowBase();
-	HWND GetWindowHandle() { return hWnd_; }
-	bool IsDialog() { return ::GetWindowLong(hWnd_, DWL_DLGPROC) != 0; }
+	SDL_Window* GetWindowHandle() { return hWnd_; }
 
-	bool Attach(HWND hWnd); //セット
-	bool Detach(); //解除
-	int GetWindowId() { return idWindow_; }
+	Uint32 GetWindowId() { return SDL_GetWindowID(hWnd_); }
 
-	virtual void SetBounds(int x, int y, int width, int height) { ::MoveWindow(hWnd_, x, y, width, height, TRUE); }
-	RECT GetClientRect()
+	virtual void SetBounds(int x, int y, int width, int height)
 	{
-		RECT rect;
-		::GetClientRect(hWnd_, &rect);
-		return rect;
+		SDL_SetWindowSize(hWnd_, width, height);
+		SDL_SetWindowPosition(hWnd_, x, y);
 	}
-	int GetClientX() { return GetClientRect().left; }
-	int GetClientY() { return GetClientRect().top; }
+
+	int GetClientX()
+	{
+		int x, y;
+		SDL_GetWindowPosition(hWnd_, &x, &y);
+		return x;
+	}
+	int GetClientY()
+	{
+		int x, y;
+		SDL_GetWindowPosition(hWnd_, &x, &y);
+		return y;
+	}
 	int GetClientWidth()
 	{
-		RECT rect = GetClientRect();
-		return rect.right - rect.left;
+		int w, h;
+		SDL_GetWindowSize(hWnd_, &w, &h);
+		return w;
 	}
 	int GetClientHeight()
 	{
-		RECT rect = GetClientRect();
-		return rect.bottom - rect.top;
+		int w, h;
+		SDL_GetWindowSize(hWnd_, &w, &h);
+		return h;
 	}
 
-	void SetWindowEnable(bool bEnable) { ::EnableWindow(hWnd_, bEnable); }
-	void SetWindowVisible(bool bVisible) { ::ShowWindow(hWnd_, bVisible ? SW_SHOW : SW_HIDE); }
-	bool IsWindowVisible() { return ::IsWindowVisible(hWnd_) ? true : false; }
-	void SetParentWindow(HWND hParentWnd)
+	void SetWindowVisible(bool bVisible)
 	{
-		if (hWnd_ != NULL)
-			::SetParent(hWnd_, hParentWnd);
+		if (bVisible)
+			SDL_ShowWindow(hWnd_);
+		else
+			SDL_HideWindow(hWnd_);
 	}
-	DWORD SetWindowStyle(DWORD style)
-	{
-		DWORD prev = GetCurrentWindowStyle();
-		DWORD next = prev | style;
-		::SetWindowLong(hWnd_, GWL_STYLE, next);
-		return next;
-	}
-	DWORD RemoveWindowStyle(DWORD style)
-	{
-		DWORD prev = GetCurrentWindowStyle();
-		DWORD next = prev & ~style;
-		::SetWindowLong(hWnd_, GWL_STYLE, next);
-		return next;
-	}
-	DWORD GetCurrentWindowStyle() { return GetWindowLong(hWnd_, GWL_STYLE); }
+
+	bool IsWindowVisible() { return (SDL_GetWindowFlags(hWnd_) & SDL_WINDOW_HIDDEN) ? false : true; }
+
+	Uint32 GetWindowFlags() { return SDL_GetWindowFlags(hWnd_); }
 
 	virtual void LocateParts() {} //画面部品配置
 	void MoveWindowCenter();
 
-	static HWND GetTopParentWindow(HWND hWnd);
-
 protected:
-	HWND hWnd_;
-	WNDPROC oldWndProc_; //ウィンドウプロシージャアドレス
-	int idWindow_;
-
-	static LRESULT CALLBACK _StaticWindowProcedure(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam); //静的プロシージャ
-	LRESULT _CallPreviousWindowProcedure(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
-	virtual LRESULT _WindowProcedure(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam); //オーバーライド用プロシージャ
-
-private:
-	static std::list<int> listWndId_;
-	static CriticalSection lock_;
+	SDL_Window* hWnd_;
+	virtual void EventProcedure(SDL_Event* evt) {} //オーバーライド用プロシージャ
 };
 
+#if 0 // UI is not supported in SDL2
 class WindowBase::Style {
 public:
 	Style()
@@ -424,7 +407,7 @@ protected:
 	float ratioY_;
 	virtual LRESULT _WindowProcedure(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 };
-
+#endif
 /**********************************************************
 //WindowUtility
 **********************************************************/

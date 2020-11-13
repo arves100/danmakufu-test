@@ -834,6 +834,7 @@ private:
 	static DxMeshManager* thisBase_;
 };
 
+#if 0
 class DxMeshInfoPanel : public gstd::WindowLogger::Panel, public gstd::Thread {
 public:
 	DxMeshInfoPanel();
@@ -853,6 +854,7 @@ protected:
 	virtual bool _AddedLogger(HWND hTab);
 	void _Run();
 };
+#endif
 
 } // namespace directx
 

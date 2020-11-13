@@ -5,137 +5,28 @@ using namespace gstd;
 /**********************************************************
 //WindowBase
 **********************************************************/
-const wchar_t* PROP_THIS = L"__THIS__";
-std::list<int> WindowBase::listWndId_;
-CriticalSection WindowBase::lock_;
-
 WindowBase::WindowBase()
 {
 	hWnd_ = NULL;
-	oldWndProc_ = NULL;
 
-	//空いているWindowID取得
-	{
-		Lock lock(lock_);
-		listWndId_.sort();
-		int idFree = 0;
-		std::list<int>::iterator itr;
-		for (itr = listWndId_.begin(); itr != listWndId_.end(); itr++) {
-			if (*itr != idFree)
-				break;
-			idFree++;
-		}
-		idWindow_ = idFree;
-		listWndId_.push_back(idFree);
-	}
+	// SDL2 does have a window id for us
 }
 
 WindowBase::~WindowBase()
 {
-	this->Detach();
-
-	//WindowID解放
-	std::list<int>::iterator itr;
-	for (itr = listWndId_.begin(); itr != listWndId_.end(); itr++) {
-		if (*itr != idWindow_)
-			continue;
-		listWndId_.erase(itr);
-		break;
+	if (hWnd_)
+	{
+		SDL_DestroyWindow(hWnd_);
+		hWnd_ = NULL;
 	}
 }
 
-bool WindowBase::Attach(HWND hWnd)
-{
-	if (!hWnd)
-		return false;
-	hWnd_ = hWnd;
-	//ダイアログかウィンドウかを判定
-	int typeProc = ::GetWindowLong(hWnd, DWL_DLGPROC) != 0 ? DWL_DLGPROC : GWL_WNDPROC;
-
-	//プロパティにインスタンスを登録
-	::SetProp(hWnd_, PROP_THIS, (HANDLE)this);
-
-	//既存のウィンドウをサブクラス化
-	if (::GetWindowLong(hWnd_, typeProc) != (LONG)_StaticWindowProcedure)
-		oldWndProc_ = (WNDPROC)::SetWindowLong(hWnd_, typeProc, (LONG)_StaticWindowProcedure);
-	return true;
-}
-
-bool WindowBase::Detach()
-{
-	if (hWnd_ == NULL)
-		return false;
-
-	//サブクラス化を解除
-	if (oldWndProc_) {
-		int typeProc = ::GetWindowLong(hWnd_, DWL_DLGPROC) != 0 ? DWL_DLGPROC : GWL_WNDPROC;
-		::SetWindowLong(hWnd_, typeProc, (DWORD)oldWndProc_);
-		oldWndProc_ = NULL;
-	}
-	::RemoveProp(hWnd_, PROP_THIS);
-	return true;
-}
-
-LRESULT CALLBACK WindowBase::_StaticWindowProcedure(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
-{
-	WindowBase* tWnd = (WindowBase*)::GetProp(hWnd, PROP_THIS);
-
-	//取得できなかったときの処理
-	if (tWnd == NULL) {
-		if ((uMsg == WM_CREATE) || (uMsg == WM_NCCREATE))
-			tWnd = (WindowBase*)((LPCREATESTRUCT)lParam)->lpCreateParams;
-		else if (uMsg == WM_INITDIALOG)
-			tWnd = (WindowBase*)lParam;
-		if (tWnd)
-			tWnd->Attach(hWnd);
-	}
-
-	if (tWnd) {
-		LRESULT lResult = tWnd->_WindowProcedure(hWnd, uMsg, wParam, lParam);
-		if (uMsg == WM_DESTROY)
-			tWnd->Detach();
-		return lResult;
-	}
-
-	//ダイアログとウィンドウで返す値を分ける
-	return ::GetWindowLong(hWnd, DWL_DLGPROC) ? FALSE : ::DefWindowProc(hWnd, uMsg, wParam, lParam);
-}
-LRESULT WindowBase::_WindowProcedure(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
-{
-	return _CallPreviousWindowProcedure(hWnd, uMsg, wParam, lParam);
-}
-LRESULT WindowBase::_CallPreviousWindowProcedure(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
-{
-	if (oldWndProc_)
-		return CallWindowProc(oldWndProc_, hWnd, uMsg, wParam, lParam);
-
-	//ダイアログとウィンドウで返す値を分ける
-	return ::GetWindowLong(hWnd, DWL_DLGPROC) ? FALSE : ::DefWindowProc(hWnd, uMsg, wParam, lParam);
-}
 void WindowBase::MoveWindowCenter()
 {
-	RECT drect, mrect;
-	HWND hDesk = ::GetDesktopWindow();
-	::GetWindowRect(hDesk, &drect);
-	::GetWindowRect(hWnd_, &mrect);
-	int tWidth = mrect.right - mrect.left;
-	int tHeight = mrect.bottom - mrect.top;
-	int left = drect.right / 2 - tWidth / 2;
-	int top = drect.bottom / 2 - tHeight / 2;
-	::MoveWindow(hWnd_, left, top, tWidth, tHeight, TRUE);
-}
-HWND WindowBase::GetTopParentWindow(HWND hWnd)
-{
-	HWND res = hWnd;
-	while (true) {
-		HWND hParent = GetParent(hWnd);
-		if (hParent == NULL)
-			break;
-		res = hParent;
-	}
-	return res;
+	SDL_SetWindowPosition(hWnd_, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
 }
 
+#if 0
 /**********************************************************
 //ModalDialog
 **********************************************************/
@@ -927,6 +818,7 @@ LRESULT WSplitter::_WindowProcedure(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM 
 	}
 	return _CallPreviousWindowProcedure(hWnd, uMsg, wParam, lParam);
 }
+#endif
 
 /**********************************************************
 //WindowUtility
@@ -934,8 +826,8 @@ LRESULT WSplitter::_WindowProcedure(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM 
 void WindowUtility::SetMouseVisible(bool bVisible)
 {
 	if (bVisible) {
-		while (ShowCursor(TRUE) < 0) {}
+		SDL_ShowCursor(SDL_ENABLE);
 	} else {
-		while (ShowCursor(FALSE) >= 0) {}
+		SDL_ShowCursor(SDL_DISABLE);
 	}
 }

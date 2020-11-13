@@ -2030,6 +2030,7 @@ void DxMeshManager::CallFromLoadThread(ref_count_ptr<FileManager::LoadThreadEven
 }
 
 //DxMeshInfoPanel
+#if 0
 DxMeshInfoPanel::DxMeshInfoPanel()
 {
 	timeUpdateInterval_ = 500;
@@ -2115,3 +2116,4 @@ void DxMeshInfoPanel::Update(DxMeshManager* manager)
 			wndListView_.DeleteRow(iRow);
 	}
 }
+#endif

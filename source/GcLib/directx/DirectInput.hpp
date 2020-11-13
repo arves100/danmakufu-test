@@ -37,7 +37,7 @@ public:
 	virtual ~DirectInput();
 	static DirectInput* GetBase() { return thisBase_; }
 
-	virtual bool Initialize(HWND hWnd);
+	virtual bool Initialize(SDL_Window* hWnd);
 
 	virtual void Update(); //キーをセットする
 	int GetKeyState(int key);

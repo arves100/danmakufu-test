@@ -52,9 +52,13 @@ void SystemController::ClearTaskWithoutSystem()
 }
 void SystemController::ShowErrorDialog(std::wstring msg)
 {
+#if 0
 	HWND hParent = EDirectGraphics::GetInstance()->GetAttachedWindowHandle();
 	ErrorDialog dialog(hParent);
 	dialog.ShowModal(msg);
+#else
+	MessageBoxW(nullptr, msg.c_str(), L"TEST", MB_OK);
+#endif // TODO: Replace
 }
 
 /**********************************************************

@@ -25,6 +25,7 @@
 #include <dinput.h>
 #include <dsound.h>
 #include <dxerr.h>
+#include <SDL.h>
 
 #include <vorbis/codec.h>
 #include <vorbis/vorbisfile.h>

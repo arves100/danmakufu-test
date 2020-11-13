@@ -115,25 +115,17 @@ struct ScriptInformation::PlayerListSort {
 /**********************************************************
 //ErrorDialog
 **********************************************************/
-class ErrorDialog : public ModalDialog {
+class ErrorDialog {
 public:
-	ErrorDialog(HWND hParent);
-	bool ShowModal(std::wstring msg);
-
-	static void SetParentWindowHandle(HWND hWndParent) { hWndParentStatic_ = hWndParent; }
-	static void ShowErrorDialog(std::wstring msg)
+	
+	static void SetParentWindowHandle(SDL_Window* hWndParent) { hWndParentStatic_ = hWndParent; }
+	static void ShowErrorDialog(std::string msg)
 	{
-		ErrorDialog dialog(hWndParentStatic_);
-		dialog.ShowModal(msg);
+		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", msg.c_str(), hWndParentStatic_);
 	}
 
-protected:
-	static HWND hWndParentStatic_;
-
-	WEditBox edit_;
-	WButton button_;
-
-	virtual LRESULT _WindowProcedure(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+private:
+	static SDL_Window* hWndParentStatic_;
 };
 
 /**********************************************************
@@ -182,7 +174,7 @@ public:
 	void SetMouseVisible(bool b) { bMouseVisible_ = b; }
 
 	std::wstring GetPackageScriptPath() { return pathPackageScript_; }
-	std::wstring GetWindowTitle() { return windowTitle_; }
+	std::string GetWindowTitle() { return windowTitle_; }
 	int GetScreenWidth() { return screenWidth_; }
 	int GetScreenHeight() { return screenHeight_; }
 
@@ -199,7 +191,7 @@ private:
 	bool bMouseVisible_;
 
 	std::wstring pathPackageScript_;
-	std::wstring windowTitle_;
+	std::string windowTitle_;
 	int screenWidth_;
 	int screenHeight_;
 

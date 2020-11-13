@@ -663,6 +663,7 @@ bool TextureManager::IsDataExists(std::wstring name)
 /**********************************************************
 //TextureInfoPanel
 **********************************************************/
+#if 0
 TextureInfoPanel::TextureInfoPanel()
 {
 	timeUpdateInterval_ = 500;
@@ -754,3 +755,4 @@ void TextureInfoPanel::Update(TextureManager* manager)
 			wndListView_.DeleteRow(iRow);
 	}
 }
+#endif

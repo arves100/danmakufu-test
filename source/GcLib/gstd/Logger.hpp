@@ -63,6 +63,7 @@ protected:
 //ログウィンドウ
 //ウィンドウは別スレッド動作です
 **********************************************************/
+#if 0 // TODO: Upgrade to something that's not Windows
 class WindowLogger : public Logger, public WindowBase {
 public:
 	class WindowThread;
@@ -123,6 +124,7 @@ protected:
 	WindowThread(WindowLogger* logger);
 	void _Run();
 };
+
 class WindowLogger::Panel : public WPanel {
 	friend WindowLogger;
 
@@ -191,6 +193,7 @@ protected:
 	CpuInfo _GetCpuInformation();
 	double _GetCpuPerformance();
 };
+#endif
 
 } // namespace gstd;
 

@@ -32,7 +32,7 @@ private:
 	EDirectGraphics();
 
 protected:
-	virtual LRESULT _WindowProcedure(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+	virtual void EventProcedure(SDL_Event* evt);
 
 public:
 	~EDirectGraphics();

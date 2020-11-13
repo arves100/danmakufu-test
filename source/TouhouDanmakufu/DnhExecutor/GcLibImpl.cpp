@@ -21,11 +21,12 @@ bool EApplication::_Initialize()
 
 	EFpsController* fpsController = EFpsController::CreateInstance();
 
-	std::wstring appName = L"東方弾幕風 ph3 ";
+	std::string appName = u8"東方弾幕風 ph3 ";
 	appName += DNH_VERSION;
+	appName += " {NEW:" __TIMESTAMP__ "}";
 
 	DnhConfiguration* config = DnhConfiguration::CreateInstance();
-	std::wstring configWindowTitle = config->GetWindowTitle();
+	std::string configWindowTitle = config->GetWindowTitle();
 	if (configWindowTitle.size() > 0)
 		appName = configWindowTitle;
 
@@ -36,10 +37,14 @@ bool EApplication::_Initialize()
 	//DirectX初期化
 	EDirectGraphics* graphics = EDirectGraphics::CreateInstance();
 	graphics->Initialize();
-	HWND hWndMain = graphics->GetWindowHandle();
+	SDL_Window* hWndMain = graphics->GetWindowHandle();
+#if 0
 	WindowLogger::InsertOpenCommandInSystemMenu(hWndMain);
-	::SetWindowText(hWndMain, appName.c_str());
-	::SetClassLong(hWndMain, GCL_HICON, (LONG)LoadIcon(GetApplicationHandle(), MAKEINTRESOURCE(IDI_ICON)));
+#endif
+	SDL_SetWindowTitle(hWndMain, appName.c_str());
+
+	// TODO: Icon
+	//::SetClassLong(hWndMain, GCL_HICON, (LONG)LoadIcon(GetApplicationHandle(), MAKEINTRESOURCE(IDI_ICON)));
 
 	ErrorDialog::SetParentWindowHandle(hWndMain);
 
@@ -64,6 +69,7 @@ bool EApplication::_Initialize()
 	ETaskManager* taskManager = ETaskManager::CreateInstance();
 	taskManager->Initialize();
 
+#if 0
 	gstd::ref_count_ptr<gstd::TaskInfoPanel> panelTask = new gstd::TaskInfoPanel();
 	bool bAddTaskPanel = logger->AddPanel(panelTask, L"Task");
 	if (bAddTaskPanel)
@@ -94,6 +100,7 @@ bool EApplication::_Initialize()
 		logger->LoadState();
 		logger->SetWindowVisible(true);
 	}
+#endif
 
 	SystemController* systemController = SystemController::CreateInstance();
 	systemController->Reset();
@@ -109,18 +116,14 @@ bool EApplication::_Loop()
 	EFpsController* fpsController = EFpsController::GetInstance();
 	EDirectGraphics* graphics = EDirectGraphics::GetInstance();
 
-	HWND hWndFocused = ::GetForegroundWindow();
-	HWND hWndGraphics = graphics->GetWindowHandle();
-	HWND hWndLogger = ELogger::GetInstance()->GetWindowHandle();
-	if (hWndFocused != hWndGraphics && hWndFocused != hWndLogger) {
-		//非アクティブ時は動作しない
-		::Sleep(10);
-		return true;
-	}
+	SDL_Window* hWndGraphics = graphics->GetWindowHandle();
+#if 0
+	SDL_Window* hWndLogger = ELogger::GetInstance()->GetWindowHandle();
+#endif
 
 	EDirectInput* input = EDirectInput::GetInstance();
 	input->Update();
-	if (input->GetKeyState(DIK_LCONTROL) == KEY_HOLD && input->GetKeyState(DIK_LSHIFT) == KEY_HOLD && input->GetKeyState(DIK_R) == KEY_PUSH) {
+	if (input->GetKeyState(SDLK_LCTRL) == KEY_HOLD && input->GetKeyState(SDLK_LSHIFT) == KEY_HOLD && input->GetKeyState(SDLK_r) == KEY_PUSH) {
 		//リセット
 		SystemController* systemController = SystemController::CreateInstance();
 		systemController->Reset();
@@ -137,6 +140,7 @@ bool EApplication::_Loop()
 	fpsController->Wait();
 
 	//ログ関連
+#if 0
 	SYSTEMTIME time;
 	GetLocalTime(&time);
 	std::wstring fps = StringUtility::Format(L"Work：%.2ffps、Draw：%.2ffps",
@@ -156,6 +160,7 @@ bool EApplication::_Loop()
 
 	logger->SetInfo(2, L"font cache",
 		StringUtility::Format(L"%d", EDxTextRenderer::GetInstance()->GetCacheCount()));
+#endif
 
 	//高速動作
 	int fastModeKey = fpsController->GetFastModeKey();
@@ -184,8 +189,10 @@ bool EApplication::_Finalize()
 	EFpsController::DeleteInstance();
 	EFileManager::DeleteInstance();
 
+#if 0
 	ELogger* logger = ELogger::GetInstance();
 	logger->SaveState();
+#endif
 
 	Logger::WriteTop(L"アプリケーション終了処理完了");
 	return true;
@@ -222,20 +229,16 @@ bool EDirectGraphics::Initialize()
 			windowSize = DnhConfiguration::WINDOW_SIZE_1920x1200;
 	}
 
-	bool bShowWindow = screenMode == DirectGraphics::SCREENMODE_FULLSCREEN || windowSize == DnhConfiguration::WINDOW_SIZE_640x480;
+	bool bFullScreen = screenMode == DirectGraphics::SCREENMODE_FULLSCREEN;
 
 	DirectGraphicsConfig dxConfig;
 	dxConfig.SetScreenWidth(screenWidth);
 	dxConfig.SetScreenHeight(screenHeight);
-	dxConfig.SetShowWindow(bShowWindow);
+	dxConfig.SetFullScreen(bFullScreen);
 	bool res = DirectGraphicsPrimaryWindow::Initialize(dxConfig);
 
-	int wWidth = ::GetSystemMetrics(SM_CXFULLSCREEN);
-	int wHeight = ::GetSystemMetrics(SM_CYFULLSCREEN);
-	bool bFullScreenEnable = screenWidth <= wWidth && screenHeight <= wHeight;
-
 	//コンフィグ反映
-	if (screenMode == DirectGraphics::SCREENMODE_FULLSCREEN && bFullScreenEnable) {
+	if (bFullScreen) {
 		ChangeScreenMode();
 	} else {
 		if (windowSize != DnhConfiguration::WINDOW_SIZE_640x480 || bUserSize) {
@@ -266,22 +269,7 @@ bool EDirectGraphics::Initialize()
 				}
 			}
 
-			double ratioWH = (double)screenWidth / (double)screenHeight;
-			if (width > wWidth)
-				width = wWidth;
-			height = (double)width / ratioWH;
-
-			double ratioHW = (double)screenHeight / (double)screenWidth;
-			if (height > wHeight)
-				height = wHeight;
-			width = (double)height / ratioHW;
-
-			int tw = ::GetSystemMetrics(SM_CXEDGE) + 10 + GetSystemMetrics(SM_CXBORDER) + GetSystemMetrics(SM_CXDLGFRAME);
-			int th = ::GetSystemMetrics(SM_CYEDGE) + 10 + GetSystemMetrics(SM_CYBORDER) + GetSystemMetrics(SM_CYDLGFRAME) + GetSystemMetrics(SM_CYCAPTION);
-			width += tw;
-			height += th;
-
-			SetBounds(0, 0, width, height);
+			SetBounds(SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, width, height);
 			MoveWindowCenter();
 		}
 	}
@@ -296,8 +284,10 @@ void EDirectGraphics::SetRenderStateFor2D(int blend)
 	graphics->SetZBufferEnable(false);
 	graphics->SetZWriteEnalbe(false);
 }
-LRESULT EDirectGraphics::_WindowProcedure(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+void EDirectGraphics::EventProcedure(SDL_Event* evt)
 {
+	// Did they just ?
+#if 0
 	switch (uMsg) {
 	case WM_SYSCOMMAND:
 		int nId = wParam & 0xffff;
@@ -305,5 +295,7 @@ LRESULT EDirectGraphics::_WindowProcedure(HWND hWnd, UINT uMsg, WPARAM wParam, L
 			ELogger::GetInstance()->ShowLogWindow();
 		break;
 	}
-	return DirectGraphicsPrimaryWindow::_WindowProcedure(hWnd, uMsg, wParam, lParam);
+#endif
+
+	DirectGraphicsPrimaryWindow::EventProcedure(evt);
 }

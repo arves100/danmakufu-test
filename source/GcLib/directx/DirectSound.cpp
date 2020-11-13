@@ -1,5 +1,7 @@
 #include "DirectSound.hpp"
 
+#include <SDL_syswm.h>
+
 using namespace gstd;
 using namespace directx;
 
@@ -27,14 +29,25 @@ DirectSoundManager::~DirectSoundManager()
 		pDirectSoundBuffer_->Release();
 	if (pDirectSound_ != NULL)
 		pDirectSound_->Release();
+#if 0
 	panelInfo_ = NULL;
+#endif
 	thisBase_ = NULL;
 	Logger::WriteTop(L"DirectSound：終了完了");
 }
-bool DirectSoundManager::Initialize(HWND hWnd)
+bool DirectSoundManager::Initialize(SDL_Window* SDL_hWnd)
 {
 	if (thisBase_ != NULL)
 		return false;
+
+	SDL_SysWMinfo info;
+	if (!SDL_GetWindowWMInfo(SDL_hWnd, &info))
+	{
+		Logger::WriteTop(L"SDL_GetWindowWMInfo: FAILED");
+		return false;
+	}
+
+	HWND hWnd = info.info.win.window;
 
 	Logger::WriteTop(L"DirectSound：初期化");
 
@@ -381,11 +394,14 @@ void DirectSoundManager::SoundManageThread::_Run()
 			_Arrange();
 		}
 
+#if 0
 		if (manager->panelInfo_ != NULL && this->GetStatus() == RUN) {
 			//クリティカルセクションの中で更新すると
 			//メインスレッドとロックする可能性があります
 			manager->panelInfo_->Update(manager);
 		}
+#endif
+
 		timePrevious_ = timeCurrent_;
 		::Sleep(100);
 	}
@@ -459,6 +475,7 @@ void DirectSoundManager::SoundManageThread::_Fade()
 /**********************************************************
 //SoundInfoPanel
 **********************************************************/
+#if 0
 SoundInfoPanel::SoundInfoPanel()
 {
 	timeLastUpdate_ = 0;
@@ -554,6 +571,8 @@ void SoundInfoPanel::Update(DirectSoundManager* soundManager)
 			wndListView_.DeleteRow(iRow);
 	}
 }
+#endif
+
 /**********************************************************
 //SoundDivision
 **********************************************************/

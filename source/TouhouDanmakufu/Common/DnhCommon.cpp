@@ -310,94 +310,7 @@ std::vector<ref_count_ptr<ScriptInformation>> ScriptInformation::FindPlayerScrip
 /**********************************************************
 //ErrorDialog
 **********************************************************/
-HWND ErrorDialog::hWndParentStatic_ = NULL;
-ErrorDialog::ErrorDialog(HWND hParent)
-{
-	hParent_ = hParent;
-}
-LRESULT ErrorDialog::_WindowProcedure(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
-{
-	switch (uMsg) {
-	case WM_DESTROY: {
-		_FinishMessageLoop();
-		break;
-	}
-	case WM_CLOSE:
-		DestroyWindow(hWnd_);
-		break;
-	case WM_KEYDOWN:
-		if (wParam == VK_RETURN) {
-			DestroyWindow(hWnd_);
-		}
-		break;
-	case WM_COMMAND: {
-		int param = wParam & 0xffff;
-		if (param == button_.GetWindowId()) {
-			DestroyWindow(hWnd_);
-		}
-
-		break;
-	}
-	case WM_SIZE: {
-		RECT rect;
-		::GetClientRect(hWnd_, &rect);
-		int wx = rect.left;
-		int wy = rect.top;
-		int wWidth = rect.right - rect.left;
-		int wHeight = rect.bottom - rect.top;
-
-		RECT rcButton = button_.GetClientRect();
-		int widthButton = rcButton.right - rcButton.left;
-		int heightButton = rcButton.bottom - rcButton.top;
-		button_.SetBounds(wWidth / 2 - widthButton / 2, wHeight - heightButton - 8, widthButton, heightButton);
-
-		edit_.SetBounds(wx + 8, wy + 8, wWidth - 16, wHeight - heightButton - 24);
-
-		break;
-	}
-	}
-	return _CallPreviousWindowProcedure(hWnd, uMsg, wParam, lParam);
-}
-bool ErrorDialog::ShowModal(std::wstring msg)
-{
-	HINSTANCE hInst = ::GetModuleHandle(NULL);
-	std::wstring wName = L"ErrorWindow";
-
-	WNDCLASSEX wcex;
-	ZeroMemory(&wcex, sizeof(wcex));
-	wcex.cbSize = sizeof(WNDCLASSEX);
-	wcex.lpfnWndProc = (WNDPROC)WindowBase::_StaticWindowProcedure;
-	wcex.hInstance = hInst;
-	wcex.hIcon = NULL;
-	wcex.hCursor = LoadCursor(NULL, IDC_ARROW);
-	wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW);
-	wcex.lpszMenuName = NULL;
-	wcex.lpszClassName = wName.c_str();
-	wcex.hIconSm = NULL;
-	RegisterClassEx(&wcex);
-
-	hWnd_ = ::CreateWindow(wcex.lpszClassName,
-		wName.c_str(),
-		WS_OVERLAPPEDWINDOW,
-		0, 0, 480, 320, hParent_, (HMENU)NULL, hInst, NULL);
-	::ShowWindow(hWnd_, SW_HIDE);
-	this->Attach(hWnd_);
-
-	gstd::WEditBox::Style styleEdit;
-	styleEdit.SetStyle(WS_CHILD | WS_VISIBLE | ES_MULTILINE | ES_READONLY | ES_AUTOHSCROLL | ES_AUTOVSCROLL | WS_HSCROLL | WS_VSCROLL);
-	styleEdit.SetStyleEx(WS_EX_CLIENTEDGE);
-	edit_.Create(hWnd_, styleEdit);
-	edit_.SetText(msg);
-
-	button_.Create(hWnd_);
-	button_.SetText(L"OK");
-	button_.SetBounds(0, 0, 88, 20);
-
-	MoveWindowCenter();
-	SetWindowVisible(true);
-	_RunMessageLoop();
-	return true;
-}
+SDL_Window* ErrorDialog::hWndParentStatic_ = NULL;
 
 /**********************************************************
 //DnhConfiguration
@@ -452,7 +365,7 @@ bool DnhConfiguration::_LoadDefintionFile()
 		pathPackageScript_ = PathProperty::GetModuleDirectory() + pathPackageScript_;
 	}
 
-	windowTitle_ = prop.GetString(L"window.title", L"");
+	windowTitle_ = prop.GetString("window.title");
 
 	screenWidth_ = prop.GetInteger(L"screen.width", 640); // + ::GetSystemMetrics(SM_CXEDGE) + 10
 	screenWidth_ = max(screenWidth_, 640); // + ::GetSystemMetrics(SM_CXEDGE) + 10

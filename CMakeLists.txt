@@ -14,7 +14,12 @@ if ("${VCPKG_TARGET_TRIPLET}" MATCHES "-static")
 	set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} /MTd")
 endif()
 
+if (WIN32)
+	add_definitions(-DUNICODE -D_UNICODE)
+endif()
+
 find_package(ZLIB REQUIRED)
 find_package(Vorbis CONFIG REQUIRED)
+find_package(SDL2 CONFIG REQUIRED)
 
 add_subdirectory(source)

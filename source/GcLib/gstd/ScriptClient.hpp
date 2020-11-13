@@ -291,6 +291,7 @@ protected:
 /**********************************************************
 //ScriptCommonDataInfoPanel
 **********************************************************/
+#if 0
 class ScriptCommonDataInfoPanel : public WindowLogger::Panel {
 public:
 	ScriptCommonDataInfoPanel();
@@ -319,6 +320,7 @@ protected:
 	void _UpdateAreaView();
 	void _UpdateValueView();
 };
+#endif
 
 } // namespace gstd
 

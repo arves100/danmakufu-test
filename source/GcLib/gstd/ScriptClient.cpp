@@ -1506,6 +1506,7 @@ void ScriptCommonData::_WriteRecord(gstd::ByteBuffer& buffer, gstd::value& comVa
 /**********************************************************
 //ScriptCommonDataPanel
 **********************************************************/
+#if 0
 ScriptCommonDataInfoPanel::ScriptCommonDataInfoPanel()
 {
 	timeLastUpdate_ = 0;
@@ -1659,3 +1660,4 @@ void ScriptCommonDataInfoPanel::_UpdateValueView()
 		wndListViewValue_.SetText(iRow, COL_VALUE, val.as_string());
 	}
 }
+#endif

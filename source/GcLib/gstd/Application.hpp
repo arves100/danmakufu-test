@@ -26,7 +26,6 @@ public:
 protected:
 	bool bAppRun_;
 	bool bAppActive_;
-	HINSTANCE hAppInstance_;
 	virtual bool _Initialize() { return true; }
 	virtual bool _Loop() { return true; }
 	virtual bool _Finalize() { return true; }

@@ -124,6 +124,7 @@ void FileLogger::_Write(SYSTEMTIME& time, std::wstring str)
 /**********************************************************
 //WindowLogger
 **********************************************************/
+#if 0
 WindowLogger::WindowLogger()
 {
 }
@@ -754,3 +755,4 @@ double WindowLogger::InfoCollectThread::_GetCpuPerformance()
 	PdhCloseQuery(hQuery);
 	return FmtValue.doubleValue;
 }
+#endif

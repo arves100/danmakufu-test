@@ -13,6 +13,8 @@ Application::Application()
 }
 Application::~Application()
 {
+	SDL_Quit();
+
 	thisBase_ = NULL;
 }
 bool Application::Initialize()
@@ -20,9 +22,12 @@ bool Application::Initialize()
 	if (thisBase_ != NULL)
 		return false;
 	thisBase_ = this;
-	hAppInstance_ = ::GetModuleHandle(NULL);
 	bAppRun_ = true;
 	bAppActive_ = true;
+
+	if (SDL_Init(SDL_INIT_VIDEO) != 0)
+		return false;
+
 	return true;
 }
 bool Application::Run()

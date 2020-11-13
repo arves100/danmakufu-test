@@ -60,7 +60,7 @@ public:
 	DirectSoundManager();
 	virtual ~DirectSoundManager();
 	static DirectSoundManager* GetBase() { return thisBase_; }
-	virtual bool Initialize(HWND hWnd);
+	virtual bool Initialize(SDL_Window* hWnd);
 	void Clear();
 
 	IDirectSound8* GetDirectSound() { return pDirectSound_; }
@@ -71,11 +71,13 @@ public:
 	gstd::ref_count_ptr<SoundDivision> GetSoundDivision(int index);
 	gstd::ref_count_ptr<SoundInfo> GetSoundInfo(std::wstring path);
 
+#if 0
 	void SetInfoPanel(gstd::ref_count_ptr<SoundInfoPanel> panel)
 	{
 		gstd::Lock lock(lock_);
 		panelInfo_ = panel;
 	}
+#endif
 
 	bool AddSoundInfoFromFile(std::wstring path);
 	std::vector<gstd::ref_count_ptr<SoundInfo>> GetSoundInfoList();
@@ -89,7 +91,10 @@ protected:
 	std::map<std::wstring, std::list<gstd::ref_count_ptr<SoundPlayer>>> mapPlayer_;
 	std::map<int, gstd::ref_count_ptr<SoundDivision>> mapDivision_;
 	std::map<std::wstring, gstd::ref_count_ptr<SoundInfo>> mapInfo_;
+
+#if 0
 	gstd::ref_count_ptr<SoundInfoPanel> panelInfo_;
+#endif
 
 	gstd::ref_count_ptr<SoundPlayer> _GetPlayer(std::wstring path);
 
@@ -115,6 +120,7 @@ protected:
 /**********************************************************
 	//SoundInfoPanel
 	**********************************************************/
+#if 0
 class SoundInfoPanel : public gstd::WindowLogger::Panel {
 public:
 	SoundInfoPanel();
@@ -140,6 +146,7 @@ protected:
 
 	virtual bool _AddedLogger(HWND hTab);
 };
+#endif
 
 /**********************************************************
 	//SoundDivision

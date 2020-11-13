@@ -21,8 +21,6 @@ public:
 public:
 	DirectGraphicsConfig();
 	virtual ~DirectGraphicsConfig();
-	bool IsShowWindow() { return bShowWindow_; }
-	void SetShowWindow(bool b) { bShowWindow_ = b; }
 	int GetScreenWidth() { return widthScreen_; }
 	void SetScreenWidth(int width) { widthScreen_ = width; }
 	int GetScreenHeight() { return heightScreen_; }
@@ -37,11 +35,10 @@ public:
 	void SetTripleBufferEnable(bool bEnable) { bUseTripleBuffer_ = bEnable; }
 	bool IsWaitTimerEnable() { return bUseWaitTimer_; }
 	void SetWaitTimerEnable(bool bEnable) { bUseWaitTimer_ = bEnable; }
-	bool IsPseudoFullScreen() { return bPseudoFullScreen_; }
-	void SetbPseudoFullScreen(bool b) { bPseudoFullScreen_ = b; }
+	bool IsFullScreen() { return bIsFullScreen_; }
+	void SetFullScreen(bool b) { bIsFullScreen_ = b; }
 
 protected:
-	bool bShowWindow_;
 	int widthScreen_;
 	int heightScreen_;
 	bool bWindowed_;
@@ -49,7 +46,7 @@ protected:
 	int colorMode_;
 	bool bUseTripleBuffer_;
 	bool bUseWaitTimer_;
-	bool bPseudoFullScreen_;
+	bool bIsFullScreen_;
 };
 
 class DirectGraphicsListener {
@@ -88,10 +85,10 @@ public:
 	DirectGraphics();
 	virtual ~DirectGraphics();
 	static DirectGraphics* GetBase() { return thisBase_; }
-	HWND GetAttachedWindowHandle() { return hAttachedWindow_; }
+	SDL_Window* GetAttachedWindowHandle() { return hAttachedWindow_; }
 
-	virtual bool Initialize(HWND hWnd);
-	virtual bool Initialize(HWND hWnd, DirectGraphicsConfig& config);
+	virtual bool Initialize(SDL_Window* hWnd);
+	virtual bool Initialize(SDL_Window* hWnd, DirectGraphicsConfig& config);
 	void AddDirectGraphicsListener(DirectGraphicsListener* listener);
 	void RemoveDirectGraphicsListener(DirectGraphicsListener* listener);
 	int GetScreenMode() { return modeScreen_; }
@@ -150,9 +147,7 @@ protected:
 	IDirect3DSurface9* pZBuffer_;
 
 	DirectGraphicsConfig config_;
-	HWND hAttachedWindow_;
-	DWORD wndStyleFull_;
-	DWORD wndStyleWin_;
+	SDL_Window* hAttachedWindow_;
 	int modeScreen_;
 	std::list<DirectGraphicsListener*> listListener_;
 
@@ -178,8 +173,7 @@ public:
 	void ChangeScreenMode();
 
 protected:
-	gstd::WindowBase wndGraphics_;
-	virtual LRESULT _WindowProcedure(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam); //オーバーライド用プロシージャ
+	virtual void EventProcedure(SDL_Event* evt); //オーバーライド用プロシージャ
 	void _PauseDrawing();
 	void _RestartDrawing();
 };

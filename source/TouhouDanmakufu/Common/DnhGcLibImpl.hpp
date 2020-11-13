@@ -26,16 +26,23 @@ public:
 /**********************************************************
 //ELogger
 **********************************************************/
+#if 0
 class ELogger : public Singleton<ELogger>, public WindowLogger {
+#else
+class ELogger : public Singleton<ELogger>, public FileLogger {
+#endif
 public:
 	ELogger();
 	void Initialize(bool bFile, bool bWindow);
 
+#if 0
 	gstd::ref_count_ptr<gstd::ScriptCommonDataInfoPanel> GetScriptCommonDataInfoPanel() { return panelCommonData_; }
+
 	void UpdateCommonDataInfoPanel(gstd::ref_count_ptr<ScriptCommonDataManager> commonDataManager);
 
 private:
 	gstd::ref_count_ptr<gstd::ScriptCommonDataInfoPanel> panelCommonData_;
+#endif
 };
 
 /**********************************************************
@@ -159,7 +166,7 @@ public:
 	int padIndex_;
 
 public:
-	virtual bool Initialize(HWND hWnd);
+	virtual bool Initialize(SDL_Window* hWnd);
 	void ResetVirtualKeyMap();
 	int GetPadIndex() { return padIndex_; }
 };

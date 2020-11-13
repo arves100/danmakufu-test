@@ -1075,6 +1075,7 @@ gstd::value StgControlScript::Func_SaveReplay(gstd::script_machine* machine, int
 /**********************************************************
 //ScriptInfoPanel
 **********************************************************/
+#if 0
 ScriptInfoPanel::ScriptInfoPanel()
 {
 }
@@ -1121,3 +1122,4 @@ void ScriptInfoPanel::_TerminateScriptAll()
 		}
 	}
 }
+#endif

@@ -125,6 +125,7 @@ protected:
 /**********************************************************
 	//TextureInfoPanel
 	**********************************************************/
+#if 0
 class TextureInfoPanel : public gstd::WindowLogger::Panel, public gstd::Thread {
 public:
 	TextureInfoPanel();
@@ -146,6 +147,7 @@ protected:
 	virtual bool _AddedLogger(HWND hTab);
 	void _Run();
 };
+#endif
 
 } // namespace directx
 

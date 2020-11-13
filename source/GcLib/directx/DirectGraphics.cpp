@@ -5,12 +5,13 @@
 using namespace gstd;
 using namespace directx;
 
+#include <SDL_syswm.h>
+
 /**********************************************************
 //DirectGraphicsConfig
 **********************************************************/
 DirectGraphicsConfig::DirectGraphicsConfig()
 {
-	bShowWindow_ = true;
 	widthScreen_ = 800;
 	heightScreen_ = 600;
 	bWindowed_ = true;
@@ -18,7 +19,7 @@ DirectGraphicsConfig::DirectGraphicsConfig()
 	colorMode_ = COLOR_MODE_32BIT;
 	bUseTripleBuffer_ = true;
 	bUseWaitTimer_ = false;
-	bPseudoFullScreen_ = true;
+	bIsFullScreen_ = false;
 }
 DirectGraphicsConfig::~DirectGraphicsConfig()
 {
@@ -53,14 +54,24 @@ DirectGraphics::~DirectGraphics()
 	thisBase_ = NULL;
 	Logger::WriteTop(L"DirectGraphics：終了完了");
 }
-bool DirectGraphics::Initialize(HWND hWnd)
+bool DirectGraphics::Initialize(SDL_Window* hWnd)
 {
 	return this->Initialize(hWnd, config_);
 }
-bool DirectGraphics::Initialize(HWND hWnd, DirectGraphicsConfig& config)
+bool DirectGraphics::Initialize(SDL_Window* SDL_hWnd, DirectGraphicsConfig& config)
 {
 	if (thisBase_ != NULL)
 		return false;
+
+	// Get native window handle from an SDL2 window
+	SDL_SysWMinfo info;
+	if (!SDL_GetWindowWMInfo(SDL_hWnd, &info))
+	{
+		OutputDebugStringA(SDL_GetError()); // Not based ...
+		throw gstd::wexception(L"Cannot get SDL window info");
+	}
+
+	HWND hWnd = info.info.win.window;
 
 	Logger::WriteTop(L"DirectGraphics：初期化");
 	pDirect3D_ = Direct3DCreate9(D3D_SDK_VERSION);
@@ -68,9 +79,7 @@ bool DirectGraphics::Initialize(HWND hWnd, DirectGraphicsConfig& config)
 		throw gstd::wexception(L"Direct3DCreate9失敗");
 
 	config_ = config;
-	wndStyleFull_ = WS_POPUP;
-	wndStyleWin_ = WS_OVERLAPPEDWINDOW - WS_SIZEBOX;
-	hAttachedWindow_ = hWnd;
+	hAttachedWindow_ = SDL_hWnd;
 
 	//FullScreenModeの設定
 	ZeroMemory(&d3dppFull_, sizeof(D3DPRESENT_PARAMETERS));
@@ -112,11 +121,6 @@ bool DirectGraphics::Initialize(HWND hWnd, DirectGraphicsConfig& config)
 	d3dppWin_.EnableAutoDepthStencil = TRUE;
 	d3dppWin_.AutoDepthStencilFormat = D3DFMT_D16;
 	d3dppWin_.MultiSampleType = D3DMULTISAMPLE_NONE;
-
-	if (!config_.IsWindowed()) { //FullScreenMode
-		::SetWindowLong(hWnd, GWL_STYLE, wndStyleFull_);
-		::ShowWindow(hWnd, SW_SHOW);
-	}
 
 	int countAdapt = pDirect3D_->GetAdapterCount();
 
@@ -585,48 +589,31 @@ int DirectGraphics::GetScreenHeight()
 }
 double DirectGraphics::GetScreenWidthRatio()
 {
-	RECT rect;
-	::GetWindowRect(hAttachedWindow_, &rect);
-	double widthWindow = rect.right - rect.left;
-	double widthView = config_.GetScreenWidth();
-
-	DWORD style = ::GetWindowLong(hAttachedWindow_, GWL_STYLE);
-	if (modeScreen_ == SCREENMODE_WINDOW && (style & (WS_OVERLAPPEDWINDOW - WS_SIZEBOX)) > 0) {
-		widthWindow -= GetSystemMetrics(SM_CXEDGE) + 10 + GetSystemMetrics(SM_CXBORDER) + GetSystemMetrics(SM_CXDLGFRAME);
-	}
-
-	return widthWindow / widthView;
+	int w, h;
+	SDL_GetWindowSize(hAttachedWindow_, &w, &h);
+	return w / config_.GetScreenWidth();
 }
 double DirectGraphics::GetScreenHeightRatio()
 {
-	RECT rect;
-	::GetWindowRect(hAttachedWindow_, &rect);
-	double heightWindow = rect.bottom - rect.top;
-	double heightView = config_.GetScreenHeight();
-
-	DWORD style = ::GetWindowLong(hAttachedWindow_, GWL_STYLE);
-	if (modeScreen_ == SCREENMODE_WINDOW && (style & (WS_OVERLAPPEDWINDOW - WS_SIZEBOX)) > 0) {
-		heightWindow -= GetSystemMetrics(SM_CYEDGE) + 10 + GetSystemMetrics(SM_CYBORDER) + GetSystemMetrics(SM_CYDLGFRAME) + GetSystemMetrics(SM_CYCAPTION);
-	}
-
-	return heightWindow / heightView;
+	int w, h;
+	SDL_GetWindowSize(hAttachedWindow_, &w, &h);
+	return h / config_.GetScreenHeight();
 }
 POINT DirectGraphics::GetMousePosition()
 {
-	POINT res = { 0, 0 };
-	GetCursorPos(&res);
-	ScreenToClient(hAttachedWindow_, &res);
+	int x, y;
+	SDL_GetMouseState(&x, &y);
 
 	double ratioWidth = GetScreenWidthRatio();
 	double ratioHeight = GetScreenHeightRatio();
 	if (ratioWidth != 0) {
-		res.x = (int)(res.x / ratioWidth);
+		x /= ratioWidth;
 	}
 	if (ratioHeight != 0) {
-		res.y = (int)(res.y / ratioHeight);
+		y /= ratioHeight;
 	}
 
-	return res;
+	return { x, y };
 }
 void DirectGraphics::SaveBackSurfaceToFile(std::wstring path)
 {
@@ -656,11 +643,10 @@ DirectGraphicsPrimaryWindow::~DirectGraphicsPrimaryWindow()
 }
 void DirectGraphicsPrimaryWindow::_PauseDrawing()
 {
-	//	gstd::Application::GetBase()->SetActive(false);
-	// ウインドウのメニューバーを描画する
-	::DrawMenuBar(hWnd_);
-	// ウインドウのフレームを描画する
-	::RedrawWindow(hWnd_, NULL, NULL, RDW_FRAME);
+	// TODO: This needs to be changed by DirectX
+	//   NOT by the window handle -.-''
+
+	gstd::Application::GetBase()->SetActive(false);
 }
 void DirectGraphicsPrimaryWindow::_RestartDrawing()
 {
@@ -673,281 +659,103 @@ bool DirectGraphicsPrimaryWindow::Initialize()
 }
 bool DirectGraphicsPrimaryWindow::Initialize(DirectGraphicsConfig& config)
 {
-	HINSTANCE hInst = ::GetModuleHandle(NULL);
-	{
-		std::wstring nameClass = L"DirectGraphicsPrimaryWindow";
-		WNDCLASSEX wcex;
-		ZeroMemory(&wcex, sizeof(wcex));
-		wcex.cbSize = sizeof(WNDCLASSEX);
-		// wcex.style=CS_HREDRAW|CS_VREDRAW;
-		wcex.lpfnWndProc = (WNDPROC)WindowBase::_StaticWindowProcedure;
-		wcex.hInstance = hInst;
-		wcex.hIcon = NULL;
-		wcex.hCursor = LoadCursor(NULL, IDC_ARROW);
-		wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 5);
-		wcex.lpszMenuName = NULL;
-		wcex.lpszClassName = nameClass.c_str();
-		wcex.hIconSm = NULL;
-		::RegisterClassEx(&wcex);
+	int wWidth = config.GetScreenWidth();
+	int wHeight = config.GetScreenHeight();
 
-		int wWidth = config.GetScreenWidth();
-		int wHeight = config.GetScreenHeight();
-		int tw = ::GetSystemMetrics(SM_CXEDGE) + 10 + GetSystemMetrics(SM_CXBORDER) + GetSystemMetrics(SM_CXDLGFRAME);
-		int th = ::GetSystemMetrics(SM_CYEDGE) + 10 + GetSystemMetrics(SM_CYBORDER) + GetSystemMetrics(SM_CYDLGFRAME) + GetSystemMetrics(SM_CYCAPTION);
-		wWidth += tw;
-		wHeight += th;
+	// TODO: Should we add OpenGL/Vulkan here?
+	// TODO: Would High DPI work on this game?
+	int flags = SDL_WINDOW_ALLOW_HIGHDPI;
 
-		hWnd_ = ::CreateWindow(wcex.lpszClassName,
-			L"",
-			WS_OVERLAPPEDWINDOW - WS_SIZEBOX,
-			0, 0, wWidth, wHeight, NULL, NULL, hInst, NULL);
-	}
+	if (config.IsFullScreen())
+		// TODO: Borderless fullscreen ?
+		flags &= SDL_WINDOW_FULLSCREEN;
 
-	HWND hWndGraphics = NULL;
-	if (config.IsPseudoFullScreen()) {
-		//擬似フルスクリーンの場合は、子ウィンドウにDirectGraphicsを配置する
-		std::wstring nameClass = L"DirectGraphicsPrimaryWindow.Child";
-		WNDCLASSEX wcex;
-		ZeroMemory(&wcex, sizeof(wcex));
-		wcex.cbSize = sizeof(WNDCLASSEX);
-		wcex.style = CS_HREDRAW | CS_VREDRAW;
-		wcex.lpfnWndProc = (WNDPROC)WindowBase::_StaticWindowProcedure;
-		wcex.hInstance = hInst;
-		wcex.hCursor = LoadCursor(NULL, IDC_ARROW);
-		wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 5);
-		wcex.lpszClassName = nameClass.c_str();
-		::RegisterClassEx(&wcex);
+	hWnd_ = SDL_CreateWindow("", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, wWidth, wHeight, flags);
 
-		int screenWidth = config_.GetScreenWidth() + ::GetSystemMetrics(SM_CXEDGE) + 10;
-		int screenHeight = config_.GetScreenHeight() + ::GetSystemMetrics(SM_CYEDGE) + 10;
-		HWND hWnd = ::CreateWindow(wcex.lpszClassName,
-			L"",
-			WS_CHILD | WS_VISIBLE,
-			0, 0, screenWidth, screenHeight, hWnd_, NULL, hInst, NULL);
-		wndGraphics_.Attach(hWnd);
+	if (!hWnd_)
+		return false;
 
-		hWndGraphics = hWnd;
-	} else {
-		if (config.IsShowWindow())
-			::ShowWindow(hWnd_, SW_SHOW);
-		hWndGraphics = hWnd_;
-	}
-	::UpdateWindow(hWnd_);
+#if 0
 	this->Attach(hWnd_);
+#endif
 
-	//Windowを画面の中央に移動
-	RECT drect, mrect;
-	HWND hDesk = ::GetDesktopWindow();
-	::GetWindowRect(hDesk, &drect);
-	::GetWindowRect(hWnd_, &mrect);
-	int tWidth = mrect.right - mrect.left;
-	int tHeight = mrect.bottom - mrect.top;
-	int left = drect.right / 2 - tWidth / 2;
-	int top = drect.bottom / 2 - tHeight / 2;
-	::MoveWindow(hWnd_, left, top, tWidth, tHeight, TRUE);
-
-	DirectGraphics::Initialize(hWndGraphics, config);
+	DirectGraphics::Initialize(hWnd_, config);
 
 	return true;
 }
 
-LRESULT DirectGraphicsPrimaryWindow::_WindowProcedure(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+void DirectGraphicsPrimaryWindow::EventProcedure(SDL_Event* evt)
 {
-	switch (uMsg) {
-	case WM_CLOSE: {
-		::DestroyWindow(hWnd);
-		return FALSE;
-	}
-	case WM_DESTROY: {
-		::PostQuitMessage(0);
-		return FALSE;
-	}
-	case WM_ACTIVATEAPP: {
-		if ((BOOL)wParam)
+	switch (evt->type)
+	{
+	case SDL_WINDOWEVENT:
+		switch (evt->window.event)
+		{
+		case SDL_WINDOWEVENT_SHOWN:
+		case SDL_APP_WILLENTERBACKGROUND: // Android/iOS/WinRT
 			_RestartDrawing();
-		else
+			break;
+
+		case SDL_WINDOWEVENT_HIDDEN:
+		case SDL_APP_WILLENTERFOREGROUND: // Android/iOS/WinRT
 			_PauseDrawing();
-		return FALSE;
-	}
-	case WM_ENTERMENULOOP: {
-		//メニューが選択されたら動作を停止する
-		_PauseDrawing();
-		return FALSE;
-	}
-	case WM_EXITMENULOOP: {
-		//メニューの選択が解除されたら動作を再開する
-		_RestartDrawing();
-		return FALSE;
-	}
-	case WM_SIZE: {
-		if (wndGraphics_.GetWindowHandle() != NULL) {
-			RECT rect;
-			::GetClientRect(hWnd, &rect);
-			int width = rect.right;
-			int height = rect.bottom;
+			break;
 
-			int screenWidth = config_.GetScreenWidth();
-			int screenHeight = config_.GetScreenHeight();
+		case SDL_WINDOWEVENT_CLOSE:
+			// TODO: Send shutdown
+			break;
 
-			double ratioWH = (double)screenWidth / (double)screenHeight;
-			if (width > rect.right)
-				width = rect.right;
-			height = (double)width / ratioWH;
-
-			double ratioHW = (double)screenHeight / (double)screenWidth;
-			if (height > rect.bottom)
-				height = rect.bottom;
-			width = (double)height / ratioHW;
-
-			int wX = (rect.right - width) / 2;
-			int wY = (rect.bottom - height) / 2;
-			wndGraphics_.SetBounds(wX, wY, width, height);
-		}
-		return FALSE;
-	}
-	case WM_GETMINMAXINFO: {
-		int tw = ::GetSystemMetrics(SM_CXEDGE) + 10 + GetSystemMetrics(SM_CXBORDER) + GetSystemMetrics(SM_CXDLGFRAME);
-		int th = ::GetSystemMetrics(SM_CYEDGE) + 10 + GetSystemMetrics(SM_CYBORDER) + GetSystemMetrics(SM_CYDLGFRAME) + GetSystemMetrics(SM_CYCAPTION);
-
-		MINMAXINFO* info = (MINMAXINFO*)lParam;
-		int wWidth = ::GetSystemMetrics(SM_CXFULLSCREEN);
-		int wHeight = ::GetSystemMetrics(SM_CYFULLSCREEN);
-
-		int screenWidth = config_.GetScreenWidth();
-		int screenHeight = config_.GetScreenHeight();
-		int width = wWidth;
-		int height = wHeight;
-
-		double ratioWH = (double)screenWidth / (double)screenHeight;
-		if (width > wWidth)
-			width = wWidth;
-		height = (double)width / ratioWH;
-
-		double ratioHW = (double)screenHeight / (double)screenWidth;
-		if (height > wHeight)
-			height = wHeight;
-		width = (double)height / ratioHW;
-
-		info->ptMaxSize.x = width + tw;
-		info->ptMaxSize.y = height + th;
-		return FALSE;
-	}
-	case WM_KEYDOWN: {
-		switch (wParam) {
-		case VK_F12:
-			::PostMessage(hWnd, WM_CLOSE, 0, 0);
+		default:
 			break;
 		}
-		return FALSE;
+
+		break;
+
+	case SDL_APP_TERMINATING: // Android/IOS/WinRT
+	case SDL_QUIT:
+		// TODO: Send shutdown
+		break;
+
+	case SDL_KEYDOWN:
+		if (evt->key.keysym.sym == SDLK_F12)
+		{
+			// TODO: Send shutdown
+		}
+
+		if ( (evt->key.keysym.sym == SDLK_RETURN || evt->key.keysym.sym == SDLK_RETURN2)
+			&& (evt->key.keysym.mod == KMOD_LALT || evt->key.keysym.mod == KMOD_RALT) )
+			ChangeScreenMode();
+		break;
 	}
-	case WM_SYSCHAR: {
-		if (wParam == VK_RETURN)
-			this->ChangeScreenMode();
-		return FALSE;
-	}
-	}
-	return _CallPreviousWindowProcedure(hWnd, uMsg, wParam, lParam);
 }
 
 void DirectGraphicsPrimaryWindow::ChangeScreenMode()
 {
-	if (!config_.IsPseudoFullScreen()) {
-		if (modeScreen_ == SCREENMODE_WINDOW) {
-			int screenWidth = config_.GetScreenWidth() + ::GetSystemMetrics(SM_CXEDGE) + 10;
-			int screenHeight = config_.GetScreenHeight() + ::GetSystemMetrics(SM_CYEDGE) + 10;
-			int wWidth = ::GetSystemMetrics(SM_CXFULLSCREEN);
-			int wHeight = ::GetSystemMetrics(SM_CYFULLSCREEN);
-			bool bFullScreenEnable = screenWidth <= wWidth && screenHeight <= wHeight;
-			if (!bFullScreenEnable) {
-				std::wstring log = StringUtility::Format(
-					L"this display cannot change full screen : display[%d-%d] screen[%d-%d]", wWidth, wHeight, screenWidth, screenHeight);
-				Logger::WriteTop(log);
-				return;
-			}
-		}
+	Application::GetBase()->SetActive(true);
 
-		Application::GetBase()->SetActive(true);
+	//テクスチャ解放
+	_ReleaseDxResource();
 
-		//テクスチャ解放
-		_ReleaseDxResource();
+	if (modeScreen_ == SCREENMODE_FULLSCREEN) {
+		pDevice_->Reset(&d3dppWin_);
+		
+		SDL_SetWindowFullscreen(hAttachedWindow_, 0);
 
-		if (modeScreen_ == SCREENMODE_FULLSCREEN) {
-			pDevice_->Reset(&d3dppWin_);
-			::SetWindowLong(hAttachedWindow_, GWL_STYLE, wndStyleWin_);
-			::ShowWindow(hAttachedWindow_, SW_SHOW);
-
-			//Windowを画面の中央に移動
-			int tw = ::GetSystemMetrics(SM_CXEDGE) + 10 + GetSystemMetrics(SM_CXBORDER) + GetSystemMetrics(SM_CXDLGFRAME);
-			int th = ::GetSystemMetrics(SM_CYEDGE) + 10 + GetSystemMetrics(SM_CYBORDER) + GetSystemMetrics(SM_CYDLGFRAME) + GetSystemMetrics(SM_CYCAPTION);
-			RECT drect, mrect;
-			HWND hDesk = ::GetDesktopWindow();
-			::GetWindowRect(hDesk, &drect);
-			::GetWindowRect(hAttachedWindow_, &mrect);
-			int wWidth = mrect.right - mrect.left;
-			int wHeight = mrect.bottom - mrect.top;
-			int left = drect.right / 2 - wWidth / 2;
-			int top = drect.bottom / 2 - wHeight / 2;
-			::MoveWindow(hAttachedWindow_, left, top, wWidth + tw, wHeight + th, TRUE);
-
-			::SetWindowPos(hAttachedWindow_, HWND_NOTOPMOST,
-				0, 0, 0, 0,
-				SWP_NOSIZE | SWP_NOMOVE | SWP_NOREDRAW | SWP_NOACTIVATE | SWP_NOCOPYBITS | SWP_NOSENDCHANGING);
-
-			modeScreen_ = SCREENMODE_WINDOW;
-			while (::ShowCursor(TRUE) < 0) {
-			}; //マウスカーソルを出現させる
-		} else {
-			pDevice_->Reset(&d3dppFull_);
-			::SetWindowLong(hAttachedWindow_, GWL_STYLE, wndStyleFull_);
-			::ShowWindow(hAttachedWindow_, SW_SHOW);
-			modeScreen_ = SCREENMODE_FULLSCREEN;
-		}
-
-		//テクスチャレストア
-		_RestoreDxResource();
+		SDL_SetWindowPosition(hAttachedWindow_, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
+		modeScreen_ = SCREENMODE_WINDOW;
+		SDL_ShowCursor(SDL_ENABLE);
 	} else {
-		if (modeScreen_ == SCREENMODE_FULLSCREEN) {
-			::SetWindowLong(hWnd_, GWL_STYLE, wndStyleWin_);
-			::ShowWindow(hWnd_, SW_SHOW);
+		pDevice_->Reset(&d3dppFull_);
 
-			//Windowを画面の中央に移動
-			int tw = ::GetSystemMetrics(SM_CXEDGE) + 10 + GetSystemMetrics(SM_CXBORDER) + GetSystemMetrics(SM_CXDLGFRAME);
-			int th = ::GetSystemMetrics(SM_CYEDGE) + 10 + GetSystemMetrics(SM_CYBORDER) + GetSystemMetrics(SM_CYDLGFRAME) + GetSystemMetrics(SM_CYCAPTION);
+		// TODO: borderless fullscreen?
+		SDL_SetWindowFullscreen(hAttachedWindow_, SDL_WINDOW_FULLSCREEN);
 
-			int wWidth = ::GetSystemMetrics(SM_CXFULLSCREEN);
-			int wHeight = ::GetSystemMetrics(SM_CYFULLSCREEN);
-			int screenWidth = config_.GetScreenWidth();
-			int screenHeight = config_.GetScreenHeight();
-			int width = screenWidth;
-			int height = screenHeight;
-
-			double ratioWH = (double)screenWidth / (double)screenHeight;
-			if (width > wWidth)
-				width = wWidth;
-			height = (double)width / ratioWH;
-
-			double ratioHW = (double)screenHeight / (double)screenWidth;
-			if (height > wHeight)
-				height = wHeight;
-			width = (double)height / ratioHW;
-
-			width += tw;
-			height += th;
-
-			SetBounds(0, 0, width, height);
-			MoveWindowCenter();
-
-			modeScreen_ = SCREENMODE_WINDOW;
-		} else {
-			RECT rect;
-			GetWindowRect(GetDesktopWindow(), &rect);
-			::SetWindowLong(hWnd_, GWL_STYLE, wndStyleFull_);
-			::ShowWindow(hWnd_, SW_SHOW);
-			::MoveWindow(hWnd_, 0, 0, rect.right, rect.bottom, TRUE);
-
-			modeScreen_ = SCREENMODE_FULLSCREEN;
-		}
+		SDL_ShowCursor(SDL_DISABLE);
+		modeScreen_ = SCREENMODE_FULLSCREEN;
 	}
+
+	//テクスチャレストア
+	_RestoreDxResource();
 }
 
 /**********************************************************
