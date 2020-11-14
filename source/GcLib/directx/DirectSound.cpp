@@ -41,6 +41,7 @@ bool DirectSoundManager::Initialize(SDL_Window* SDL_hWnd)
 		return false;
 
 	SDL_SysWMinfo info;
+	SDL_VERSION(&info.version);
 	if (!SDL_GetWindowWMInfo(SDL_hWnd, &info))
 	{
 		Logger::WriteTop(L"SDL_GetWindowWMInfo: FAILED");

@@ -51,6 +51,7 @@ bool DirectInput::Initialize(SDL_Window* hWnd)
 	Logger::WriteTop(L"DirectInput：初期化");
 
 	SDL_SysWMinfo info;
+	SDL_VERSION(&info.version);
 	if (!SDL_GetWindowWMInfo(hWnd, &info))
 	{
 		Logger::WriteTop(L"DirectInput: SDL_GetWindowWMInfo failed");

@@ -65,6 +65,8 @@ bool DirectGraphics::Initialize(SDL_Window* SDL_hWnd, DirectGraphicsConfig& conf
 
 	// Get native window handle from an SDL2 window
 	SDL_SysWMinfo info;
+
+	SDL_VERSION(&info.version);
 	if (!SDL_GetWindowWMInfo(SDL_hWnd, &info))
 	{
 		OutputDebugStringA(SDL_GetError()); // Not based ...
