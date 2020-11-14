@@ -21,14 +21,13 @@ public:
 	bool IsRun() { return bAppRun_; }
 	void End() { bAppRun_ = false; }
 
-	static HINSTANCE GetApplicationHandle() { return ::GetModuleHandle(NULL); }
-
 protected:
 	bool bAppRun_;
 	bool bAppActive_;
 	virtual bool _Initialize() { return true; }
 	virtual bool _Loop() { return true; }
 	virtual bool _Finalize() { return true; }
+	virtual void WindowEvent(SDL_Event*) {}
 	Application();
 
 private:

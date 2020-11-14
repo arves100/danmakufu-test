@@ -55,15 +55,12 @@ bool Application::Run()
 		bAppRun_ = false;
 	}
 
-	MSG msg;
+	SDL_Event evt;
 	while (true) {
 		if (bAppRun_ == false)
 			break;
-		if (::PeekMessage(&msg, 0, 0, 0, PM_NOREMOVE)) {
-			if (!::GetMessage(&msg, NULL, 0, 0))
-				break;
-			::TranslateMessage(&msg);
-			::DispatchMessage(&msg);
+		if (SDL_PollEvent(&evt)) {
+			WindowEvent(&evt);
 		} else {
 			if (bAppActive_ == false) {
 				Sleep(10);

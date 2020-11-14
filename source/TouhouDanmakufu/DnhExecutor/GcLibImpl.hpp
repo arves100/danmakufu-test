@@ -17,6 +17,7 @@ protected:
 	bool _Initialize();
 	bool _Loop();
 	bool _Finalize();
+	void WindowEvent(SDL_Event* evt);
 
 public:
 	~EApplication();
@@ -31,13 +32,12 @@ class EDirectGraphics : public Singleton<EDirectGraphics>, public DirectGraphics
 private:
 	EDirectGraphics();
 
-protected:
-	virtual void EventProcedure(SDL_Event* evt);
-
 public:
 	~EDirectGraphics();
 	virtual bool Initialize();
 	void SetRenderStateFor2D(int blend);
+	void EventProcedure(SDL_Event* evt);
+
 };
 
 #endif

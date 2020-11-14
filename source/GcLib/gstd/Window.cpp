@@ -8,6 +8,7 @@ using namespace gstd;
 WindowBase::WindowBase()
 {
 	hWnd_ = NULL;
+	bShutdown_ = false;
 
 	// SDL2 does have a window id for us
 }

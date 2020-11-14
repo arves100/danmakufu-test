@@ -677,10 +677,6 @@ bool DirectGraphicsPrimaryWindow::Initialize(DirectGraphicsConfig& config)
 	if (!hWnd_)
 		return false;
 
-#if 0
-	this->Attach(hWnd_);
-#endif
-
 	DirectGraphics::Initialize(hWnd_, config);
 
 	return true;
@@ -704,7 +700,7 @@ void DirectGraphicsPrimaryWindow::EventProcedure(SDL_Event* evt)
 			break;
 
 		case SDL_WINDOWEVENT_CLOSE:
-			// TODO: Send shutdown
+			bShutdown_ = true;
 			break;
 
 		default:
@@ -713,9 +709,9 @@ void DirectGraphicsPrimaryWindow::EventProcedure(SDL_Event* evt)
 
 		break;
 
-	case SDL_APP_TERMINATING: // Android/IOS/WinRT
+	case SDL_APP_TERMINATING: // Android/iOS/WinRT
 	case SDL_QUIT:
-		// TODO: Send shutdown
+		bShutdown_ = true;
 		break;
 
 	case SDL_KEYDOWN:
@@ -725,7 +721,7 @@ void DirectGraphicsPrimaryWindow::EventProcedure(SDL_Event* evt)
 		}
 
 		if ( (evt->key.keysym.sym == SDLK_RETURN || evt->key.keysym.sym == SDLK_RETURN2)
-			&& (evt->key.keysym.mod == KMOD_LALT || evt->key.keysym.mod == KMOD_RALT) )
+			&& (evt->key.keysym.mod & KMOD_LALT || evt->key.keysym.mod & KMOD_RALT) )
 			ChangeScreenMode();
 		break;
 	}

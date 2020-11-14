@@ -64,7 +64,10 @@ public:
 	virtual void LocateParts() {} //画面部品配置
 	void MoveWindowCenter();
 
+	bool ShouldShutdown() { return bShutdown_; }
+
 protected:
+	bool bShutdown_;
 	SDL_Window* hWnd_;
 	virtual void EventProcedure(SDL_Event* evt) {} //オーバーライド用プロシージャ
 };

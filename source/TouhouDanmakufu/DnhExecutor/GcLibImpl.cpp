@@ -173,6 +173,10 @@ bool EApplication::_Loop()
 	}
 	return true;
 }
+void EApplication::WindowEvent(SDL_Event* evt)
+{
+	EDirectGraphics::GetInstance()->EventProcedure(evt);
+}
 bool EApplication::_Finalize()
 {
 	Logger::WriteTop(L"アプリケーション終了処理開始");
@@ -296,6 +300,9 @@ void EDirectGraphics::EventProcedure(SDL_Event* evt)
 		break;
 	}
 #endif
+
+	if (bShutdown_)
+		EApplication::GetInstance()->End();
 
 	DirectGraphicsPrimaryWindow::EventProcedure(evt);
 }
