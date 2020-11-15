@@ -19,7 +19,7 @@ This project is a fork of https://github.com/WishMakers0/Danmakufu-Woo-Edition,
 which is a modified version of the open source danmakufu ph3 release, available here:
 https://touhougc.web.fc2.com/products/th_dnh_ph3.html
 
-The old code (both Woo edition and the origin one) are released under NYSL Version 0.9982.
+The old code (both Woo edition and the original one) are released under NYSL Version 0.9982.
 
 JP: http://www.kmonos.net/nysl/
 EN: http://www.kmonos.net/nysl/index.en.html
