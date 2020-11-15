@@ -288,40 +288,6 @@ protected:
 	void _WriteRecord(gstd::ByteBuffer& buffer, gstd::value& comValue);
 };
 
-/**********************************************************
-//ScriptCommonDataInfoPanel
-**********************************************************/
-#if 0
-class ScriptCommonDataInfoPanel : public WindowLogger::Panel {
-public:
-	ScriptCommonDataInfoPanel();
-	void SetUpdateInterval(int time) { timeUpdateInterval_ = time; }
-	virtual void LocateParts();
-	virtual void Update(gstd::ref_count_ptr<ScriptCommonDataManager> commonDataManager);
-
-protected:
-	enum {
-		COL_AREA = 0,
-		COL_KEY = 0,
-		COL_VALUE,
-	};
-
-	gstd::ref_count_ptr<ScriptCommonDataManager> commonDataManager_;
-	gstd::CriticalSection lock_;
-
-	WSplitter wndSplitter_;
-	WListView wndListViewArea_;
-	WListView wndListViewValue_;
-	int timeLastUpdate_;
-	int timeUpdateInterval_;
-
-	virtual bool _AddedLogger(HWND hTab);
-	void _UpdateListViewKey(WListView* listView, std::vector<std::string> listKey);
-	void _UpdateAreaView();
-	void _UpdateValueView();
-};
-#endif
-
 } // namespace gstd
 
 #endif

@@ -70,11 +70,6 @@ void StgSystemController::Work()
 {
 	try {
 		_ControlScene();
-
-#if 0
-		ELogger* logger = ELogger::GetInstance();
-		logger->UpdateCommonDataInfoPanel(commonDataManager_);
-#endif
 	} catch (gstd::wexception e) {
 		Logger::WriteTop(e.what());
 		infoSystem_->SetError(e.what());
@@ -141,11 +136,6 @@ void StgSystemController::Work()
 			DirectSoundManager* soundManager = DirectSoundManager::GetBase();
 			soundManager->Clear();
 		}
-
-#if 0
-		ELogger* logger = ELogger::GetInstance();
-		logger->UpdateCommonDataInfoPanel(NULL);
-#endif
 
 		EFpsController* fpsController = EFpsController::GetInstance();
 		fpsController->SetFastModeKey(DIK_LCONTROL);
@@ -554,38 +544,6 @@ void StgSystemController::_ControlScene()
 			packageController_->Work();
 		}
 	}
-
-#if 0
-	ELogger* logger = ELogger::GetInstance();
-	if (logger->IsWindowVisible()) {
-		//ログ関連
-		int taskCount = 0;
-		int objectCount = 0;
-		if (packageController_ != NULL) {
-			ref_count_ptr<StgControlScriptManager> scriptManager = packageController_->GetScriptManager();
-			if (scriptManager != NULL)
-				taskCount = scriptManager->GetAllScriptThreadCount();
-
-			ref_count_ptr<DxScriptObjectManager> objectManager = packageController_->GetMainObjectManager();
-			if (objectManager != NULL)
-				objectCount += objectManager->GetAliveObjectCount();
-		}
-		if (stageController_ != NULL) {
-			ref_count_ptr<StgStageInformation> infoStage = stageController_->GetStageInformation();
-			if (!infoStage->IsEnd()) {
-				StgControlScriptManager* scriptManager = stageController_->GetScriptManagerP();
-				if (scriptManager != NULL)
-					taskCount = scriptManager->GetAllScriptThreadCount();
-
-				ref_count_ptr<DxScriptObjectManager> objectManager = stageController_->GetMainObjectManager();
-				if (objectManager != NULL)
-					objectCount += objectManager->GetAliveObjectCount();
-			}
-		}
-		logger->SetInfo(4, L"script_task_count", StringUtility::Format(L"%d", taskCount));
-		logger->SetInfo(5, L"object_count", StringUtility::Format(L"%d", objectCount));
-	}
-#endif
 }
 void StgSystemController::StartStgScene(ref_count_ptr<StgStageInformation> infoStage, ref_count_ptr<ReplayInformation::StageData> replayStageData)
 {

@@ -71,14 +71,6 @@ public:
 	gstd::ref_count_ptr<SoundDivision> GetSoundDivision(int index);
 	gstd::ref_count_ptr<SoundInfo> GetSoundInfo(std::wstring path);
 
-#if 0
-	void SetInfoPanel(gstd::ref_count_ptr<SoundInfoPanel> panel)
-	{
-		gstd::Lock lock(lock_);
-		panelInfo_ = panel;
-	}
-#endif
-
 	bool AddSoundInfoFromFile(std::wstring path);
 	std::vector<gstd::ref_count_ptr<SoundInfo>> GetSoundInfoList();
 	void SetFadeDeleteAll();
@@ -91,10 +83,6 @@ protected:
 	std::map<std::wstring, std::list<gstd::ref_count_ptr<SoundPlayer>>> mapPlayer_;
 	std::map<int, gstd::ref_count_ptr<SoundDivision>> mapDivision_;
 	std::map<std::wstring, gstd::ref_count_ptr<SoundInfo>> mapInfo_;
-
-#if 0
-	gstd::ref_count_ptr<SoundInfoPanel> panelInfo_;
-#endif
 
 	gstd::ref_count_ptr<SoundPlayer> _GetPlayer(std::wstring path);
 
@@ -116,37 +104,6 @@ protected:
 	void _Arrange(); //必要なくなったデータを削除
 	void _Fade(); //フェード処理
 };
-
-/**********************************************************
-	//SoundInfoPanel
-	**********************************************************/
-#if 0
-class SoundInfoPanel : public gstd::WindowLogger::Panel {
-public:
-	SoundInfoPanel();
-	void SetUpdateInterval(int time) { timeUpdateInterval_ = time; }
-	virtual void LocateParts();
-	virtual void Update(DirectSoundManager* soundManager);
-
-protected:
-	struct Info {
-		int address;
-		std::wstring path;
-		int countRef;
-	};
-	enum {
-		ROW_ADDRESS,
-		ROW_FILENAME,
-		ROW_FULLPATH,
-		ROW_COUNT_REFFRENCE,
-	};
-	gstd::WListView wndListView_;
-	int timeLastUpdate_;
-	int timeUpdateInterval_;
-
-	virtual bool _AddedLogger(HWND hTab);
-};
-#endif
 
 /**********************************************************
 	//SoundDivision

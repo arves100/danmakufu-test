@@ -77,31 +77,11 @@ std::wstring EPathProperty::ExtendRelativeToFull(std::wstring dir, std::wstring 
 ELogger::ELogger()
 {
 }
-void ELogger::Initialize(bool bFile, bool bWindow)
+void ELogger::Initialize(bool bFile)
 {
-#if 0
-	gstd::ref_count_ptr<gstd::FileLogger> fileLogger = new gstd::FileLogger();
-	fileLogger->Initialize(bFile);
-	fileLogger->Clear();
-
-	AddLogger(fileLogger);
-
-	Logger::SetTop(this);
-	WindowLogger::Initialize(bWindow);
-
-	panelCommonData_ = new gstd::ScriptCommonDataInfoPanel();
-#else
 	FileLogger::Initialize(bFile);
 	Clear();
-#endif
 }
-
-#if 0
-void ELogger::UpdateCommonDataInfoPanel(gstd::ref_count_ptr<ScriptCommonDataManager> commonDataManager)
-{
-	panelCommonData_->Update(commonDataManager);
-}
-#endif
 
 /**********************************************************
 //EFpsController

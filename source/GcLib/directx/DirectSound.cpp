@@ -29,9 +29,7 @@ DirectSoundManager::~DirectSoundManager()
 		pDirectSoundBuffer_->Release();
 	if (pDirectSound_ != NULL)
 		pDirectSound_->Release();
-#if 0
-	panelInfo_ = NULL;
-#endif
+
 	thisBase_ = NULL;
 	Logger::WriteTop(L"DirectSound：終了完了");
 }
@@ -395,14 +393,6 @@ void DirectSoundManager::SoundManageThread::_Run()
 			_Arrange();
 		}
 
-#if 0
-		if (manager->panelInfo_ != NULL && this->GetStatus() == RUN) {
-			//クリティカルセクションの中で更新すると
-			//メインスレッドとロックする可能性があります
-			manager->panelInfo_->Update(manager);
-		}
-#endif
-
 		timePrevious_ = timeCurrent_;
 		::Sleep(100);
 	}
@@ -472,107 +462,6 @@ void DirectSoundManager::SoundManageThread::_Fade()
 		}
 	}
 }
-
-/**********************************************************
-//SoundInfoPanel
-**********************************************************/
-#if 0
-SoundInfoPanel::SoundInfoPanel()
-{
-	timeLastUpdate_ = 0;
-	timeUpdateInterval_ = 500;
-}
-bool SoundInfoPanel::_AddedLogger(HWND hTab)
-{
-	Create(hTab);
-
-	gstd::WListView::Style styleListView;
-	styleListView.SetStyle(WS_CHILD | WS_VISIBLE | LVS_REPORT | LVS_SHOWSELALWAYS | LVS_SINGLESEL | LVS_NOSORTHEADER);
-	styleListView.SetStyleEx(WS_EX_CLIENTEDGE);
-	styleListView.SetListViewStyleEx(LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES);
-	wndListView_.Create(hWnd_, styleListView);
-
-	wndListView_.AddColumn(64, ROW_ADDRESS, L"Address");
-	wndListView_.AddColumn(96, ROW_FILENAME, L"Name");
-	wndListView_.AddColumn(48, ROW_FULLPATH, L"Path");
-	wndListView_.AddColumn(32, ROW_COUNT_REFFRENCE, L"Ref");
-
-	return true;
-}
-void SoundInfoPanel::LocateParts()
-{
-	int wx = GetClientX();
-	int wy = GetClientY();
-	int wWidth = GetClientWidth();
-	int wHeight = GetClientHeight();
-
-	wndListView_.SetBounds(wx, wy, wWidth, wHeight);
-}
-void SoundInfoPanel::Update(DirectSoundManager* soundManager)
-{
-	if (!IsWindowVisible())
-		return;
-	int time = timeGetTime();
-	if (abs(time - timeLastUpdate_) < timeUpdateInterval_)
-		return;
-	timeLastUpdate_ = time;
-
-	//クリティカルセクション内で、ウィンドウにメッセージを送ると
-	//ロックする可能性があるので、表示する情報のみをコピーする
-	std::list<Info> listInfo;
-	{
-		Lock lock(soundManager->GetLock());
-		std::map<std::wstring, std::list<gstd::ref_count_ptr<SoundPlayer>>>& mapPlayer = soundManager->mapPlayer_;
-		std::map<std::wstring, std::list<gstd::ref_count_ptr<SoundPlayer>>>::iterator itrNameMap;
-		for (itrNameMap = mapPlayer.begin(); itrNameMap != mapPlayer.end(); itrNameMap++) {
-			std::wstring path = itrNameMap->first;
-			std::list<gstd::ref_count_ptr<SoundPlayer>>& listPlayer = itrNameMap->second;
-			std::list<gstd::ref_count_ptr<SoundPlayer>>::iterator itrPlayer;
-			for (itrPlayer = listPlayer.begin(); itrPlayer != listPlayer.end(); itrPlayer++) {
-				SoundPlayer* player = (*itrPlayer).GetPointer();
-				if (player == NULL)
-					continue;
-
-				int address = (int)player;
-				Info info;
-				info.address = address;
-				info.path = path;
-				info.countRef = (*itrPlayer).GetReferenceCount();
-				listInfo.push_back(info);
-			}
-		}
-	}
-
-	std::set<std::wstring> setKey;
-	std::list<Info>::iterator itrInfo;
-	for (itrInfo = listInfo.begin(); itrInfo != listInfo.end(); itrInfo++) {
-		Info& info = *itrInfo;
-		int address = info.address;
-		std::wstring path = info.path;
-		int countRef = info.countRef;
-		std::wstring key = StringUtility::Format(L"%08x", address);
-		int index = wndListView_.GetIndexInColumn(key, ROW_ADDRESS);
-		if (index == -1) {
-			index = wndListView_.GetRowCount();
-			wndListView_.SetText(index, ROW_ADDRESS, key);
-		}
-
-		wndListView_.SetText(index, ROW_FILENAME, PathProperty::GetFileName(path));
-		wndListView_.SetText(index, ROW_FULLPATH, path);
-		wndListView_.SetText(index, ROW_COUNT_REFFRENCE, StringUtility::Format(L"%d", countRef));
-
-		setKey.insert(key);
-	}
-
-	for (int iRow = 0; iRow < wndListView_.GetRowCount();) {
-		std::wstring key = wndListView_.GetText(iRow, ROW_ADDRESS);
-		if (setKey.find(key) != setKey.end())
-			iRow++;
-		else
-			wndListView_.DeleteRow(iRow);
-	}
-}
-#endif
 
 /**********************************************************
 //SoundDivision

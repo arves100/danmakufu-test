@@ -157,22 +157,4 @@ protected:
 	std::map<std::wstring, ref_count_ptr<ScriptInformation>> mapScriptInfo_;
 };
 
-/**********************************************************
-//ScriptInfoPanel
-**********************************************************/
-#if 0
-class ScriptInfoPanel : public WindowLogger::Panel {
-public:
-	ScriptInfoPanel();
-	virtual void LocateParts();
-
-protected:
-	virtual bool _AddedLogger(HWND hTab);
-	virtual LRESULT _WindowProcedure(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam); //オーバーライド用プロシージャ
-	void _TerminateScriptAll();
-
-	WButton buttonTerminateScript_;
-};
-#endif
-
 #endif

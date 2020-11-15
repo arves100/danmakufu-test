@@ -122,33 +122,6 @@ protected:
 	bool _CreateRenderTarget(std::wstring name);
 };
 
-/**********************************************************
-	//TextureInfoPanel
-	**********************************************************/
-#if 0
-class TextureInfoPanel : public gstd::WindowLogger::Panel, public gstd::Thread {
-public:
-	TextureInfoPanel();
-	~TextureInfoPanel();
-	virtual void LocateParts();
-	virtual void Update(TextureManager* manager);
-
-protected:
-	enum {
-		ROW_ADDRESS,
-		ROW_NAME,
-		ROW_FULLNAME,
-		ROW_COUNT_REFFRENCE,
-		ROW_WIDTH_IMAGE,
-		ROW_HEIGHT_IMAGE,
-	};
-	int timeUpdateInterval_;
-	gstd::WListView wndListView_;
-	virtual bool _AddedLogger(HWND hTab);
-	void _Run();
-};
-#endif
-
 } // namespace directx
 
 #endif

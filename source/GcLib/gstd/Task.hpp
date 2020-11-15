@@ -101,9 +101,7 @@ protected:
 /**********************************************************
 //TaskManager
 **********************************************************/
-class TaskInfoPanel;
 class TaskManager : public TaskBase {
-	friend TaskInfoPanel;
 
 public:
 	typedef std::map<int, std::vector<std::list<ref_count_ptr<TaskFunction>>>> function_map;
@@ -139,7 +137,6 @@ public:
 	void SetFunctionEnable(bool bEnable, TaskBase* task, int divFunc, int idFunc); //タスク機能の状態を切り替える
 	void SetFunctionEnable(bool bEnable, const std::type_info& info, int divFunc); //タスク機能の状態を切り替える
 
-	void SetInfoPanel(ref_count_ptr<TaskInfoPanel> panel) { panelInfo_ = panel; }
 	gstd::CriticalSection& GetStaticLock() { return lockStatic_; }
 
 protected:
@@ -147,45 +144,10 @@ protected:
 	std::list<ref_count_ptr<TaskBase>> listTask_; //タスクの元クラス
 	function_map mapFunc_; //タスク機能のリスト(divFunc, priority, func)
 	_int64 indexTaskManager_; //一意のインデックス
-	ref_count_ptr<TaskInfoPanel> panelInfo_;
 
 	void _ArrangeTask(); //必要のなくなった領域削除
 	void _CheckInvalidFunctionDivision(int divFunc);
 };
-
-/**********************************************************
-//TaskInfoPanel
-**********************************************************/
-#if 0
-class TaskInfoPanel : public WindowLogger::Panel {
-public:
-	TaskInfoPanel();
-	void SetUpdateInterval(int time) { timeUpdateInterval_ = time; }
-	virtual void LocateParts();
-	virtual void Update(TaskManager* taskManager);
-
-protected:
-	enum {
-		ROW_FUNC_ADDRESS = 0,
-		ROW_FUNC_CLASS,
-		ROW_FUNC_ID,
-		ROW_FUNC_DIVISION,
-		ROW_FUNC_PRIORITY,
-		ROW_FUNC_ENABLE,
-		ROW_FUNC_INFO,
-	};
-	WSplitter wndSplitter_;
-	WTreeView wndTreeView_;
-	WListView wndListView_;
-	int timeLastUpdate_;
-	int timeUpdateInterval_;
-	int addressLastFindManager_;
-
-	virtual bool _AddedLogger(HWND hTab);
-	void _UpdateTreeView(TaskManager* taskManager, ref_count_ptr<WTreeView::Item> item);
-	void _UpdateListView(TaskManager* taskManager);
-};
-#endif
 
 /**********************************************************
 //WorkRenderTaskManager

@@ -385,16 +385,6 @@ void StgStageController::Work()
 			pauseManager_->Work();
 		}
 	}
-
-#if 0
-	ELogger* logger = ELogger::GetInstance();
-	if (logger->IsWindowVisible()) {
-		//ログ関連
-		logger->SetInfo(6, L"stg shot_count", StringUtility::Format(L"%d", shotManager_->GetShotCountAll()));
-		logger->SetInfo(7, L"stg enemy_count", StringUtility::Format(L"%d", enemyManager_->GetEnemyCount()));
-		logger->SetInfo(8, L"stg item_count", StringUtility::Format(L"%d", itemManager_->GetItemCount()));
-	}
-#endif
 }
 void StgStageController::Render()
 {

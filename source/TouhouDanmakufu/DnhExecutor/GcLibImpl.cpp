@@ -38,9 +38,7 @@ bool EApplication::_Initialize()
 	EDirectGraphics* graphics = EDirectGraphics::CreateInstance();
 	graphics->Initialize();
 	SDL_Window* hWndMain = graphics->GetWindowHandle();
-#if 0
-	WindowLogger::InsertOpenCommandInSystemMenu(hWndMain);
-#endif
+
 	SDL_SetWindowTitle(hWndMain, appName.c_str());
 
 	// TODO: Icon
@@ -69,39 +67,6 @@ bool EApplication::_Initialize()
 	ETaskManager* taskManager = ETaskManager::CreateInstance();
 	taskManager->Initialize();
 
-#if 0
-	gstd::ref_count_ptr<gstd::TaskInfoPanel> panelTask = new gstd::TaskInfoPanel();
-	bool bAddTaskPanel = logger->AddPanel(panelTask, L"Task");
-	if (bAddTaskPanel)
-		taskManager->SetInfoPanel(panelTask);
-
-	gstd::ref_count_ptr<directx::TextureInfoPanel> panelTexture = new directx::TextureInfoPanel();
-	bool bTexturePanel = logger->AddPanel(panelTexture, L"Texture");
-	if (bTexturePanel)
-		textureManager->SetInfoPanel(panelTexture);
-
-	gstd::ref_count_ptr<directx::DxMeshInfoPanel> panelMesh = new directx::DxMeshInfoPanel();
-	bool bMeshPanel = logger->AddPanel(panelMesh, L"Mesh");
-	if (bMeshPanel)
-		meshManager->SetInfoPanel(panelMesh);
-
-	gstd::ref_count_ptr<directx::SoundInfoPanel> panelSound = new directx::SoundInfoPanel();
-	bool bSoundPanel = logger->AddPanel(panelSound, L"Sound");
-	if (bSoundPanel)
-		soundManager->SetInfoPanel(panelSound);
-
-	gstd::ref_count_ptr<gstd::ScriptCommonDataInfoPanel> panelCommonData = logger->GetScriptCommonDataInfoPanel();
-	logger->AddPanel(panelCommonData, L"Common Data");
-
-	gstd::ref_count_ptr<ScriptInfoPanel> panelScript = new ScriptInfoPanel();
-	logger->AddPanel(panelScript, L"Script");
-
-	if (config->IsLogWindow()) {
-		logger->LoadState();
-		logger->SetWindowVisible(true);
-	}
-#endif
-
 	SystemController* systemController = SystemController::CreateInstance();
 	systemController->Reset();
 
@@ -117,9 +82,6 @@ bool EApplication::_Loop()
 	EDirectGraphics* graphics = EDirectGraphics::GetInstance();
 
 	SDL_Window* hWndGraphics = graphics->GetWindowHandle();
-#if 0
-	SDL_Window* hWndLogger = ELogger::GetInstance()->GetWindowHandle();
-#endif
 
 	EDirectInput* input = EDirectInput::GetInstance();
 	input->Update();
@@ -138,29 +100,6 @@ bool EApplication::_Loop()
 	}
 
 	fpsController->Wait();
-
-	//ログ関連
-#if 0
-	SYSTEMTIME time;
-	GetLocalTime(&time);
-	std::wstring fps = StringUtility::Format(L"Work：%.2ffps、Draw：%.2ffps",
-		fpsController->GetCurrentWorkFps(),
-		fpsController->GetCurrentRenderFps());
-	logger->SetInfo(0, L"fps", fps);
-
-	int widthConfig = graphics->GetConfigData().GetScreenWidth();
-	int heightConfig = graphics->GetConfigData().GetScreenHeight();
-	int widthScreen = widthConfig * graphics->GetScreenWidthRatio();
-	int heightScreen = heightConfig * graphics->GetScreenHeightRatio();
-
-	std::wstring screen = StringUtility::Format(L"width：%d/%d、height：%d/%d",
-		widthScreen, widthConfig,
-		heightScreen, heightConfig);
-	logger->SetInfo(1, L"screen", screen);
-
-	logger->SetInfo(2, L"font cache",
-		StringUtility::Format(L"%d", EDxTextRenderer::GetInstance()->GetCacheCount()));
-#endif
 
 	//高速動作
 	int fastModeKey = fpsController->GetFastModeKey();
@@ -192,11 +131,6 @@ bool EApplication::_Finalize()
 	EDirectGraphics::DeleteInstance();
 	EFpsController::DeleteInstance();
 	EFileManager::DeleteInstance();
-
-#if 0
-	ELogger* logger = ELogger::GetInstance();
-	logger->SaveState();
-#endif
 
 	Logger::WriteTop(L"アプリケーション終了処理完了");
 	return true;
@@ -290,17 +224,6 @@ void EDirectGraphics::SetRenderStateFor2D(int blend)
 }
 void EDirectGraphics::EventProcedure(SDL_Event* evt)
 {
-	// Did they just ?
-#if 0
-	switch (uMsg) {
-	case WM_SYSCOMMAND:
-		int nId = wParam & 0xffff;
-		if (nId == WindowLogger::MENU_ID_OPEN)
-			ELogger::GetInstance()->ShowLogWindow();
-		break;
-	}
-#endif
-
 	if (bShutdown_)
 		EApplication::GetInstance()->End();
 

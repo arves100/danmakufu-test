@@ -834,28 +834,6 @@ private:
 	static DxMeshManager* thisBase_;
 };
 
-#if 0
-class DxMeshInfoPanel : public gstd::WindowLogger::Panel, public gstd::Thread {
-public:
-	DxMeshInfoPanel();
-	~DxMeshInfoPanel();
-	virtual void LocateParts();
-	virtual void Update(DxMeshManager* manager);
-
-protected:
-	enum {
-		ROW_ADDRESS,
-		ROW_NAME,
-		ROW_FULLNAME,
-		ROW_COUNT_REFFRENCE,
-	};
-	int timeUpdateInterval_;
-	gstd::WListView wndListView_;
-	virtual bool _AddedLogger(HWND hTab);
-	void _Run();
-};
-#endif
-
 } // namespace directx
 
 #endif
