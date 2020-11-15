@@ -367,7 +367,8 @@ std::vector<char> ScriptClientBase::_Include(std::vector<char>& source)
 					placement.resize(reader->GetFileSize() - targetBomSize + newLineSize); //-BOM読み込み分+最後の改行
 					int readSize = reader->GetFileSize() - targetBomSize;
 					reader->Read(&placement[0], readSize);
-					memcpy(&placement[readSize], L"\r\n", newLineSize);
+					if (bNeedNewLine)
+						memcpy(&placement[readSize], L"\r\n", newLineSize);
 
 					//結合先がShiftJISの場合、結合先をUTF16LEに変換する。
 					if (encoding == Encoding::SHIFT_JIS) {
@@ -389,7 +390,8 @@ std::vector<char> ScriptClientBase::_Include(std::vector<char>& source)
 					int newLineSize = bNeedNewLine ? 2 : 0;
 					placement.resize(reader->GetFileSize() + newLineSize);
 					reader->Read(&placement[0], reader->GetFileSize());
-					memcpy(&placement[reader->GetFileSize() - 1], "\r\n", newLineSize);
+					if (bNeedNewLine)
+						memcpy(&placement[reader->GetFileSize() - 1], "\r\n", newLineSize);
 
 					//結合先がUTF16LEの場合、読み込んだデータをUTF16LEに変換する。
 					if (encoding == Encoding::UTF16LE) {
