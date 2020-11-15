@@ -12,11 +12,16 @@ Building:
 
 TODO:
 	- Verify correct reimplementation of borders (SM_CXBORDER, SM_CYBORDER, SM_CXEDGE, SM_CYEDGE)
+	- SDL2 batch 2 (Remove and replace other WinAPI calls such as GetModulePath)
 
-Old code license: NYSL (Niru nari Yaku nari Suki ni shiro License'). 
-	Main translated points:
-    "No warranty" disclaimer is explicitly included.
-    Modified version of the software MUST be distributed under the responsibility of the distributer.
-    Official version is written in Japanese.
+---------------------------------------
+This project is a fork of https://github.com/WishMakers0/Danmakufu-Woo-Edition,
+which is a modified version of the open source danmakufu ph3 release, available here:
+https://touhougc.web.fc2.com/products/th_dnh_ph3.html
 
-New code license: ???
+The old code (both Woo edition and the origin one) are released under NYSL Version 0.9982.
+
+JP: http://www.kmonos.net/nysl/
+EN: http://www.kmonos.net/nysl/index.en.html
+
+A new license for this changes is currently not selected.
