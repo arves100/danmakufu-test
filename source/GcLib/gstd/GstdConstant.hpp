@@ -1,30 +1,8 @@
 #ifndef __GSTD_GAMESTDCONSTANT__
 #define __GSTD_GAMESTDCONSTANT__
 
-//Unicode
-#ifdef _MBCS
-#undef _MBCS
-#endif
-#ifndef UNICODE
-#define UNICODE
-#endif
-#ifndef _UNICODE
-#define _UNICODE
-#endif
-
 //標準関数対応表
 //http://www1.kokusaika.jp/advisory/org/ja/win32_unicode.html
-
-//Win2000以降
-#define _WIN32_WINNT 0x0500
-
-//lib
-#pragma comment(lib, "winmm.lib")
-#pragma comment(lib, "comctl32.lib")
-#pragma comment(lib, "pdh.lib")
-#pragma comment(lib, "gdi32.lib")
-#pragma comment(lib, "shlwapi.lib")
-#pragma comment(lib, "psapi.lib")
 
 //pragma
 #pragma warning(disable : 4786) //STL Warning抑止
