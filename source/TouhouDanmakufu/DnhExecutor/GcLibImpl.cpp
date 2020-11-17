@@ -41,8 +41,14 @@ bool EApplication::_Initialize()
 
 	SDL_SetWindowTitle(hWndMain, appName.c_str());
 
-	// TODO: Icon
-	//::SetClassLong(hWndMain, GCL_HICON, (LONG)LoadIcon(GetApplicationHandle(), MAKEINTRESOURCE(IDI_ICON)));
+	std::wstring iconPath = EPathProperty::GetSystemImageDirectory() + L"System_Icon.bmp";
+	SDL_Surface* pIcon = SDL_LoadBMP(StringUtility::ConvertWideToMulti(iconPath, CP_UTF8).c_str());
+
+	if (pIcon)
+	{
+		SDL_SetWindowIcon(hWndMain, pIcon);
+		SDL_FreeSurface(pIcon);
+	}
 
 	ErrorDialog::SetParentWindowHandle(hWndMain);
 
