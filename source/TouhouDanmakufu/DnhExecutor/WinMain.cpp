@@ -9,7 +9,7 @@ int main(int argc, char* argv[])
 	try {
 		DnhConfiguration* config = DnhConfiguration::CreateInstance();
 		ELogger* logger = ELogger::CreateInstance();
-		logger->Initialize(config->IsLogFile(), config->IsLogWindow());
+		logger->Initialize(config->IsLogFile() /*, config->IsLogWindow()*/);
 		EPathProperty::CreateInstance();
 
 		EApplication* app = EApplication::CreateInstance();
