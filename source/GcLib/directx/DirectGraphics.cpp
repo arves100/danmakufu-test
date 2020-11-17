@@ -717,7 +717,7 @@ void DirectGraphicsPrimaryWindow::EventProcedure(SDL_Event* evt)
 	case SDL_KEYDOWN:
 		if (evt->key.keysym.sym == SDLK_F12)
 		{
-			// TODO: Send shutdown
+			bShutdown_ = true;
 		}
 
 		if ( (evt->key.keysym.sym == SDLK_RETURN || evt->key.keysym.sym == SDLK_RETURN2)

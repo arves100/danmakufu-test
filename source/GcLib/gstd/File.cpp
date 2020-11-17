@@ -1464,20 +1464,15 @@ std::wstring PropertyFile::GetString(std::wstring key, std::wstring def)
 	return mapEntry_[key];
 }
 
-
-// TODO: Replace
-#include <locale>
-#include <codecvt>
 std::string PropertyFile::GetString(std::string key, std::string def)
 {
-	std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
-	std::wstring wkey = converter.from_bytes(key);
+	std::wstring wkey = StringUtility::ConvertMultiToWide(key, CP_UTF8);
 
 	if (!HasProperty(wkey))
 		return def;
 
 	std::wstring ret = mapEntry_[wkey];
-	return converter.to_bytes(ret);
+	return StringUtility::ConvertWideToMulti(ret, CP_UTF8);
 }
 
 int PropertyFile::GetInteger(std::wstring key, int def)

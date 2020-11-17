@@ -121,11 +121,7 @@ void StgSystemController::Work()
 		if (infoSystem_->IsError()) {
 			std::wstring error = infoSystem_->GetErrorMessage();
 			if (error.size() > 0) {
-#if 0
 				ErrorDialog::ShowErrorDialog(error);
-#else
-				MessageBoxW(nullptr, error.c_str(), L"TEST", MB_OK); // TODO replace
-#endif
 			} else {
 				//リトライ
 				bRetry = true;

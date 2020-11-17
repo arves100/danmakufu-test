@@ -123,6 +123,10 @@ public:
 	{
 		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", msg.c_str(), hWndParentStatic_);
 	}
+	static void ShowErrorDialog(std::wstring msg)
+	{
+		ShowErrorDialog(StringUtility::ConvertWideToMulti(msg, CP_UTF8));
+	}
 
 private:
 	static SDL_Window* hWndParentStatic_;
