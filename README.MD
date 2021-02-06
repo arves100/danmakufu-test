@@ -13,12 +13,8 @@ vcpkg install sdl2-mixer[nativemidi,libflac,mpg123,libvorbis] sdl2 zlib
 This project is a fork of [WishMakers0's Danmakufu Woo](https://github.com/WishMakers0/Danmakufu-Woo-Edition),
 which is a modified version of the open source [danmakufu ph3](https://touhougc.web.fc2.com/products/th_dnh_ph3.html).
 
-
 The old repositories (both Woo edition and the original one) are released under NYSL Version 0.9982:
 - [Japanese text of NYSL](http://www.kmonos.net/nysl/)
 - [English text of NYSL](http://www.kmonos.net/nysl/index.en.html)
-
-
-The original README of Woo Edition is available [here](https://github.com/arves100/danmakufu/READMEORIGINAL.MD)
 
 A new license for this changes is currently not selected.
