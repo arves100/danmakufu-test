@@ -184,8 +184,8 @@ void DxWindowManager::_DispatchMouseEvent()
 	gstd::ref_count_ptr<DxWindow> wndIntersect = GetIntersectedWindow();
 
 	//左クリック
-	int mLeftState = input->GetMouseState(DI_MOUSE_LEFT);
-	int mRightState = input->GetMouseState(DI_MOUSE_RIGHT);
+	int mLeftState = input->GetMouseState(MOUSE_KEY_LEFT);
+	int mRightState = input->GetMouseState(MOUSE_KEY_RIGHT);
 	if (wndCapture_ == NULL) {
 		if (wndIntersect != NULL) {
 			if (mLeftState == KEY_PUSH) {

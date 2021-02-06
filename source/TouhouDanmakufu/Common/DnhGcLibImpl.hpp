@@ -154,7 +154,7 @@ public:
 	int padIndex_;
 
 public:
-	virtual bool Initialize(SDL_Window* hWnd);
+	virtual bool Initialize();
 	void ResetVirtualKeyMap();
 	int GetPadIndex() { return padIndex_; }
 };

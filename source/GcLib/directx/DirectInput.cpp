@@ -6,309 +6,86 @@ using namespace directx;
 #include <SDL_syswm.h>
 
 /**********************************************************
-//DirectInput
+// SDL2 Input (ex.: DirectInput)
 **********************************************************/
 DirectInput* DirectInput::thisBase_ = NULL;
 DirectInput::DirectInput()
 {
-	hWnd_ = NULL;
-	pInput_ = NULL;
-	pKeyboard_ = NULL;
-	pMouse_ = NULL;
+	memset(bufKey_, KEY_FREE, sizeof(bufKey_));
+	memset(bufMouse_, KEY_FREE, sizeof(bufMouse_));
+	lastMouseX_ = lastMouseY_ = 0;
+	stateMouse_.lX = stateMouse_.lY = stateMouse_.lZ = 0;
 }
 DirectInput::~DirectInput()
 {
 	Logger::WriteTop(L"DirectInput：終了開始");
-	for (int iPad = 0; iPad < pJoypad_.size(); iPad++) {
-		if (pJoypad_[iPad] == NULL)
-			continue;
-		pJoypad_[iPad]->Unacquire();
-		if (pJoypad_[iPad] != NULL)
-			pJoypad_[iPad]->Release();
-	}
 
-	if (pMouse_ != NULL) {
-		pMouse_->Unacquire();
-		pMouse_->Release();
-	}
+	for (auto& j : pJoypad_)
+		SDL_JoystickClose(j);
 
-	if (pKeyboard_ != NULL) {
-		pKeyboard_->Unacquire();
-		pKeyboard_->Release();
-	}
+	for (auto& gc : pGamecontroller_)
+		SDL_GameControllerClose(gc.ptr);
 
-	if (pInput_ != NULL)
-		pInput_->Release();
 	thisBase_ = NULL;
 	Logger::WriteTop(L"DirectInput：終了完了");
 }
 
-bool DirectInput::Initialize(SDL_Window* hWnd)
+bool DirectInput::Initialize()
 {
-	if (thisBase_ != NULL)
-		return false;
-
-	Logger::WriteTop(L"DirectInput：初期化");
-
-	SDL_SysWMinfo info;
-	SDL_VERSION(&info.version);
-	if (!SDL_GetWindowWMInfo(hWnd, &info))
-	{
-		Logger::WriteTop(L"DirectInput: SDL_GetWindowWMInfo failed");
-		return false;
-	}
-
-	hWnd_ = info.info.win.window;
-
-	HINSTANCE hInst = ::GetModuleHandle(NULL);
-	HRESULT hrInput = DirectInput8Create(hInst, DIRECTINPUT_VERSION, IID_IDirectInput8, (void**)&pInput_, NULL);
-	if (FAILED(hrInput)) {
-		Logger::WriteTop(L"DirectInput：DirectInput8Create失敗");
-		return false; // DirectInput8の作成に失敗
-	}
-
-	_InitializeKeyBoard();
-	_InitializeMouse();
 	_InitializeJoypad();
-
-	bufPad_.resize(pJoypad_.size());
-	for (int iPad = 0; iPad < pJoypad_.size(); iPad++) {
-		bufPad_[iPad].resize(32);
-	}
 
 	thisBase_ = this;
 	Logger::WriteTop(L"DirectInput：初期化完了");
 	return true;
 }
 
-bool DirectInput::_InitializeKeyBoard()
-{
-	Logger::WriteTop(L"DirectIuput：キーボード初期化");
-
-	HRESULT hrDevice = pInput_->CreateDevice(GUID_SysKeyboard, &pKeyboard_, NULL);
-	if (FAILED(hrDevice)) {
-		Logger::WriteTop(L"DirectInput：キーボードのデバイスオブジェクト作成失敗");
-		return false;
-	}
-
-	HRESULT hrFormat = pKeyboard_->SetDataFormat(&c_dfDIKeyboard);
-	if (FAILED(hrFormat)) {
-		Logger::WriteTop(L"DirectInput：キーボードのデータフォーマット設定失敗");
-		return false;
-	}
-
-	HRESULT hrCoop = pKeyboard_->SetCooperativeLevel(hWnd_, DISCL_NONEXCLUSIVE | DISCL_BACKGROUND);
-	if (FAILED(hrCoop)) {
-		Logger::WriteTop(L"DirectInput：キーボードの動作設定失敗");
-		return false;
-	}
-
-	// 入力制御開始
-	pKeyboard_->Acquire();
-
-	Logger::WriteTop(L"DirectIuput：キーボード初期化完了");
-
-	return true;
-}
-bool DirectInput::_InitializeMouse()
-{
-	Logger::WriteTop(L"DirectIuput：マウス初期化");
-
-	HRESULT hrDevice = pInput_->CreateDevice(GUID_SysMouse, &pMouse_, NULL);
-	if (FAILED(hrDevice)) {
-		Logger::WriteTop(L"DirectInput：マウスのデバイスオブジェクト作成失敗");
-		return false;
-	}
-
-	HRESULT hrFormat = pMouse_->SetDataFormat(&c_dfDIMouse);
-	if (FAILED(hrFormat)) {
-		Logger::WriteTop(L"DirectInput：マウスのデータフォーマット設定失敗");
-		return false;
-	}
-
-	HRESULT hrCoop = pMouse_->SetCooperativeLevel(hWnd_, DISCL_NONEXCLUSIVE | DISCL_BACKGROUND);
-	if (FAILED(hrCoop)) {
-		Logger::WriteTop(L"DirectInput：マウスの動作設定失敗");
-		return false;
-	}
-
-	// 入力制御開始
-	pMouse_->Acquire();
-
-	Logger::WriteTop(L"DirectIuput：マウス初期化完了");
-	return true;
-}
 bool DirectInput::_InitializeJoypad()
 {
-	Logger::WriteTop(L"DirectIuput：ジョイパッド初期化");
-	pInput_->EnumDevices(DI8DEVCLASS_GAMECTRL, (LPDIENUMDEVICESCALLBACK)_GetJoypadStaticCallback, this, DIEDFL_ATTACHEDONLY);
-	int count = pJoypad_.size();
+	Logger::WriteTop(L"DirectInput：ジョイパッド初期化");
+	int count = SDL_NumJoysticks();
+
 	if (count == 0) {
-		Logger::WriteTop(L"DirectIuput：ジョイパッドは見つかりませんでした");
+		Logger::WriteTop(L"DirectInput：ジョイパッドは見つかりませんでした");
 		return false; // ジョイパッドが見付からない
 	}
+	
+	for (int i = 0; i < count; i++)
+	{
+		if (SDL_IsGameController(i))
+		{
+			SDL_GameController* gc = SDL_GameControllerOpen(i);
+			if (!gc)
+			{
+				Logger::WriteTop(L"DirectInput: Cannot open game controller " + StringUtility::ConvertMultiToWide(SDL_GetError()));
+				continue;
+			}
 
-	statePad_.resize(count);
-	padRes_.resize(count);
-	for (int iPad = 0; iPad < count; iPad++)
-		padRes_[iPad] = 500;
+			GameController c;
+			memset(c.axis, 0, sizeof(c.axis));
+			memset(c.button, KEY_FREE, sizeof(c.button));
+			c.ptr = gc;
+			pGamecontroller_.push_back(c);
+		}
+		else
+		{
+#if 0 // § TODO ?
+			SDL_Joystick* j = SDL_JoystickOpen(i);
+			if (!j)
+			{
+				Logger::WriteTop(L"DirectInput: Cannot open game controller " + StringUtility::ConvertMultiToWide(SDL_GetError()));
+				continue;
+			}
 
-	Logger::WriteTop(L"DirectIuput：ジョイパッド初期化完了");
+			pJoypad_.push_back(j);
+#endif
+		}
+	}
+
+	Logger::WriteTop(L"DirectInput：ジョイパッド初期化完了");
 
 	return true;
 }
-BOOL CALLBACK DirectInput::_GetJoypadStaticCallback(LPDIDEVICEINSTANCE lpddi, LPVOID pvRef)
-{
-	DirectInput* input = (DirectInput*)pvRef;
-	return input->_GetJoypadCallback(lpddi);
-}
-BOOL DirectInput::_GetJoypadCallback(LPDIDEVICEINSTANCE lpddi)
-{
-	Logger::WriteTop(L"DirectInput：ジョイパッドを見つけました");
-	LPDIRECTINPUTDEVICE8 pJoypad = NULL;
-	HRESULT hrDevice = pInput_->CreateDevice(lpddi->guidInstance, &pJoypad, NULL);
-	if (FAILED(hrDevice)) {
-		Logger::WriteTop(L"DirectInput：入力装置のデバイスオブジェクト作成失敗");
-		return DIENUM_CONTINUE;
-	}
 
-	// 情報表示
-	{
-		DIDEVICEINSTANCE State;
-		ZeroMemory(&State, sizeof(State));
-		State.dwSize = sizeof(State);
-		pJoypad->GetDeviceInfo(&State);
-
-		Logger::WriteTop(StringUtility::Format(L"デバイスの登録名:%s", State.tszInstanceName));
-		Logger::WriteTop(StringUtility::Format(L"デバイスの製品登録名:%s", State.tszProductName));
-	}
-
-	HRESULT hrFormat = pJoypad->SetDataFormat(&c_dfDIJoystick);
-	if (FAILED(hrFormat)) {
-		if (pJoypad != NULL)
-			pJoypad->Release();
-		Logger::WriteTop(L"DirectInput：ジョイパッドのデータフォーマット設定失敗");
-		return DIENUM_CONTINUE;
-	}
-
-	HRESULT hrCoop = pJoypad->SetCooperativeLevel(hWnd_, DISCL_NONEXCLUSIVE | DISCL_BACKGROUND);
-	if (FAILED(hrCoop)) {
-		if (pJoypad != NULL)
-			pJoypad->Release();
-		Logger::WriteTop(L"DirectInput：ジョイパッドの動作設定失敗");
-		return DIENUM_CONTINUE;
-	}
-
-	// xの範囲を設定
-	DIPROPRANGE diprg;
-	diprg.diph.dwSize = sizeof(diprg);
-	diprg.diph.dwHeaderSize = sizeof(diprg.diph);
-	diprg.diph.dwObj = DIJOFS_X;
-	diprg.diph.dwHow = DIPH_BYOFFSET;
-	diprg.lMin = -1000;
-	diprg.lMax = +1000;
-	HRESULT hrRangeX = pJoypad->SetProperty(DIPROP_RANGE, &diprg.diph);
-	if (FAILED(hrRangeX)) {
-		if (pJoypad != NULL)
-			pJoypad->Release();
-		Logger::WriteTop(L"DirectInput：ジョイパッドデバイスのx軸関係の設定に失敗しました");
-		return DIENUM_CONTINUE;
-	}
-
-	// yの範囲を設定
-	diprg.diph.dwObj = DIJOFS_Y;
-	HRESULT hrRangeY = pJoypad->SetProperty(DIPROP_RANGE, &diprg.diph);
-	if (FAILED(hrRangeY)) {
-		if (pJoypad != NULL)
-			pJoypad->Release();
-		Logger::WriteTop(L"DirectInput：ジョイパッドデバイスのy軸関係の設定に失敗しました");
-		return DIENUM_CONTINUE;
-	}
-
-	// zの範囲を設定
-	diprg.diph.dwObj = DIJOFS_Z;
-	HRESULT hrRangeZ = pJoypad->SetProperty(DIPROP_RANGE, &diprg.diph);
-	if (FAILED(hrRangeZ)) {
-		Logger::WriteTop(L"DirectInput：ジョイパッドデバイスのz軸関係の設定に失敗しました");
-	}
-
-	// xの無効ゾーンを設定
-	DIPROPDWORD dipdw;
-	dipdw.diph.dwSize = sizeof(dipdw);
-	dipdw.diph.dwHeaderSize = sizeof(dipdw.diph);
-	dipdw.diph.dwObj = DIJOFS_X;
-	dipdw.diph.dwHow = DIPH_BYOFFSET;
-	dipdw.dwData = 2500;
-	HRESULT hrDeadX = pJoypad->SetProperty(DIPROP_DEADZONE, &dipdw.diph);
-	if (FAILED(hrDeadX)) {
-		if (pJoypad != NULL)
-			pJoypad->Release();
-		Logger::WriteTop(L"DirectInput：ジョイパッドデバイスのx軸の無効ゾーンの設定に失敗しました");
-		return DIENUM_CONTINUE;
-	}
-
-	// yの無効ゾーンを設定
-	dipdw.diph.dwObj = DIJOFS_Y;
-	HRESULT hrDeadY = pJoypad->SetProperty(DIPROP_DEADZONE, &dipdw.diph);
-	if (FAILED(hrDeadY)) {
-		if (pJoypad != NULL)
-			pJoypad->Release();
-		Logger::WriteTop(L"DirectInput：ジョイパッドデバイスのy軸の無効ゾーンの設定に失敗しました");
-		return DIENUM_CONTINUE;
-	}
-
-	// Ｚの無効ゾーンを設定
-	dipdw.diph.dwObj = DIJOFS_Z;
-	HRESULT hrDeadZ = pJoypad->SetProperty(DIPROP_DEADZONE, &dipdw.diph);
-	if (FAILED(hrDeadZ)) {
-		Logger::WriteTop(L"DirectInput：ジョイパッドデバイスのz軸の無効ゾーンの設定に失敗しました");
-	}
-
-	// 入力制御開始
-	pJoypad->Acquire();
-
-	pJoypad_.push_back(pJoypad);
-
-	return DIENUM_CONTINUE;
-}
-
-int DirectInput::_GetKey(UINT code, int state)
-{
-	return _GetStateSub((stateKey_[code] & 0x80) == 0x80, state);
-}
-int DirectInput::_GetMouseButton(int button, int state)
-{
-	return _GetStateSub((stateMouse_.rgbButtons[button] & 0x80) == 0x80, state);
-}
-int DirectInput::_GetPadDirection(int index, UINT code, int state)
-{
-	if (index >= pJoypad_.size())
-		return KEY_FREE;
-	int response = padRes_[index];
-
-	int res = KEY_FREE;
-
-	switch (code) {
-	case DIK_UP:
-		res = _GetStateSub(statePad_[index].lY < -response, state);
-		break;
-	case DIK_DOWN:
-		res = _GetStateSub(statePad_[index].lY > response, state);
-		break;
-	case DIK_LEFT:
-		res = _GetStateSub(statePad_[index].lX < -response, state);
-		break;
-	case DIK_RIGHT:
-		res = _GetStateSub(statePad_[index].lX > response, state);
-		break;
-	}
-
-	return res;
-}
-int DirectInput::_GetPadButton(int index, int buttonNo, int state)
-{
-	return _GetStateSub((statePad_[index].rgbButtons[buttonNo] & 0x80) == 0x80, state);
-}
 int DirectInput::_GetStateSub(bool flag, int state)
 {
 	int res = KEY_FREE;
@@ -317,7 +94,8 @@ int DirectInput::_GetStateSub(bool flag, int state)
 			res = KEY_PUSH;
 		else
 			res = KEY_HOLD;
-	} else {
+	}
+	else {
 		if (state == KEY_PUSH || state == KEY_HOLD)
 			res = KEY_PULL;
 		else
@@ -326,91 +104,85 @@ int DirectInput::_GetStateSub(bool flag, int state)
 	return res;
 }
 
-bool DirectInput::_IdleKeyboard()
+void DirectInput::EventUpdate(SDL_Event* evt)
 {
-	if (!pInput_ || !pKeyboard_)
-		return false;
+	switch (evt->type)
+	{
+	case SDL_MOUSEWHEEL:
+		stateMouse_.lZ = evt->wheel.y;
+		break;
 
-	HRESULT hr = pKeyboard_->GetDeviceState(MAX_KEY, stateKey_);
-	if (SUCCEEDED(hr)) {
+	case SDL_CONTROLLERDEVICEREMOVED:
+	{
+		std::vector<GameController>::iterator it = pGamecontroller_.begin();
+		std::advance(it, evt->cdevice.which + 1);
 
-	} else if (hr == DIERR_INPUTLOST) {
-		pKeyboard_->Acquire();
+		SDL_GameControllerClose((*it).ptr);
+		pGamecontroller_.erase(it);
+		break;
 	}
-	return true;
-}
-bool DirectInput::_IdleJoypad()
-{
-	if (pJoypad_.size() == 0)
-		return false;
-	for (int iPad = 0; iPad < pJoypad_.size(); iPad++) {
-		if (!pInput_ || !pJoypad_[iPad])
-			return false;
-
-		pJoypad_[iPad]->Poll();
-		HRESULT hr = pJoypad_[iPad]->GetDeviceState(sizeof(DIJOYSTATE), &statePad_[iPad]);
-		if (SUCCEEDED(hr)) {
-
-		} else if (hr == DIERR_INPUTLOST) {
-			pJoypad_[iPad]->Acquire();
+	case SDL_CONTROLLERDEVICEADDED:
+		if (pGamecontroller_.size() < (evt->cdevice.which + 1)) // Controller which starts from 0
+		{
+			SDL_GameController* gc = SDL_GameControllerOpen(evt->cdevice.which);
+			if (gc)
+			{
+				GameController c;
+				memset(c.axis, 0, sizeof(c.axis));
+				memset(c.button, KEY_FREE, sizeof(c.button));
+				c.ptr = gc;
+				pGamecontroller_.push_back(c);
+			}
 		}
+		break;
+	default:
+		break;
 	}
-	return true;
-}
-bool DirectInput::_IdleMouse()
-{
-	if (!pInput_ || !pMouse_)
-		return false;
-
-	HRESULT hr = pMouse_->GetDeviceState(sizeof(DIMOUSESTATE), &stateMouse_);
-	if (SUCCEEDED(hr)) {
-
-	} else if (hr == DIERR_INPUTLOST) {
-		pMouse_->Acquire();
-	}
-
-	return true;
 }
 
 void DirectInput::Update()
 {
-	this->_IdleKeyboard();
-	this->_IdleJoypad();
-	this->_IdleMouse();
+	auto currentKeys = SDL_GetKeyboardState(nullptr);
 
-	for (int iKey = 0; iKey < 255; iKey++)
-		bufKey_[iKey] = _GetKey(iKey, bufKey_[iKey]);
+	for (int iKey = 0; iKey < SDL_NUM_SCANCODES; iKey++)
+		bufKey_[iKey] = _GetStateSub(currentKeys[iKey], bufKey_[iKey]);
 
-	for (int iButton = 0; iButton < 3; iButton++)
-		bufMouse_[iButton] = _GetMouseButton(iButton, bufMouse_[iButton]);
+	int mouseState = SDL_GetMouseState(&lastMouseX_, &lastMouseY_);
 
-	for (int iPad = 0; iPad < pJoypad_.size(); iPad++) {
-		bufPad_[iPad][0] = _GetPadDirection(iPad, DIK_LEFT, bufPad_[iPad][0]);
-		bufPad_[iPad][1] = _GetPadDirection(iPad, DIK_RIGHT, bufPad_[iPad][1]);
-		bufPad_[iPad][2] = _GetPadDirection(iPad, DIK_UP, bufPad_[iPad][2]);
-		bufPad_[iPad][3] = _GetPadDirection(iPad, DIK_DOWN, bufPad_[iPad][3]);
+	for (int iButton = 0; iButton < MOUSE_KEY_MAX; iButton++)
+		// We use +1 here because MOUSE_KEY_LEFT in Danmakufu enum is 0, while SDL_BUTTON_LEFT is 1
+		bufMouse_[iButton] = _GetStateSub(mouseState & SDL_BUTTON(iButton + 1), bufMouse_[iButton]);
 
-		for (int iButton = 0; iButton < MAX_PAD_BUTTON; iButton++)
-			bufPad_[iPad][iButton + 4] = _GetPadButton(iPad, iButton, bufPad_[iPad][iButton + 4]);
+	for (auto& pad : pGamecontroller_)
+	{
+		for (int axis = 0; axis < SDL_CONTROLLER_AXIS_MAX; axis++)
+			pad.axis[axis] = SDL_GameControllerGetAxis(pad.ptr, (SDL_GameControllerAxis)axis);
+
+		for (int iButton = 0; iButton < SDL_CONTROLLER_BUTTON_MAX; iButton++)
+			pad.button[iButton] = _GetStateSub(SDL_GameControllerGetButton(pad.ptr, (SDL_GameControllerButton)iButton), pad.button[iButton]);
 	}
 }
 int DirectInput::GetKeyState(int key)
 {
-	if (key < 0 || key >= MAX_KEY)
+	SDL_Scancode sc = SDL_GetScancodeFromKey(key);
+
+	if (sc >= SDL_NUM_SCANCODES || sc < 0)
 		return KEY_FREE;
-	return bufKey_[key];
+
+	return bufKey_[sc];
 }
 int DirectInput::GetMouseState(int button)
 {
-	if (button < 0 || button >= MAX_MOUSE_BUTTON)
+	if (button < 0 || button >= MOUSE_KEY_MAX)
 		return KEY_FREE;
 	return bufMouse_[button];
 }
+
 int DirectInput::GetPadState(int padNo, int button)
 {
 	int res = KEY_FREE;
-	if (padNo < bufPad_.size())
-		res = bufPad_[padNo][button];
+	if (padNo < pGamecontroller_.size())
+		res = pGamecontroller_[padNo].button[button];
 	return res;
 }
 
@@ -429,35 +201,23 @@ void DirectInput::ResetInputState()
 }
 void DirectInput::ResetMouseState()
 {
-	for (int iButton = 0; iButton < 3; iButton++)
+	for (int iButton = 0; iButton < MOUSE_KEY_MAX; iButton++)
 		bufMouse_[iButton] = KEY_FREE;
-	ZeroMemory(&stateMouse_, sizeof(stateMouse_));
 }
 void DirectInput::ResetKeyState()
 {
-	for (int iKey = 0; iKey < MAX_KEY; iKey++)
-		bufKey_[iKey] = KEY_FREE;
-	ZeroMemory(&stateKey_, sizeof(stateKey_));
+	for (int iButton = 0; iButton < SDL_NUM_SCANCODES; iButton++)
+		bufKey_[iButton] = KEY_FREE;
 }
 void DirectInput::ResetPadState()
 {
-	for (int iPad = 0; iPad < bufPad_.size(); iPad++) {
-		for (int iKey = 0; iKey < bufPad_.size(); iKey++)
-			bufPad_[iPad][iKey] = KEY_FREE;
-		statePad_[iPad].lX = 0;
-		statePad_[iPad].lY = 0;
-		for (int iButton = 0; iButton < MAX_PAD_BUTTON; iButton++) {
-			statePad_[iPad].rgbButtons[iButton] = KEY_FREE;
-		}
+	for (int iPad = 0; iPad < pGamecontroller_.size(); iPad++)
+	{
+		for (int iKey = 0; iKey < SDL_CONTROLLER_BUTTON_MAX; iKey++)
+			pGamecontroller_[iPad].button[iKey] = KEY_FREE;
+		for (int iAxis = 0; iAxis < SDL_CONTROLLER_AXIS_MAX; iAxis++)
+			pGamecontroller_[iPad].axis[iAxis] = 0;
 	}
-}
-DIDEVICEINSTANCE DirectInput::GetPadDeviceInformation(int padIndex)
-{
-	DIDEVICEINSTANCE state;
-	ZeroMemory(&state, sizeof(state));
-	state.dwSize = sizeof(state);
-	pJoypad_[padIndex]->GetDeviceInfo(&state);
-	return state;
 }
 
 /**********************************************************
@@ -505,6 +265,12 @@ void VirtualKeyManager::ClearKeyState()
 		key->SetKeyState(KEY_FREE);
 	}
 }
+
+void VirtualKeyManager::EventUpdate(SDL_Event* evt)
+{
+	DirectInput::EventUpdate(evt);
+}
+
 int VirtualKeyManager::_GetVirtualKeyState(int id)
 {
 	if (mapKey_.find(id) == mapKey_.end())
@@ -513,16 +279,20 @@ int VirtualKeyManager::_GetVirtualKeyState(int id)
 	gstd::ref_count_ptr<VirtualKey> key = mapKey_[id];
 
 	int res = KEY_FREE;
-	if (key->keyboard_ >= 0 && key->keyboard_ < MAX_KEY)
-		res = bufKey_[key->keyboard_];
+	SDL_Scancode sc = SDL_GetScancodeFromKey(key->keyboard_);
+
+	if (sc  >= 0 && sc < SDL_NUM_SCANCODES)
+		res = bufKey_[sc];
 	if (res == KEY_FREE) {
 		int indexPad = key->padIndex_;
-		if (indexPad >= 0 && indexPad < pJoypad_.size()) {
-			if (key->padButton_ >= 0 && key->padButton_ < bufPad_[indexPad].size())
-				res = bufPad_[indexPad][key->padButton_];
+		if (indexPad >= 0 && indexPad < pGamecontroller_.size()) {
+			if (key->padButton_ >= 0 && key->padButton_ < SDL_CONTROLLER_BUTTON_MAX)
+				res = pGamecontroller_[indexPad].button[key->padButton_];
+			else if (key->padButton_ > CONTROLLER_AXIS_OFFSET)
+				res = pGamecontroller_[indexPad].axis[key->padButton_ - CONTROLLER_AXIS_OFFSET];
 		}
 	}
-
+	
 	return res;
 }
 

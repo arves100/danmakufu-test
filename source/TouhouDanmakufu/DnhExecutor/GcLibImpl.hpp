@@ -17,7 +17,7 @@ protected:
 	bool _Initialize();
 	bool _Loop();
 	bool _Finalize();
-	void WindowEvent(SDL_Event* evt);
+	void OnEvent(SDL_Event* evt);
 
 public:
 	~EApplication();

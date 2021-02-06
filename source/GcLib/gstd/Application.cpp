@@ -25,7 +25,7 @@ bool Application::Initialize()
 	bAppRun_ = true;
 	bAppActive_ = true;
 
-	if (SDL_Init(SDL_INIT_VIDEO) != 0)
+	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK | SDL_INIT_GAMECONTROLLER) != 0)
 		return false;
 
 	return true;
@@ -60,7 +60,7 @@ bool Application::Run()
 		if (bAppRun_ == false)
 			break;
 		if (SDL_PollEvent(&evt)) {
-			WindowEvent(&evt);
+			OnEvent(&evt);
 		} else {
 			if (bAppActive_ == false) {
 				Sleep(10);

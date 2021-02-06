@@ -324,21 +324,21 @@ DnhConfiguration::DnhConfiguration()
 
 	//キー登録
 	padIndex_ = 0;
-	mapKey_[EDirectInput::KEY_LEFT] = new VirtualKey(DIK_LEFT, 0, 0); //キーボード「←」とジョイパッド「←」を登録
-	mapKey_[EDirectInput::KEY_RIGHT] = new VirtualKey(DIK_RIGHT, 0, 1); //キーボード「→」とジョイパッド「→」を登録
-	mapKey_[EDirectInput::KEY_UP] = new VirtualKey(DIK_UP, 0, 2); //キーボード「↑」とジョイパッド「↑」を登録
-	mapKey_[EDirectInput::KEY_DOWN] = new VirtualKey(DIK_DOWN, 0, 3); //キーボード「↓」とジョイパッド「↓」を登録
+	mapKey_[EDirectInput::KEY_LEFT] = new VirtualKey(SDLK_LEFT, 0, SDL_CONTROLLER_BUTTON_DPAD_LEFT); //キーボード「←」とジョイパッド「←」を登録
+	mapKey_[EDirectInput::KEY_RIGHT] = new VirtualKey(SDLK_RIGHT, 0, SDL_CONTROLLER_BUTTON_DPAD_RIGHT); //キーボード「→」とジョイパッド「→」を登録
+	mapKey_[EDirectInput::KEY_UP] = new VirtualKey(SDLK_UP, 0, SDL_CONTROLLER_BUTTON_DPAD_UP); //キーボード「↑」とジョイパッド「↑」を登録
+	mapKey_[EDirectInput::KEY_DOWN] = new VirtualKey(SDLK_DOWN, 0, SDL_CONTROLLER_BUTTON_DPAD_DOWN); //キーボード「↓」とジョイパッド「↓」を登録
 
-	mapKey_[EDirectInput::KEY_OK] = new VirtualKey(DIK_Z, 0, 5);
-	mapKey_[EDirectInput::KEY_CANCEL] = new VirtualKey(DIK_X, 0, 6);
+	mapKey_[EDirectInput::KEY_OK] = new VirtualKey(SDLK_z, 0, SDL_CONTROLLER_BUTTON_B);
+	mapKey_[EDirectInput::KEY_CANCEL] = new VirtualKey(SDLK_x, 0, SDL_CONTROLLER_BUTTON_A);
 
-	mapKey_[EDirectInput::KEY_SHOT] = new VirtualKey(DIK_Z, 0, 5);
-	mapKey_[EDirectInput::KEY_BOMB] = new VirtualKey(DIK_X, 0, 6);
-	mapKey_[EDirectInput::KEY_SLOWMOVE] = new VirtualKey(DIK_LSHIFT, 0, 7);
-	mapKey_[EDirectInput::KEY_USER1] = new VirtualKey(DIK_C, 0, 8);
-	mapKey_[EDirectInput::KEY_USER2] = new VirtualKey(DIK_V, 0, 9);
+	mapKey_[EDirectInput::KEY_SHOT] = new VirtualKey(SDLK_z, 0, SDL_CONTROLLER_BUTTON_A);
+	mapKey_[EDirectInput::KEY_BOMB] = new VirtualKey(SDLK_x, 0, SDL_CONTROLLER_BUTTON_B);
+	mapKey_[EDirectInput::KEY_SLOWMOVE] = new VirtualKey(SDLK_LSHIFT, 0, SDL_CONTROLLER_BUTTON_X);
+	mapKey_[EDirectInput::KEY_USER1] = new VirtualKey(SDLK_c, 0, SDL_CONTROLLER_BUTTON_LEFTSHOULDER);
+	mapKey_[EDirectInput::KEY_USER2] = new VirtualKey(SDLK_v, 0, SDL_CONTROLLER_BUTTON_RIGHTSHOULDER);
 
-	mapKey_[EDirectInput::KEY_PAUSE] = new VirtualKey(DIK_ESCAPE, 0, 10);
+	mapKey_[EDirectInput::KEY_PAUSE] = new VirtualKey(SDLK_ESCAPE, 0, SDL_CONTROLLER_BUTTON_START);
 
 	bLogWindow_ = false;
 	bLogFile_ = false;

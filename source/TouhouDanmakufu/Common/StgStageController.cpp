@@ -315,8 +315,8 @@ void StgStageController::Work()
 	ref_count_ptr<StgSystemInformation> infoSystem = systemController_->GetSystemInformation();
 	bool bPackageMode = infoSystem->IsPackageMode();
 
-	bool bPermitRetryKey = !input->IsTargetKeyCode(DIK_BACK);
-	if (!bPackageMode && bPermitRetryKey && input->GetKeyState(DIK_BACK) == KEY_PUSH) {
+	bool bPermitRetryKey = !input->IsTargetKeyCode(SDLK_BACKSPACE);
+	if (!bPackageMode && bPermitRetryKey && input->GetKeyState(SDLK_BACKSPACE) == KEY_PUSH) {
 		//リトライ
 		if (!infoStage_->IsReplay()) {
 			ref_count_ptr<StgSystemInformation> infoSystem = systemController_->GetSystemInformation();

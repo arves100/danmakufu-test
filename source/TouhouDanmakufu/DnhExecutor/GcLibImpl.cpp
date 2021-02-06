@@ -23,7 +23,7 @@ bool EApplication::_Initialize()
 
 	std::string appName = u8"東方弾幕風 ph3 ";
 	appName += DNH_VERSION;
-	appName += " {NEW:" __TIMESTAMP__ "}";
+	appName += " (fork)";
 
 	DnhConfiguration* config = DnhConfiguration::CreateInstance();
 	std::string configWindowTitle = config->GetWindowTitle();
@@ -68,7 +68,7 @@ bool EApplication::_Initialize()
 	soundManager->Initialize(hWndMain);
 
 	EDirectInput* input = EDirectInput::CreateInstance();
-	input->Initialize(hWndMain);
+	input->Initialize();
 
 	ETaskManager* taskManager = ETaskManager::CreateInstance();
 	taskManager->Initialize();
@@ -118,9 +118,10 @@ bool EApplication::_Loop()
 	}
 	return true;
 }
-void EApplication::WindowEvent(SDL_Event* evt)
+void EApplication::OnEvent(SDL_Event* evt)
 {
 	EDirectGraphics::GetInstance()->EventProcedure(evt);
+	DirectInput::GetBase()->EventUpdate(evt);
 }
 bool EApplication::_Finalize()
 {

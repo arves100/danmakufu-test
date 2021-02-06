@@ -1741,7 +1741,7 @@ void EventLogWindow::Work()
 			pos_ = max(posMin_, pos_ - 1);
 	}
 
-	if (input->GetMouseState(DI_MOUSE_RIGHT) == KEY_PULL)
+	if (input->GetMouseState(MOUSE_KEY_RIGHT) == KEY_PULL)
 		bChange = true;
 
 	if (bChange)
@@ -2362,8 +2362,8 @@ bool EventKeyState::IsNext()
 	gstd::ref_count_ptr<DxWindowEvent> wndEvent = mngWindow->GetMouseCaptureLayer()->GetEvent();
 
 	res |= (wndEvent != NULL && wndEvent->HasEventType(DxWindowEvent::TYPE_MOUSE_LEFT_CLICK));
-	res |= (input->GetKeyState(DIK_Z) == KEY_PUSH);
-	res |= (input->GetKeyState(DIK_RETURN) == KEY_PUSH);
+	res |= (input->GetKeyState(SDLK_z) == KEY_PUSH);
+	res |= (input->GetKeyState(SDLK_RETURN) == KEY_PUSH);
 	res |= (input->GetMouseMoveZ() < 0);
 
 	return res;
@@ -2372,7 +2372,7 @@ bool EventKeyState::IsSkip()
 {
 	bool res = false;
 	DirectInput* input = DirectInput::GetBase();
-	res |= (input->GetKeyState(DIK_LCONTROL) == KEY_HOLD);
+	res |= (input->GetKeyState(SDLK_LCTRL) == KEY_HOLD);
 	return res;
 }
 
@@ -3014,7 +3014,7 @@ void EventEngine::CheckStateChenge()
 	DirectInput* input = DirectInput::GetBase();
 	if (state_ == STATE_RUN) {
 		bool bChangeLOG = input->GetMouseMoveZ() > 0;
-		bool bChangeHideText = input->GetMouseState(DI_MOUSE_RIGHT) == KEY_PULL;
+		bool bChangeHideText = input->GetMouseState(MOUSE_KEY_RIGHT) == KEY_PULL;
 
 		if (bChangeLOG)
 			SetState(STATE_LOG);
@@ -3023,8 +3023,8 @@ void EventEngine::CheckStateChenge()
 	} else if (state_ == STATE_HIDE_TEXT) {
 		bool bChangeRun = false;
 		bChangeRun |= keyState_->IsSkip();
-		bChangeRun |= (input->GetMouseState(DI_MOUSE_LEFT) == KEY_PULL);
-		bChangeRun |= (input->GetMouseState(DI_MOUSE_RIGHT) == KEY_PULL);
+		bChangeRun |= (input->GetMouseState(MOUSE_KEY_LEFT) == KEY_PULL);
+		bChangeRun |= (input->GetMouseState(MOUSE_KEY_RIGHT) == KEY_PULL);
 		if (bChangeRun)
 			SetState(STATE_RUN);
 	}

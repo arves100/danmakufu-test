@@ -152,11 +152,11 @@ std::wstring ETextureManager::GetReservedRenderTargetName(int index)
 /**********************************************************
 //EDirectInput
 **********************************************************/
-bool EDirectInput::Initialize(SDL_Window* hWnd)
+bool EDirectInput::Initialize()
 {
 	padIndex_ = 0;
 
-	VirtualKeyManager::Initialize(hWnd);
+	VirtualKeyManager::Initialize();
 
 	ResetVirtualKeyMap();
 

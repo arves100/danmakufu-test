@@ -134,7 +134,7 @@ void StgSystemController::Work()
 		}
 
 		EFpsController* fpsController = EFpsController::GetInstance();
-		fpsController->SetFastModeKey(DIK_LCONTROL);
+		fpsController->SetFastModeKey(SDLK_LCTRL);
 
 		DoEnd();
 		return;

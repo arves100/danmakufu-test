@@ -22,7 +22,6 @@
 #include <basetsd.h>
 #include <d3d9.h>
 #include <d3dx9.h>
-#include <dinput.h>
 #include <dsound.h>
 #include <dxerr.h>
 #include <SDL.h>

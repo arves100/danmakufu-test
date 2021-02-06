@@ -27,7 +27,7 @@ protected:
 	virtual bool _Initialize() { return true; }
 	virtual bool _Loop() { return true; }
 	virtual bool _Finalize() { return true; }
-	virtual void WindowEvent(SDL_Event*) {}
+	virtual void OnEvent(SDL_Event*) {}
 	Application();
 
 private:
