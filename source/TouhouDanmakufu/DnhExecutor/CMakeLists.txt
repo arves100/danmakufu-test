@@ -13,6 +13,10 @@ System.cpp
 TitleScene.cpp
 WinMain.cpp)
 
+if (WIN32)
+	list(APPEND EXECUTOR_SOURCES DnhExecuter.rc resource.h)
+endif()
+
 add_executable(DnhExecutor ${EXECUTOR_SOURCES})
 target_link_libraries(DnhExecutor PRIVATE DnhCommon)
 
