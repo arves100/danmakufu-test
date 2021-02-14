@@ -1,5 +1,6 @@
 #include "Script.hpp"
 #include "GstdUtility.hpp"
+#include "Logger.hpp"
 
 #include <cassert>
 #include <cctype>
@@ -7,54 +8,10 @@
 #include <cmath>
 #include <cstdio>
 #include <vector>
-#include <windows.h>
-
-#ifdef _MSC_VER
-#define for if (0); else for
-namespace std {
-using ::atof;
-using ::ceill;
-using ::fabsl;
-using ::floorl;
-using ::fmodl;
-using ::isalpha;
-using ::isdigit;
-using ::iswalpha;
-using ::iswdigit;
-using ::isxdigit;
-using ::mbstowcs;
-using ::powl;
-using ::swprintf;
-using ::wcstombs;
-}
-
-#endif
+#include <string>
+#include <ctgmath>
 
 using namespace gstd;
-
-std::string gstd::to_mbcs(std::wstring const& s)
-{
-	std::string result = StringUtility::ConvertWideToMulti(s);
-	// int len = std::wcstombs(NULL, s.c_str(), s.size());
-	// if (len < 0)
-	// 	return "(BAD-DATA)";
-	// char * buffer = new char[len + 1];
-	// std::wcstombs(buffer, s.c_str(), len);
-	// std::string result(buffer, len);
-	// delete[] buffer;
-	return result;
-}
-
-std::wstring gstd::to_wide(std::string const& s)
-{
-	std::wstring result = StringUtility::ConvertMultiToWide(s);
-	// int len = std::mbstowcs(NULL, s.c_str(), s.size());
-	// wchar_t * buffer = new wchar_t[len + 1];
-	// std::mbstowcs(buffer, s.c_str(), len);
-	// std::wstring result(buffer, len);
-	// delete[] buffer;
-	return result;
-}
 
 long double fmodl2(long double i, long double j)
 {
@@ -69,12 +26,12 @@ long double fmodl2(long double i, long double j)
 
 /* value */
 
-value::value(type_data* t, std::wstring v)
+value::value(type_data* t, std::string v)
 {
 	data = new body();
 	data->ref_count = 1;
 	data->type = t;
-	for (unsigned i = 0; i < v.size(); ++i)
+	for (unsigned int i = 0; i < v.size(); ++i)
 		data->array_value.push_back(value(t->get_element(), v[i]));
 }
 
@@ -114,7 +71,7 @@ long double value::as_real() const
 			return (data->boolean_value) ? 1.0L : 0.0L;
 		case type_data::tk_array:
 			if (data->type->get_element()->get_kind() == type_data::tk_char)
-				return std::atof(to_mbcs(as_string()).c_str());
+				return std::stof(as_string());
 			else
 				return 0.0L;
 		default:
@@ -124,7 +81,7 @@ long double value::as_real() const
 	}
 }
 
-wchar_t value::as_char() const
+char value::as_char() const
 {
 	if (data == NULL)
 		return 0.0L;
@@ -135,12 +92,12 @@ wchar_t value::as_char() const
 		case type_data::tk_char:
 			return data->char_value;
 		case type_data::tk_boolean:
-			return (data->boolean_value) ? L'1' : L'0';
+			return (data->boolean_value) ? '1' : '0';
 		case type_data::tk_array:
-			return L'\0';
+			return '\0';
 		default:
 			assert(false);
-			return L'\0';
+			return '\0';
 		}
 	}
 }
@@ -154,7 +111,7 @@ bool value::as_boolean() const
 		case type_data::tk_real:
 			return data->real_value != 0.0L;
 		case type_data::tk_char:
-			return data->char_value != L'\0';
+			return data->char_value != '\0';
 		case type_data::tk_boolean:
 			return data->boolean_value;
 		case type_data::tk_array:
@@ -166,48 +123,46 @@ bool value::as_boolean() const
 	}
 }
 
-std::wstring value::as_string() const
+std::string value::as_string() const
 {
 	if (data == NULL)
-		return L"(VOID)";
+		return "(VOID)";
 
 	else {
 		switch (data->type->get_kind()) {
 		case type_data::tk_real: {
-			wchar_t buffer[128];
-			std::swprintf(buffer, L"%Lf", data->real_value);
-			return std::wstring(buffer);
+			return StringUtility::Format("%Lf", data->real_value);
 		}
 
 		case type_data::tk_char: {
-			std::wstring result;
+			std::string result;
 			result += data->char_value;
 			return result;
 		}
 
 		case type_data::tk_boolean:
-			return (data->boolean_value) ? L"true" : L"false";
+			return (data->boolean_value) ? "true" : "false";
 
 		case type_data::tk_array: {
 			if (data->type->get_element()->get_kind() == type_data::tk_char) {
-				std::wstring result;
+				std::string result;
 				for (unsigned i = 0; i < data->array_value.size(); ++i)
 					result += data->array_value[i].as_char();
 				return result;
 			} else {
-				std::wstring result = L"[";
+				std::string result = "[";
 				for (unsigned i = 0; i < data->array_value.size(); ++i) {
 					result += data->array_value[i].as_string();
 					if (i != data->array_value.size() - 1)
-						result += L",";
+						result += ",";
 				}
-				result += L"]";
+				result += "]";
 				return result;
 			}
 		}
 		default:
 			assert(false);
-			return L"(INTERNAL-ERROR)";
+			return "(INTERNAL-ERROR)";
 		}
 	}
 }
@@ -256,192 +211,57 @@ void value::overwrite(value const& source)
 
 /* parser_error */
 
-class parser_error : public gstd::wexception {
+class parser_error : public std::exception {
 public:
-	parser_error(std::wstring const& the_message)
-		: gstd::wexception(the_message)
+	parser_error(std::string const& the_message)
+		: message_(the_message) {}
+
+	const char* what() const noexcept override
 	{
+		return message_.c_str();
 	}
+
+private:
+	std::string message_;
 };
 
 /* lexical analyzer */
-
-enum token_kind {
-	tk_end,
-	tk_invalid,
-	tk_word,
-	tk_real,
-	tk_char,
-	tk_string,
-	tk_open_par,
-	tk_close_par,
-	tk_open_bra,
-	tk_close_bra,
-	tk_open_cur,
-	tk_close_cur,
-	tk_open_abs,
-	tk_close_abs,
-	tk_comma,
-	tk_semicolon,
-	tk_tilde,
-	tk_assign,
-	tk_plus,
-	tk_minus,
-	tk_inc,
-	tk_dec,
-	tk_asterisk,
-	tk_slash,
-	tk_percent,
-	tk_caret,
-	tk_e,
-	tk_g,
-	tk_ge,
-	tk_l,
-	tk_le,
-	tk_ne,
-	tk_exclamation,
-	tk_ampersand,
-	tk_and_then,
-	tk_vertical,
-	tk_or_else,
-	tk_at,
-	tk_add_assign,
-	tk_subtract_assign,
-	tk_multiply_assign,
-	tk_divide_assign,
-	tk_remainder_assign,
-	tk_power_assign,
-	tk_range,
-	tk_ALTERNATIVE,
-	tk_ASCENT,
-	tk_BREAK,
-	tk_CASE,
-	tk_DESCENT,
-	tk_ELSE,
-	tk_FUNCTION,
-	tk_IF,
-	tk_IN,
-	tk_LET,
-	tk_LOCAL,
-	tk_LOOP,
-	tk_OTHERS,
-	tk_REAL,
-	tk_RETURN,
-	tk_SUB,
-	tk_TASK,
-	tk_TIMES,
-	tk_WHILE,
-	tk_YIELD,
-};
-
-class scanner {
-public:
-	token_kind next;
-	std::string word;
-	long double real_value;
-	wchar_t char_value;
-	std::wstring string_value;
-	int line;
-
-	scanner(char const* source, char const* end)
-		: current(source)
-		, line(1)
-	{
-		endPoint = end;
-		encoding = Encoding::SHIFT_JIS;
-		if (Encoding::IsUtf16Le(source, 2)) {
-			encoding = Encoding::UTF16LE;
-
-			int bomSize = Encoding::GetBomSize(source, 2);
-			current += bomSize;
-		}
-
-		advance();
-	}
-
-	scanner(scanner const& source)
-		: encoding(source.encoding)
-		, current(source.current)
-		, endPoint(source.endPoint)
-		, next(source.next)
-		, word(source.word)
-		, line(source.line)
-	{
-	}
-
-	void skip();
-	void advance();
-
-	void AddLog(wchar_t* data);
-
-private:
-	int encoding;
-	char const* current;
-	char const* endPoint;
-
-	inline wchar_t current_char();
-	inline wchar_t index_from_current_char(int index);
-	inline wchar_t next_char();
-};
-
-wchar_t scanner::current_char()
+char scanner::current_char()
 {
-	wchar_t res = L'\0';
-	if (encoding == Encoding::UTF16LE) {
-		res = (wchar_t&)current[0];
-	} else {
-		res = *current;
-	}
-	return res;
+	return *current;
 }
-wchar_t scanner::index_from_current_char(int index)
+char scanner::index_from_current_char(int index)
 {
-	wchar_t res = L'\0';
-	if (encoding == Encoding::UTF16LE) {
-		const char* pos = current + index * 2;
-		if (pos >= endPoint)
-			return L'\0';
-		res = (wchar_t&)current[index * 2];
-	} else {
-		const char* pos = current + index;
-		if (pos >= endPoint)
-			return L'\0';
-		res = current[index];
-	}
-
-	return res;
+	const char* pos = current + index;
+	if (pos >= endPoint)
+		return '\0';
+	return current[index];
 }
-wchar_t scanner::next_char()
+char scanner::next_char()
 {
-	if (encoding == Encoding::UTF16LE) {
-		current += 2;
-	} else {
-		++current;
-	}
-
-	wchar_t res = current_char();
-	return res;
+	++current;
+	return current_char();
 }
 
 void scanner::skip()
 {
 	//空白を飛ばす
-	wchar_t ch1 = current_char();
-	wchar_t ch2 = index_from_current_char(1);
-	while (ch1 == '\r' || ch1 == '\n' || ch1 == L'\t' || ch1 == L' '
-		|| ch1 == L'#' || (ch1 == L'/' && (ch2 == L'/' || ch2 == L'*'))) {
+	char ch1 = current_char();
+	char ch2 = index_from_current_char(1);
+	while (ch1 == '\r' || ch1 == '\n' || ch1 == '\t' || ch1 == ' '
+		|| ch1 == '#' || (ch1 == '/' && (ch2 == '/' || ch2 == '*'))) {
 		//コメントを飛ばす
-		if (ch1 == L'#' || (ch1 == L'/' && (ch2 == L'/' || ch2 == L'*'))) {
-			if (ch1 == L'#' || ch2 == L'/') {
+		if (ch1 == '#' || (ch1 == '/' && (ch2 == '/' || ch2 == '*'))) {
+			if (ch1 == '#' || ch2 == '/') {
 				do {
 					ch1 = next_char();
-				} while (ch1 != L'\r' && ch1 != L'\n');
+				} while (ch1 != '\r' && ch1 != '\n');
 			} else {
 				next_char();
 				ch1 = next_char();
 				ch2 = index_from_current_char(1);
-				while (ch1 != L'*' || ch2 != L'/') {
-					if (ch1 == L'\n')
+				while (ch1 != '*' || ch2 != '/') {
+					if (ch1 == '\n')
 						++line;
 					ch1 = next_char();
 					ch2 = index_from_current_char(1);
@@ -449,7 +269,7 @@ void scanner::skip()
 				ch1 = next_char();
 				ch1 = next_char();
 			}
-		} else if (ch1 == L'\n') {
+		} else if (ch1 == '\n') {
 			++line;
 			ch1 = next_char();
 		} else
@@ -458,12 +278,12 @@ void scanner::skip()
 	}
 }
 
-void scanner::AddLog(wchar_t* data)
+void scanner::AddLog(const char* data)
 {
-	wchar_t* pStart = (wchar_t*)current;
-	wchar_t* pEnd = (wchar_t*)(current + min(16, endPoint - current));
-	std::wstring wstr = std::wstring(pStart, pEnd);
-	// Logger::WriteTop(StringUtility::Format(L"%s current=%d, endPoint=%d, val=%d, ch=%s", data, pStart, endPoint, (wchar_t)*current, wstr.c_str()));
+	const char* pStart = current;
+	const char* pEnd = current + MIN(16, endPoint - current);
+	std::string wstr = std::string(pStart, pEnd);
+	Logger::WriteTop(StringUtility::Format("%s current=%x, endPoint=%d, val=%d, ch=%s", data, pStart, endPoint, *current, wstr.c_str()));
 }
 
 void scanner::advance()
@@ -471,206 +291,188 @@ void scanner::advance()
 	skip();
 
 	wchar_t ch = current_char();
-	if (ch == L'\0' || current >= endPoint) {
+	if (ch == '\0' || current >= endPoint) {
 		next = tk_end;
 		return;
 	}
 
 	switch (ch) {
-	case L'[':
+	case '[':
 		next = tk_open_bra;
 		ch = next_char();
 		break;
-	case L']':
+	case ']':
 		next = tk_close_bra;
 		ch = next_char();
 		break;
-	case L'(':
+	case '(':
 		next = tk_open_par;
 		ch = next_char();
-		if (ch == L'|') {
+		if (ch == '|') {
 			next = tk_open_abs;
 			ch = next_char();
 		}
 		break;
-	case L')':
+	case ')':
 		next = tk_close_par;
 		ch = next_char();
 		break;
-	case L'{':
+	case '{':
 		next = tk_open_cur;
 		ch = next_char();
 		break;
-	case L'}':
+	case '}':
 		next = tk_close_cur;
 		ch = next_char();
 		break;
-	case L'@':
+	case '@':
 		next = tk_at;
 		ch = next_char();
 		break;
-	case L',':
+	case ',':
 		next = tk_comma;
 		ch = next_char();
 		break;
-	case L';':
+	case ';':
 		next = tk_semicolon;
 		ch = next_char();
 		break;
-	case L'~':
+	case '~':
 		next = tk_tilde;
 		ch = next_char();
 		break;
-	case L'*':
+	case '*':
 		next = tk_asterisk;
 		ch = next_char();
-		if (ch == L'=') {
+		if (ch == '=') {
 			next = tk_multiply_assign;
 			ch = next_char();
 		}
 		break;
-	case L'/':
+	case '/':
 		next = tk_slash;
 		ch = next_char();
-		if (ch == L'=') {
+		if (ch == '=') {
 			next = tk_divide_assign;
 			ch = next_char();
 		}
 		break;
-	case L'%':
+	case '%':
 		next = tk_percent;
 		ch = next_char();
-		if (ch == L'=') {
+		if (ch == '=') {
 			next = tk_remainder_assign;
 			ch = next_char();
 		}
 		break;
-	case L'^':
+	case '^':
 		next = tk_caret;
 		ch = next_char();
-		if (ch == L'=') {
+		if (ch == '=') {
 			next = tk_power_assign;
 			ch = next_char();
 		}
 		break;
-	case L'=':
+	case '=':
 		next = tk_assign;
 		ch = next_char();
-		if (ch == L'=') {
+		if (ch == '=') {
 			next = tk_e;
 			ch = next_char();
 		}
 		break;
-	case L'>':
+	case '>':
 		next = tk_g;
 		ch = next_char();
-		if (ch == L'=') {
+		if (ch == '=') {
 			next = tk_ge;
 			ch = next_char();
 		}
 		break;
-	case L'<':
+	case '<':
 		next = tk_l;
 		ch = next_char();
-		if (ch == L'=') {
+		if (ch == '=') {
 			next = tk_le;
 			ch = next_char();
 		}
 		break;
-	case L'!':
+	case '!':
 		next = tk_exclamation;
 		ch = next_char();
-		if (ch == L'=') {
+		if (ch == '=') {
 			next = tk_ne;
 			ch = next_char();
 		}
 		break;
-	case L'+':
+	case '+':
 		next = tk_plus;
 		ch = next_char();
-		if (ch == L'+') {
+		if (ch == '+') {
 			next = tk_inc;
 			ch = next_char();
-		} else if (ch == L'=') {
+		} else if (ch == '=') {
 			next = tk_add_assign;
 			ch = next_char();
 		}
 		break;
-	case L'-':
+	case '-':
 		next = tk_minus;
 		ch = next_char();
-		if (ch == L'-') {
+		if (ch == '-') {
 			next = tk_dec;
 			ch = next_char();
-		} else if (ch == L'=') {
+		} else if (ch == '=') {
 			next = tk_subtract_assign;
 			ch = next_char();
 		}
 		break;
-	case L'&':
+	case '&':
 		next = tk_ampersand;
 		ch = next_char();
-		if (ch == L'&') {
+		if (ch == '&') {
 			next = tk_and_then;
 			ch = next_char();
 		}
 		break;
-	case L'|':
+	case '|':
 		next = tk_vertical;
 		ch = next_char();
-		if (ch == L'|') {
+		if (ch == '|') {
 			next = tk_or_else;
 			ch = next_char();
-		} else if (ch == L')') {
+		} else if (ch == ')') {
 			next = tk_close_abs;
 			ch = next_char();
 		}
 		break;
-	case L'.':
+	case '.':
 		ch = next_char();
-		if (ch == L'.') {
+		if (ch == '.') {
 			next = tk_range;
 			ch = next_char();
 		} else {
-			std::wstring error;
-			error += L"It's script does not allow to alone period\r\n";
-			error += L"(単独のピリオドはこのスクリプトでは使いません)";
+			std::string error;
+			error += "It's script does not allow to alone period\r\n";
+			error += u8"(単独のピリオドはこのスクリプトでは使いません)";
 			throw parser_error(error);
 		}
 		break;
 
-	case L'\'':
-	case L'\"': {
+	case '\'':
+	case '\"': {
 		wchar_t q = current_char();
-		next = (q == L'\"') ? tk_string : tk_char;
+		next = (q == '\"') ? tk_string : tk_char;
 		ch = next_char();
 		wchar_t pre = next;
-		if (encoding == Encoding::UTF16LE) {
-			std::wstring s;
-			while (true) {
-				if (ch == q && pre != L'\\')
-					break;
-
-				if (ch == L'\\') {
-					if (pre == L'\\')
-						s += ch;
-				} else {
-					s += ch;
-				}
-
-				pre = ch;
-				ch = next_char();
-			}
-			ch = next_char();
-			string_value = s;
-		} else {
+		{
 			std::string s;
 			while (true) {
-				if (ch == q && pre != L'\\')
+				if (ch == q && pre != '\\')
 					break;
 
-				if (ch == L'\\') {
-					if (pre == L'\\')
+				if (ch == '\\') {
+					if (pre == '\\')
 						s += *current;
 				} else {
 					s += *current;
@@ -678,90 +480,80 @@ void scanner::advance()
 
 				pre = ch;
 
-				if (IsDBCSLeadByteEx(Encoding::CP_SHIFT_JIS, ch)) {
-					ch = next_char();
-					s += ch;
-				}
 				ch = next_char();
 			}
 			ch = next_char();
-			string_value = to_wide(s);
+			string_value = s;
 		}
 
-		if (q == L'\'') {
+		if (q == '\'') {
 			if (string_value.size() == 1)
 				char_value = string_value[0];
 			else
-				throw parser_error(L"文字型の値の長さは1だけです");
+				throw parser_error(u8"文字型の値の長さは1だけです");
 		}
 	} break;
-	case L'\\': {
+	case '\\': {
 		ch = next_char();
 		next = tk_char;
 		wchar_t c = ch;
 		ch = next_char();
 		switch (c) {
-		case L'0':
-			char_value = L'\0';
+		case '0':
+			char_value = '\0';
 			break;
-		case L'n':
-			char_value = L'\n';
+		case 'n':
+			char_value = '\n';
 			break;
-		case L'r':
-			char_value = L'\r';
+		case 'r':
+			char_value = '\r';
 			break;
-		case L't':
-			char_value = L'\t';
+		case 't':
+			char_value = '\t';
 			break;
-		case L'x':
+		case 'x':
 			char_value = 0;
 			while (std::isxdigit(ch)) {
-				char_value = char_value * 16 + (ch >= L'a') ? ch - L'a' + 10 : (ch >= L'A') ? ch - L'A' + 10 : ch - L'0';
+				char_value = char_value * 16 + (ch >= 'a') ? ch - 'a' + 10 : (ch >= 'A') ? ch - 'A' + 10 : ch - '0';
 				ch = next_char();
 			}
 			break;
 		default: {
-			std::wstring error;
-			error += L"There is a strange character.\r\n";
-			error += L"特殊文字が変です(「\"...\"」を忘れていませんか)";
+			std::string error;
+			error += "There is a strange character.\r\n";
+			error += u8"特殊文字が変です(「\"...\"」を忘れていませんか)";
 			throw parser_error(error);
 		}
 		}
 	} break;
 	default:
-		if (std::iswdigit(ch)) {
+		if (std::isdigit(ch)) {
 			next = tk_real;
 			real_value = 0.0;
 			do {
-				real_value = real_value * 10. + (ch - L'0');
+				real_value = real_value * 10. + (ch - '0');
 				ch = next_char();
-			} while (std::iswdigit(ch));
+			} while (std::isdigit(ch));
 
 			wchar_t ch2 = index_from_current_char(1);
-			if (ch == L'.' && std::iswdigit(ch2)) {
+			if (ch == '.' && std::isdigit(ch2)) {
 				ch = next_char();
 				long double d = 1;
-				while (std::iswdigit(ch)) {
+				while (std::isdigit(ch)) {
 					d = d / 10;
-					real_value = real_value + d * (ch - L'0');
+					real_value = real_value + d * (ch - '0');
 					ch = next_char();
 				}
 			}
-		} else if (std::iswalpha(ch) || ch == L'_') {
+		} else if (std::isalpha(ch) || ch == '_') {
 			next = tk_word;
-			if (encoding == Encoding::UTF16LE) {
-				word = "";
-				do {
-					word += (char)ch;
-					ch = next_char();
-				} while (std::iswalpha(ch) || ch == '_' || std::iswdigit(ch));
-			} else {
+			{
 				char* pStart = (char*)current;
 				char* pEnd = pStart;
 				do {
 					ch = next_char();
 					pEnd = (char*)current;
-				} while (std::iswalpha(ch) || ch == '_' || std::iswdigit(ch));
+				} while (std::isalpha(ch) || ch == '_' || std::isdigit(ch));
 				word = std::string(pStart, pEnd);
 			}
 
@@ -818,16 +610,16 @@ value add(script_machine* machine, int argc, value const* argv)
 	assert(argc == 2);
 	if (argv[0].get_type()->get_kind() == type_data::tk_array) {
 		if (argv[0].get_type() != argv[1].get_type()) {
-			std::wstring error;
-			error += L"variable type mismatch\r\n";
-			error += L"(型が一致しません)";
+			std::string error;
+			error += "variable type mismatch\r\n";
+			error += u8"(型が一致しません)";
 			machine->raise_error(error);
 			return value();
 		}
 		if (argv[0].length_as_array() != argv[1].length_as_array()) {
-			std::wstring error;
-			error += L"array length mismatch\r\n";
-			error += L"(長さが一致しません)";
+			std::string error;
+			error += "array length mismatch\r\n";
+			error += u8"(長さが一致しません)";
 			machine->raise_error(error);
 			return value();
 		}
@@ -848,16 +640,16 @@ value subtract(script_machine* machine, int argc, value const* argv)
 	assert(argc == 2);
 	if (argv[0].get_type()->get_kind() == type_data::tk_array) {
 		if (argv[0].get_type() != argv[1].get_type()) {
-			std::wstring error;
-			error += L"variable type mismatch\r\n";
-			error += L"(型が一致しません)";
+			std::string error;
+			error += "variable type mismatch\r\n";
+			error += u8"(型が一致しません)";
 			machine->raise_error(error);
 			return value();
 		}
 		if (argv[0].length_as_array() != argv[1].length_as_array()) {
-			std::wstring error;
-			error += L"array length mismatch\r\n";
-			error += L"(長さが一致しません)";
+			std::string error;
+			error += "array length mismatch\r\n";
+			error += u8"(長さが一致しません)";
 			machine->raise_error(error);
 			return value();
 		}
@@ -873,25 +665,16 @@ value subtract(script_machine* machine, int argc, value const* argv)
 		return value(machine->get_engine()->get_real_type(), argv[0].as_real() - argv[1].as_real());
 }
 
-#ifdef __BORLANDC__
-#pragma argsused
-#endif
 value multiply(script_machine* machine, int argc, value const* argv)
 {
 	return value(machine->get_engine()->get_real_type(), argv[0].as_real() * argv[1].as_real());
 }
 
-#ifdef __BORLANDC__
-#pragma argsused
-#endif
 value divide(script_machine* machine, int argc, value const* argv)
 {
 	return value(machine->get_engine()->get_real_type(), argv[0].as_real() / argv[1].as_real());
 }
 
-#ifdef __BORLANDC__
-#pragma argsused
-#endif
 value remainder(script_machine* machine, int argc, value const* argv)
 {
 	long double x = argv[0].as_real();
@@ -899,9 +682,6 @@ value remainder(script_machine* machine, int argc, value const* argv)
 	return value(machine->get_engine()->get_real_type(), fmodl2(x, y));
 }
 
-#ifdef __BORLANDC__
-#pragma argsused
-#endif
 value modc(script_machine* machine, int argc, value const* argv)
 {
 	long double x = argv[0].as_real();
@@ -909,25 +689,16 @@ value modc(script_machine* machine, int argc, value const* argv)
 	return value(machine->get_engine()->get_real_type(), fmodl(x, y));
 }
 
-#ifdef __BORLANDC__
-#pragma argsused
-#endif
 value negative(script_machine* machine, int argc, value const* argv)
 {
 	return value(machine->get_engine()->get_real_type(), -argv[0].as_real());
 }
 
-#ifdef __BORLANDC__
-#pragma argsused
-#endif
 value power(script_machine* machine, int argc, value const* argv)
 {
-	return value(machine->get_engine()->get_real_type(), std::powl(argv[0].as_real(), argv[1].as_real()));
+	return value(machine->get_engine()->get_real_type(), ::powl(argv[0].as_real(), argv[1].as_real()));
 }
 
-#ifdef __BORLANDC__
-#pragma argsused
-#endif
 value compare(script_machine* machine, int argc, value const* argv)
 {
 	if (argv[0].get_type() == argv[1].get_type()) {
@@ -976,9 +747,9 @@ value compare(script_machine* machine, int argc, value const* argv)
 		}
 		return value(machine->get_engine()->get_real_type(), static_cast<long double>(r));
 	} else {
-		std::wstring error;
-		error += L"Variables of different types are being compared\r\n";
-		error += L"(型が違う値同士を比較しようとしました)";
+		std::string error;
+		error += u8"Variables of different types are being compared\r\n";
+		error += u8"(型が違う値同士を比較しようとしました)";
 		machine->raise_error(error);
 		return value();
 	}
@@ -992,16 +763,16 @@ value predecessor(script_machine* machine, int argc, value const* argv)
 	case type_data::tk_real:
 		return value(argv[0].get_type(), argv[0].as_real() - 1);
 	case type_data::tk_char: {
-		wchar_t c = argv[0].as_char();
+		char c = argv[0].as_char();
 		--c;
 		return value(argv[0].get_type(), c);
 	}
 	case type_data::tk_boolean:
 		return value(argv[0].get_type(), false);
 	default:
-		std::wstring error;
-		error += L"This variables does not allow predecessor\r\n";
-		error += L"(この型の値にpredecessorは使えません)";
+		std::string error;
+		error += u8"This variables does not allow predecessor\r\n";
+		error += u8"(この型の値にpredecessorは使えません)";
 		machine->raise_error(error);
 		return value();
 	}
@@ -1016,41 +787,32 @@ value successor(script_machine* machine, int argc, value const* argv)
 		return value(argv[0].get_type(), argv[0].as_real() + 1);
 
 	case type_data::tk_char: {
-		wchar_t c = argv[0].as_char();
+		char c = argv[0].as_char();
 		++c;
 		return value(argv[0].get_type(), c);
 	}
 	case type_data::tk_boolean:
 		return value(argv[0].get_type(), true);
 	default: {
-		std::wstring error;
-		error += L"This variables does not allow successor\r\n";
-		error += L"(この型の値にpredecessorは使えません)";
+		std::string error;
+		error += u8"This variables does not allow successor\r\n";
+		error += u8"(この型の値にpredecessorは使えません)";
 		machine->raise_error(error);
 		return value();
 	}
 	}
 }
 
-#ifdef __BORLANDC__
-#pragma argsused
-#endif
 value true_(script_machine* machine, int argc, value const* argv)
 {
 	return value(machine->get_engine()->get_boolean_type(), true);
 }
 
-#ifdef __BORLANDC__
-#pragma argsused
-#endif
 value false_(script_machine* machine, int argc, value const* argv)
 {
 	return value(machine->get_engine()->get_boolean_type(), false);
 }
 
-#ifdef __BORLANDC__
-#pragma argsused
-#endif
 value not_(script_machine* machine, int argc, value const* argv)
 {
 	return value(machine->get_engine()->get_boolean_type(), !argv[0].as_boolean());
@@ -1067,9 +829,9 @@ value index(script_machine* machine, int argc, value const* argv)
 	assert(argc == 2);
 
 	if (argv[0].get_type()->get_kind() != type_data::tk_array) {
-		std::wstring error;
-		error += L"This variables does not allow to array index operation.\r\n";
-		error += L"(配列以外にindexを使いました)";
+		std::string error;
+		error += u8"This variables does not allow to array index operation.\r\n";
+		error += u8"(配列以外にindexを使いました)";
 		machine->raise_error(error);
 		return value();
 	}
@@ -1077,17 +839,17 @@ value index(script_machine* machine, int argc, value const* argv)
 	long double index = argv[1].as_real();
 
 	if (index != static_cast<int>(index)) {
-		std::wstring error;
-		error += L"Array index access does not allow to period.\r\n";
-		error += L"(小数点以下があります)";
+		std::string error;
+		error += u8"Array index access does not allow to period.\r\n";
+		error += u8"(小数点以下があります)";
 		machine->raise_error(error);
 		return value();
 	}
 
 	if (index < 0 || index >= argv[0].length_as_array()) {
-		std::wstring error;
-		error += L"Array index out of bounds.\r\n";
-		error += L"(配列のサイズを超えています)";
+		std::string error;
+		error += u8"Array index out of bounds.\r\n";
+		error += u8"(配列のサイズを超えています)";
 		machine->raise_error(error);
 		return value();
 	}
@@ -1101,9 +863,9 @@ value index_writable(script_machine* machine, int argc, value const* argv)
 	assert(argc == 2);
 
 	if (argv[0].get_type()->get_kind() != type_data::tk_array) {
-		std::wstring error;
-		error += L"This variables does not allow to array index operation.\r\n";
-		error += L"(配列以外にindex!を使いました)";
+		std::string error;
+		error += u8"This variables does not allow to array index operation.\r\n";
+		error += u8"(配列以外にindex!を使いました)";
 		machine->raise_error(error);
 		return value();
 	}
@@ -1111,17 +873,17 @@ value index_writable(script_machine* machine, int argc, value const* argv)
 	long double index = argv[1].as_real();
 
 	if (index != static_cast<int>(index)) {
-		std::wstring error;
-		error += L"Array index access does not allow to period.\r\n";
-		error += L"(小数点以下があります)";
+		std::string error;
+		error += u8"Array index access does not allow to period.\r\n";
+		error += u8"(小数点以下があります)";
 		machine->raise_error(error);
 		return value();
 	}
 
 	if (index < 0 || index >= argv[0].length_as_array()) {
-		std::wstring error;
-		error += L"Array index out of bounds.\r\n";
-		error += L"(配列のサイズを超えています)";
+		std::string error;
+		error += u8"Array index out of bounds.\r\n";
+		error += u8"(配列のサイズを超えています)";
 		machine->raise_error(error);
 		return value();
 	}
@@ -1136,9 +898,9 @@ value slice(script_machine* machine, int argc, value const* argv)
 	assert(argc == 3);
 
 	if (argv[0].get_type()->get_kind() != type_data::tk_array) {
-		std::wstring error;
-		error += L"This variables does not allow to array slice operation.\r\n";
-		error += L"(配列以外にindexを使いました)";
+		std::string error;
+		error += u8"This variables does not allow to array slice operation.\r\n";
+		error += u8"(配列以外にindexを使いました)";
 		machine->raise_error(error);
 		return value();
 	}
@@ -1146,9 +908,9 @@ value slice(script_machine* machine, int argc, value const* argv)
 	long double index_1 = argv[1].as_real();
 
 	if (index_1 != static_cast<int>(index_1)) {
-		std::wstring error;
-		error += L"Array slicing does not allow to period.\r\n";
-		error += L"(開始位置に小数点以下があります)";
+		std::string error;
+		error += u8"Array slicing does not allow to period.\r\n";
+		error += u8"(開始位置に小数点以下があります)";
 		machine->raise_error(error);
 		return value();
 	}
@@ -1156,22 +918,22 @@ value slice(script_machine* machine, int argc, value const* argv)
 	long double index_2 = argv[2].as_real();
 
 	if (index_2 != static_cast<int>(index_2)) {
-		std::wstring error;
-		error += L"Array slicing does not allow to period.\r\n";
-		error += L"(終端位置に小数点以下があります)";
+		std::string error;
+		error += u8"Array slicing does not allow to period.\r\n";
+		error += u8"(終端位置に小数点以下があります)";
 		machine->raise_error(error);
 		return value();
 	}
 
 	if (index_1 < 0 || index_1 > index_2 || index_2 > argv[0].length_as_array()) {
-		std::wstring error;
-		error += L"Array index out of bounds.\r\n";
-		error += L"(配列のサイズを超えています)";
+		std::string error;
+		error += u8"Array index out of bounds.\r\n";
+		error += u8"(配列のサイズを超えています)";
 		machine->raise_error(error);
 		return value();
 	}
 
-	value result(argv[0].get_type(), std::wstring());
+	value result(argv[0].get_type(), std::string());
 
 	for (int i = index_1; i < index_2; ++i) {
 		result.append(result.get_type(), argv[0].index_as_array(i));
@@ -1185,9 +947,9 @@ value erase(script_machine* machine, int argc, value const* argv)
 	assert(argc == 2);
 
 	if (argv[0].get_type()->get_kind() != type_data::tk_array) {
-		std::wstring error;
-		error += L"This variables does not allow to array erase operation.\r\n";
-		error += L"(配列以外にeraseを使いました)";
+		std::string error;
+		error += u8"This variables does not allow to array erase operation.\r\n";
+		error += u8"(配列以外にeraseを使いました)";
 		machine->raise_error(error);
 		return value();
 	}
@@ -1196,22 +958,22 @@ value erase(script_machine* machine, int argc, value const* argv)
 	double length = argv[0].length_as_array();
 
 	if (index_1 != static_cast<int>(index_1)) {
-		std::wstring error;
-		error += L"Array erasing does not allow to period.\r\n";
-		error += L"(削除位置に小数点以下があります)";
+		std::string error;
+		error += u8"Array erasing does not allow to period.\r\n";
+		error += u8"(削除位置に小数点以下があります)";
 		machine->raise_error(error);
 		return value();
 	}
 
 	if (index_1 < 0 || index_1 >= argv[0].length_as_array()) {
-		std::wstring error;
-		error += L"Array index out of bounds.\r\n";
-		error += L"(配列のサイズを超えています)";
+		std::string error;
+		error += u8"Array index out of bounds.\r\n";
+		error += u8"(配列のサイズを超えています)";
 		machine->raise_error(error);
 		return value();
 	}
 
-	value result(argv[0].get_type(), std::wstring());
+	value result(argv[0].get_type(), std::string());
 
 	for (int i = 0; i < index_1; ++i) {
 		result.append(result.get_type(), argv[0].index_as_array(i));
@@ -1222,25 +984,22 @@ value erase(script_machine* machine, int argc, value const* argv)
 	return result;
 }
 
-#ifdef __BORLANDC__
-#pragma argsused
-#endif
 value append(script_machine* machine, int argc, value const* argv)
 {
 	assert(argc == 2);
 
 	if (argv[0].get_type()->get_kind() != type_data::tk_array) {
-		std::wstring error;
-		error += L"This variables does not allow to array append operation.\r\n";
-		error += L"(配列以外にappendを使いました)";
+		std::string error;
+		error += u8"This variables does not allow to array append operation.\r\n";
+		error += u8"(配列以外にappendを使いました)";
 		machine->raise_error(error);
 		return value();
 	}
 
 	if (argv[0].length_as_array() > 0 && argv[0].get_type()->get_element() != argv[1].get_type()) {
-		std::wstring error;
-		error += L"variable type mismatch\r\n";
-		error += L"(型が一致しません)";
+		std::string error;
+		error += u8"variable type mismatch\r\n";
+		error += u8"(型が一致しません)";
 		machine->raise_error(error);
 		return value();
 	}
@@ -1250,25 +1009,22 @@ value append(script_machine* machine, int argc, value const* argv)
 	return result;
 }
 
-#ifdef __BORLANDC__
-#pragma argsused
-#endif
 value concatenate(script_machine* machine, int argc, value const* argv)
 {
 	assert(argc == 2);
 
 	if (argv[0].get_type()->get_kind() != type_data::tk_array || argv[1].get_type()->get_kind() != type_data::tk_array) {
-		std::wstring error;
-		error += L"This variables does not allow to array concatenate operation.\r\n";
-		error += L"(配列以外にconcatenateを使いました)";
+		std::string error;
+		error += u8"This variables does not allow to array concatenate operation.\r\n";
+		error += u8"(配列以外にconcatenateを使いました)";
 		machine->raise_error(error);
 		return value();
 	}
 
 	if (argv[0].length_as_array() > 0 && argv[1].length_as_array() > 0 && argv[0].get_type() != argv[1].get_type()) {
-		std::wstring error;
-		error += L"variable type mismatch\r\n";
-		error += L"(型が一致しません)";
+		std::string error;
+		error += u8"variable type mismatch\r\n";
+		error += u8"(型が一致しません)";
 		machine->raise_error(error);
 		return value();
 	}
@@ -1278,61 +1034,40 @@ value concatenate(script_machine* machine, int argc, value const* argv)
 	return result;
 }
 
-#ifdef __BORLANDC__
-#pragma argsused
-#endif
 value round(script_machine* machine, int argc, value const* argv)
 {
-	long double r = std::floorl(argv[0].as_real() + 0.5);
+	long double r = ::floorl(argv[0].as_real() + 0.5);
 	return value(machine->get_engine()->get_real_type(), r);
 }
 
-#ifdef __BORLANDC__
-#pragma argsused
-#endif
 value truncate(script_machine* machine, int argc, value const* argv)
 {
 	long double r = argv[0].as_real();
-	r = (r > 0) ? std::floorl(r) : std::ceill(r);
+	r = (r > 0) ? ::floorl(r) : ::ceill(r);
 	return value(machine->get_engine()->get_real_type(), r);
 }
 
-#ifdef __BORLANDC__
-#pragma argsused
-#endif
 value ceil(script_machine* machine, int argc, value const* argv)
 {
-	return value(machine->get_engine()->get_real_type(), std::ceill(argv[0].as_real()));
+	return value(machine->get_engine()->get_real_type(), ::ceill(argv[0].as_real()));
 }
 
-#ifdef __BORLANDC__
-#pragma argsused
-#endif
 value floor(script_machine* machine, int argc, value const* argv)
 {
-	return value(machine->get_engine()->get_real_type(), std::floorl(argv[0].as_real()));
+	return value(machine->get_engine()->get_real_type(), ::floorl(argv[0].as_real()));
 }
 
-#ifdef __BORLANDC__
-#pragma argsused
-#endif
 value absolute(script_machine* machine, int argc, value const* argv)
 {
-	long double r = std::fabsl(argv[0].as_real());
+	long double r = ::fabsl(argv[0].as_real());
 	return value(machine->get_engine()->get_real_type(), r);
 }
 
-#ifdef __BORLANDC__
-#pragma argsused
-#endif
 value pi(script_machine* machine, int argc, value const* argv)
 {
 	return value(machine->get_engine()->get_real_type(), (long double)3.14159265358979323846);
 }
 
-#ifdef __BORLANDC__
-#pragma argsused
-#endif
 value assert_(script_machine* machine, int argc, value const* argv)
 {
 	assert(argc == 2);
@@ -1376,61 +1111,6 @@ function const operations[] = {
 
 /* parser */
 
-class gstd::parser {
-public:
-	struct symbol {
-		int level;
-		script_engine::block* sub;
-		int variable;
-	};
-
-	struct scope : public std::map<std::string, symbol> {
-		script_engine::block_kind kind;
-
-		scope(script_engine::block_kind the_kind)
-			: kind(the_kind)
-		{
-		}
-	};
-
-	std::vector<scope> frame;
-	scanner* lex;
-	script_engine* engine;
-	bool error;
-	std::wstring error_message;
-	int error_line;
-	std::map<std::string, script_engine::block*> events;
-
-	parser(script_engine* e, scanner* s, int funcc, function const* funcv);
-
-	virtual ~parser()
-	{
-	}
-
-	void parse_parentheses(script_engine::block* block);
-	void parse_clause(script_engine::block* block);
-	void parse_prefix(script_engine::block* block);
-	void parse_suffix(script_engine::block* block);
-	void parse_product(script_engine::block* block);
-	void parse_sum(script_engine::block* block);
-	void parse_comparison(script_engine::block* block);
-	void parse_logic(script_engine::block* block);
-	void parse_expression(script_engine::block* block);
-	int parse_arguments(script_engine::block* block);
-	void parse_statements(script_engine::block* block);
-	void parse_inline_block(script_engine::block* block, script_engine::block_kind kind);
-	void parse_block(script_engine::block* block, std::vector<std::string> const* args, bool adding_result);
-
-private:
-	void register_function(function const& func);
-	symbol* search(std::string const& name);
-	symbol* search_result();
-	void scan_current_scope(int level, std::vector<std::string> const* args, bool adding_result);
-	void write_operation(script_engine::block* block, char const* name, int clauses);
-
-	typedef script_engine::code code;
-};
-
 parser::parser(script_engine* e, scanner* s, int funcc, function const* funcv)
 	: engine(e)
 	, lex(s)
@@ -1449,9 +1129,9 @@ parser::parser(script_engine* e, scanner* s, int funcc, function const* funcv)
 		scan_current_scope(0, NULL, false);
 		parse_statements(engine->main_block);
 		if (lex->next != tk_end) {
-			std::wstring error;
-			error += L"Unable to be interpreted (Don't forget \";\"s).\r\n";
-			error += L"(解釈できないものがあります(「;」を忘れていませんか))";
+			std::string error;
+			error += u8"Unable to be interpreted (Don't forget \";\"s).\r\n";
+			error += u8"(解釈できないものがあります(「;」を忘れていませんか))";
 			throw parser_error(error);
 		}
 	} catch (parser_error& e) {
@@ -1540,9 +1220,9 @@ void parser::scan_current_scope(int level, std::vector<std::string> const* args,
 				lex2.advance();
 				if (cur == 0) {
 					if ((*current_frame).find(lex2.word) != (*current_frame).end()) {
-						std::wstring error;
-						error += L"Functions and variables of the same name are declared in the same scope.\r\n";
-						error += L"(同じスコープで同名のルーチンが複数宣言されています)";
+						std::string error;
+						error += u8"Functions and variables of the same name are declared in the same scope.\r\n";
+						error += u8"(同じスコープで同名のルーチンが複数宣言されています)";
 						throw parser_error(error);
 					}
 					script_engine::block_kind kind = (type == tk_SUB || type == tk_at) ? script_engine::bk_sub : (type == tk_FUNCTION) ? script_engine::bk_function : script_engine::bk_microthread;
@@ -1578,9 +1258,9 @@ void parser::scan_current_scope(int level, std::vector<std::string> const* args,
 					if (lex2.word == "result") {
 #endif
 						if ((*current_frame).find(lex2.word) != (*current_frame).end()) {
-							std::wstring error;
-							error += L"Variables of the same name are declared in the same scope.\r\n";
-							error += L"(同じスコープで同名の変数が複数宣言されています)";
+							std::string error;
+							error += u8"Variables of the same name are declared in the same scope.\r\n";
+							error += u8"(同じスコープで同名の変数が複数宣言されています)";
 							throw parser_error(error);
 						}
 #ifdef __SCRIPT_H__NO_CHECK_DUPLICATED
@@ -1612,9 +1292,9 @@ void parser::write_operation(script_engine::block* block, char const* name, int 
 	symbol* s = search(name);
 	assert(s != NULL);
 	if (s->sub->arguments != clauses) {
-		std::wstring error;
-		error += L"Overwriting function does not allow to different argument count.\r\n";
-		error += L"(演算子に対応する関数が上書き定義されましたが引数の数が違います)";
+		std::string error;
+		error += u8"Overwriting function does not allow to different argument count.\r\n";
+		error += u8"(演算子に対応する関数が上書き定義されましたが引数の数が違います)";
 		throw parser_error(error);
 	}
 
@@ -1624,9 +1304,9 @@ void parser::write_operation(script_engine::block* block, char const* name, int 
 void parser::parse_parentheses(script_engine::block* block)
 {
 	if (lex->next != tk_open_par) {
-		std::wstring error;
-		error += L"\"(\" is nessasary.\r\n";
-		error += L"(\"(\"が必要です)";
+		std::string error;
+		error += u8"\"(\" is nessasary.\r\n";
+		error += u8"(\"(\"が必要です)";
 		throw parser_error(error);
 	}
 	lex->advance();
@@ -1634,9 +1314,9 @@ void parser::parse_parentheses(script_engine::block* block)
 	parse_expression(block);
 
 	if (lex->next != tk_close_par) {
-		std::wstring error;
-		error += L"\")\" is nessasary.\r\n";
-		error += L"(\")\"が必要です)";
+		std::string error;
+		error += u8"\")\" is nessasary.\r\n";
+		error += u8"(\")\"が必要です)";
 		throw parser_error(error);
 	}
 	lex->advance();
@@ -1651,19 +1331,19 @@ void parser::parse_clause(script_engine::block* block)
 		block->codes.push_back(code(lex->line, script_engine::pc_push_value, value(engine->get_char_type(), lex->char_value)));
 		lex->advance();
 	} else if (lex->next == tk_string) {
-		std::wstring str = lex->string_value;
+		std::string str = lex->string_value;
 		lex->advance();
 		while (lex->next == tk_string || lex->next == tk_char) {
-			str += (lex->next == tk_string) ? lex->string_value : (std::wstring() + lex->char_value);
+			str += (lex->next == tk_string) ? lex->string_value : (std::string() + lex->char_value);
 			lex->advance();
 		}
 		block->codes.push_back(code(lex->line, script_engine::pc_push_value, value(engine->get_string_type(), str)));
 	} else if (lex->next == tk_word) {
 		symbol* s = search(lex->word);
 		if (s == NULL) {
-			std::wstring error;
-			error += StringUtility::FormatToWide("%s is not defined.\r\n", lex->word.c_str());
-			error += StringUtility::FormatToWide("(%sは未定義の識別子です)", lex->word.c_str());
+			std::string error;
+			error += StringUtility::Format("%s is not defined.\r\n", lex->word.c_str());
+			error += StringUtility::Format(u8"(%sは未定義の識別子です)", lex->word.c_str());
 			throw parser_error(error);
 		}
 
@@ -1671,20 +1351,20 @@ void parser::parse_clause(script_engine::block* block)
 
 		if (s->sub != NULL) {
 			if (s->sub->kind != script_engine::bk_function) {
-				std::wstring error;
-				error += L"sub and task cannot call in the statement.\r\n";
-				error += L"(subやtaskは式中で呼べません)";
+				std::string error;
+				error += u8"sub and task cannot call in the statement.\r\n";
+				error += u8"(subやtaskは式中で呼べません)";
 				throw parser_error(error);
 			}
 
 			int argc = parse_arguments(block);
 
 			if (argc != s->sub->arguments) {
-				std::wstring error;
-				error += StringUtility::FormatToWide(
+				std::string error;
+				error += StringUtility::Format(
 					"%s incorrect number of parameters. Check to make sure you have the correct number of parameters.\r\n",
 					s->sub->name.c_str());
-				error += StringUtility::FormatToWide("(%sの引数の数が違います)", s->sub->name.c_str());
+				error += StringUtility::Format(u8"(%sの引数の数が違います)", s->sub->name.c_str());
 				throw parser_error(error);
 			}
 
@@ -1695,7 +1375,7 @@ void parser::parse_clause(script_engine::block* block)
 		}
 	} else if (lex->next == tk_open_bra) {
 		lex->advance();
-		block->codes.push_back(code(lex->line, script_engine::pc_push_value, value(engine->get_string_type(), std::wstring())));
+		block->codes.push_back(code(lex->line, script_engine::pc_push_value, value(engine->get_string_type(), std::string())));
 		while (lex->next != tk_close_bra) {
 			parse_expression(block);
 			write_operation(block, "append", 2);
@@ -1704,9 +1384,9 @@ void parser::parse_clause(script_engine::block* block)
 			lex->advance();
 		}
 		if (lex->next != tk_close_bra) {
-			std::wstring error;
-			error += L"\"]\" is nessasary.\r\n";
-			error += L"(\"]\"が必要です)";
+			std::string error;
+			error += u8"\"]\" is nessasary.\r\n";
+			error += u8"(\"]\"が必要です)";
 			throw parser_error(error);
 		}
 		lex->advance();
@@ -1715,18 +1395,18 @@ void parser::parse_clause(script_engine::block* block)
 		parse_expression(block);
 		write_operation(block, "absolute", 1);
 		if (lex->next != tk_close_abs) {
-			std::wstring error;
-			error += L"\"|\" is nessasary.\r\n";
-			error += L"(\"|)\"が必要です)";
+			std::string error;
+			error += u8"\"|\" is nessasary.\r\n";
+			error += u8"(\"|)\"が必要です)";
 			throw parser_error(error);
 		}
 		lex->advance();
 	} else if (lex->next == tk_open_par) {
 		parse_parentheses(block);
 	} else {
-		std::wstring error;
-		error += L"Invalid expression.\r\n";
-		error += L"(項として無効な式があります)";
+		std::string error;
+		error += u8"Invalid expression.\r\n";
+		error += u8"(項として無効な式があります)";
 		throw parser_error(error);
 	}
 }
@@ -1752,9 +1432,9 @@ void parser::parse_suffix(script_engine::block* block)
 			}
 
 			if (lex->next != tk_close_bra) {
-				std::wstring error;
-				error += L"\"]\" is nessasary.\r\n";
-				error += L"(\"]\"が必要です)";
+				std::string error;
+				error += u8"\"]\" is nessasary.\r\n";
+				error += u8"(\"]\"が必要です)";
 				throw parser_error(error);
 			}
 			lex->advance();
@@ -1807,9 +1487,9 @@ void parser::parse_comparison(script_engine::block* block)
 	parse_sum(block);
 	switch (lex->next) {
 	case tk_assign: {
-		std::wstring error;
-		error += L"Do you not mistake it for \"==\"?\r\n";
-		error += L"(\"==\"と間違えてませんか？)";
+		std::string error;
+		error += u8"Do you not mistake it for \"==\"?\r\n";
+		error += u8"(\"==\"と間違えてませんか？)";
 		throw parser_error(error);
 	}
 
@@ -1883,9 +1563,9 @@ int parser::parse_arguments(script_engine::block* block)
 			lex->advance();
 		}
 		if (lex->next != tk_close_par) {
-			std::wstring error;
-			error += L"\")\" is nessasary.\r\n";
-			error += L"(\")\"が必要です)";
+			std::string error;
+			error += u8"\")\" is nessasary.\r\n";
+			error += u8"(\")\"が必要です)";
 			throw parser_error(error);
 		}
 		lex->advance();
@@ -1901,9 +1581,9 @@ void parser::parse_statements(script_engine::block* block)
 		if (lex->next == tk_word) {
 			symbol* s = search(lex->word);
 			if (s == NULL) {
-				std::wstring error;
-				error += StringUtility::FormatToWide("%s is not defined.\r\n", lex->word.c_str());
-				error += StringUtility::FormatToWide("(%sは未定義の識別子です)", lex->word.c_str());
+				std::string error;
+				error += StringUtility::Format("%s is not defined.\r\n", lex->word.c_str());
+				error += StringUtility::Format(u8"(%sは未定義の識別子です)", lex->word.c_str());
 				throw parser_error(error);
 			}
 			lex->advance();
@@ -1919,17 +1599,17 @@ void parser::parse_statements(script_engine::block* block)
 				lex->advance();
 				parse_expression(block);
 				if (lex->next != tk_close_bra) {
-					std::wstring error;
-					error += L"\"]\" is nessasary.\r\n";
-					error += L"(\"]\"が必要です)";
+					std::string error;
+					error += u8"\"]\" is nessasary.\r\n";
+					error += u8"(\"]\"が必要です)";
 					throw parser_error(error);
 				}
 				lex->advance();
 				write_operation(block, "index!", 2);
 				if (lex->next != tk_assign) {
-					std::wstring error;
-					error += L"\"=\" is nessasary.\r\n";
-					error += L"(\"=\"が必要です)";
+					std::string error;
+					error += u8"\"=\" is nessasary.\r\n";
+					error += u8"(\"=\"が必要です)";
 					throw parser_error(error);
 				}
 				lex->advance();
@@ -1986,20 +1666,20 @@ void parser::parse_statements(script_engine::block* block)
 			default:
 				//関数, sub呼出し
 				if (s->sub == NULL) {
-					std::wstring error;
-					error += L"You cannot call a variable as if it were a function or a subroutine.\r\n";
-					error += L"(変数は関数やsubのようには呼べません)";
+					std::string error;
+					error += u8"You cannot call a variable as if it were a function or a subroutine.\r\n";
+					error += u8"(変数は関数やsubのようには呼べません)";
 					throw parser_error(error);
 				}
 
 				int argc = parse_arguments(block);
 
 				if (argc != s->sub->arguments) {
-					std::wstring error;
-					error += StringUtility::FormatToWide(
+					std::string error;
+					error += StringUtility::Format(
 						"%s incorrect number of parameters. Check to make sure you have the correct number of parameters.\r\n",
 						s->sub->name.c_str());
-					error += StringUtility::FormatToWide("(%sの引数の数が違います)", s->sub->name.c_str());
+					error += StringUtility::Format(u8"(%sの引数の数が違います)", s->sub->name.c_str());
 					throw parser_error(error);
 				}
 
@@ -2009,9 +1689,9 @@ void parser::parse_statements(script_engine::block* block)
 			lex->advance();
 
 			if (lex->next != tk_word) {
-				std::wstring error;
-				error += L"Symbol name is nessasary.\r\n";
-				error += L"(識別子が必要です)";
+				std::string error;
+				error += u8"Symbol name is nessasary.\r\n";
+				error += u8"(識別子が必要です)";
 				throw parser_error(error);
 			}
 
@@ -2070,9 +1750,9 @@ void parser::parse_statements(script_engine::block* block)
 			lex->advance();
 
 			if (lex->next != tk_open_par) {
-				std::wstring error;
-				error += L"\"(\" is nessasary.\r\n";
-				error += L"(\"(\"が必要です)";
+				std::string error;
+				error += u8"\"(\" is nessasary.\r\n";
+				error += u8"(\"(\"が必要です)";
 				throw parser_error(error);
 			}
 			lex->advance();
@@ -2082,9 +1762,9 @@ void parser::parse_statements(script_engine::block* block)
 			}
 
 			if (lex->next != tk_word) {
-				std::wstring error;
-				error += L"The symbol name is nessasary.\r\n";
-				error += L"(識別子が必要です)";
+				std::string error;
+				error += u8"The symbol name is nessasary.\r\n";
+				error += u8"(識別子が必要です)";
 				throw parser_error(error);
 			}
 
@@ -2093,9 +1773,9 @@ void parser::parse_statements(script_engine::block* block)
 			lex->advance();
 
 			if (lex->next != tk_IN) {
-				std::wstring error;
-				error += L"\"in\" is nessasary.\r\n";
-				error += L"(inが必要です)";
+				std::string error;
+				error += u8"\"in\" is nessasary.\r\n";
+				error += u8"(inが必要です)";
 				throw parser_error(error);
 			}
 			lex->advance();
@@ -2103,9 +1783,9 @@ void parser::parse_statements(script_engine::block* block)
 			parse_expression(block);
 
 			if (lex->next != tk_range) {
-				std::wstring error;
-				error += L"\"..\" is nessasary.\r\n";
-				error += L"(\"..\"が必要です)";
+				std::string error;
+				error += u8"\"..\" is nessasary.\r\n";
+				error += u8"(\"..\"が必要です)";
 				throw parser_error(error);
 			}
 			lex->advance();
@@ -2113,9 +1793,9 @@ void parser::parse_statements(script_engine::block* block)
 			parse_expression(block);
 
 			if (lex->next != tk_close_par) {
-				std::wstring error;
-				error += L"\")\" is nessasary.\r\n";
-				error += L"(\")\"が必要です)";
+				std::string error;
+				error += u8"\")\" is nessasary.\r\n";
+				error += u8"(\")\"が必要です)";
 				throw parser_error(error);
 			}
 			lex->advance();
@@ -2186,9 +1866,9 @@ void parser::parse_statements(script_engine::block* block)
 				lex->advance();
 
 				if (lex->next != tk_open_par) {
-					std::wstring error;
-					error += L"\"(\" is nessasary.\r\n";
-					error += L"(\"(\"が必要です)";
+					std::string error;
+					error += u8"\"(\" is nessasary.\r\n";
+					error += u8"(\"(\"が必要です)";
 					throw parser_error(error);
 				}
 				block->codes.push_back(code(lex->line, script_engine::pc_case_begin));
@@ -2207,9 +1887,9 @@ void parser::parse_statements(script_engine::block* block)
 				block->codes.push_back(code(lex->line, script_engine::pc_push_value, value(engine->get_boolean_type(), false)));
 				block->codes.push_back(code(lex->line, script_engine::pc_case_end));
 				if (lex->next != tk_close_par) {
-					std::wstring error;
-					error += L"\")\" is nessasary.\r\n";
-					error += L"(\")\"が必要です)";
+					std::string error;
+					error += u8"\")\" is nessasary.\r\n";
+					error += u8"(\")\"が必要です)";
 					throw parser_error(error);
 				}
 				lex->advance();
@@ -2243,9 +1923,9 @@ void parser::parse_statements(script_engine::block* block)
 				parse_expression(block);
 				symbol* s = search_result();
 				if (s == NULL) {
-					std::wstring error;
-					error += L"\"return\" can call in function only.\r\n";
-					error += L"(ここはfunctionの中ではありません)";
+					std::string error;
+					error += u8"\"return\" can call in function only.\r\n";
+					error += u8"(ここはfunctionの中ではありません)";
 					throw parser_error(error);
 				}
 
@@ -2260,9 +1940,9 @@ void parser::parse_statements(script_engine::block* block)
 
 			lex->advance();
 			if (lex->next != tk_word) {
-				std::wstring error;
-				error += L"Symbol name is nessasary.\r\n";
-				error += L"(識別子が必要です)";
+				std::string error;
+				error += u8"Symbol name is nessasary.\r\n";
+				error += u8"(識別子が必要です)";
 				throw parser_error(error);
 			}
 
@@ -2270,9 +1950,9 @@ void parser::parse_statements(script_engine::block* block)
 
 			if (is_event) {
 				if (s->sub->level > 1) {
-					std::wstring error;
-					error += L"\"@\" cannot use in inner function and task.\r\n";
-					error += L"(イベントを深い階層に記述することはできません)";
+					std::string error;
+					error += u8"\"@\" cannot use in inner function and task.\r\n";
+					error += u8"(イベントを深い階層に記述することはできません)";
 					throw parser_error(error);
 				}
 				events[s->sub->name] = s->sub;
@@ -2288,9 +1968,9 @@ void parser::parse_statements(script_engine::block* block)
 						if (lex->next == tk_LET || lex->next == tk_REAL) {
 							lex->advance();
 							if (lex->next != tk_word) {
-								std::wstring error;
-								error += L"Function parameter is nessasary.\r\n";
-								error += L"(仮引数が必要です)";
+								std::string error;
+								error += u8"Function parameter is nessasary.\r\n";
+								error += u8"(仮引数が必要です)";
 								throw parser_error(error);
 							}
 						}
@@ -2301,9 +1981,9 @@ void parser::parse_statements(script_engine::block* block)
 						lex->advance();
 					}
 					if (lex->next != tk_close_par) {
-						std::wstring error;
-						error += L"\")\" is nessasary.\r\n";
-						error += L"(\")\"が必要です)";
+						std::string error;
+						error += u8"\")\" is nessasary.\r\n";
+						error += u8"(\")\"が必要です)";
 						throw parser_error(error);
 					}
 					lex->advance();
@@ -2313,9 +1993,9 @@ void parser::parse_statements(script_engine::block* block)
 				if (lex->next == tk_open_par) {
 					lex->advance();
 					if (lex->next != tk_close_par) {
-						std::wstring error;
-						error += L"\")\" is nessasary.\r\n";
-						error += L"(\")\"が必要…というか\"(\"要らんです)";
+						std::string error;
+						error += u8"\")\" is nessasary.\r\n";
+						error += u8"(\")\"が必要…というか\"(\"要らんです)";
 						throw parser_error(error);
 					}
 					lex->advance();
@@ -2344,9 +2024,9 @@ void parser::parse_inline_block(script_engine::block* block, script_engine::bloc
 void parser::parse_block(script_engine::block* block, std::vector<std::string> const* args, bool adding_result)
 {
 	if (lex->next != tk_open_cur) {
-		std::wstring error;
-		error += L"\"{\" is nessasary.\r\n";
-		error += L"(\"{\"が必要です)";
+		std::string error;
+		error += u8"\"{\" is nessasary.\r\n";
+		error += u8"(\"{\"が必要です)";
 		throw parser_error(error);
 	}
 	lex->advance();
@@ -2366,9 +2046,9 @@ void parser::parse_block(script_engine::block* block, std::vector<std::string> c
 	frame.pop_back();
 
 	if (lex->next != tk_close_cur) {
-		std::wstring error;
-		error += L"\"}\" is nessasary.\r\n";
-		error += L"(\"}\"が必要です)";
+		std::string error;
+		error += u8"\"}\" is nessasary.\r\n";
+		error += u8"(\"}\"が必要です)";
 		throw parser_error(error);
 	}
 	lex->advance();
@@ -2419,8 +2099,8 @@ script_engine::script_engine(script_type_manager* a_type_manager, std::vector<ch
 
 	if (false) {
 		wchar_t* pStart = (wchar_t*)&source[0];
-		wchar_t* pEnd = (wchar_t*)(&source[0] + min(source.size(), 64));
-		std::wstring str = std::wstring(pStart, pEnd);
+		wchar_t* pEnd = (wchar_t*)(&source[0] + MIN(source.size(), 64));
+		std::string str = std::string(pStart, pEnd);
 		// Logger::WriteTop(str);
 	}
 	const char* end = &source[0] + source.size();
@@ -2441,7 +2121,7 @@ script_engine::~script_engine()
 
 /* script_machine */
 
-script_machine::script_machine(script_engine* the_engine)
+script_machine::script_machine(std::shared_ptr<script_engine>& the_engine)
 {
 	assert(!the_engine->get_error());
 	engine = the_engine;
@@ -2662,9 +2342,9 @@ void script_machine::advance()
 						&& !(dest->get_type()->get_kind() == type_data::tk_array
 						&& src->get_type()->get_kind() == type_data::tk_array
 						&& (dest->length_as_array() > 0 || src->length_as_array() > 0))) {
-						std::wstring error;
-						error += L"A variable was changing it's value type.\r\n";
-						error += L"(代入によって型が変えられようとしました)";
+						std::string error;
+						error += u8"A variable was changing it's value type.\r\n";
+						error += u8"(代入によって型が変えられようとしました)";
 						raise_error(error);
 					}
 					*dest = *src;
@@ -2682,9 +2362,9 @@ void script_machine::advance()
 			if (dest->has_data() && dest->get_type() != src->get_type()
 				&& !(dest->get_type()->get_kind() == type_data::tk_array && src->get_type()->get_kind() == type_data::tk_array
 				&& (dest->length_as_array() > 0 || src->length_as_array() > 0))) {
-				std::wstring error;
-				error += L"A variable was changing it's value type.\r\n";
-				error += L"(代入によって型が変えられようとしました)";
+				std::string error;
+				error += u8"A variable was changing it's value type.\r\n";
+				error += u8"(代入によって型が変えられようとしました)";
 				raise_error(error);
 			} else {
 				dest->overwrite(*src);
@@ -2801,9 +2481,7 @@ void script_machine::advance()
 					++(current->ip);
 				}
 			next:
-#ifdef _MSC_VER
 				;
-#endif
 			}
 		} break;
 
@@ -2920,9 +2598,9 @@ void script_machine::advance()
 				if (i->sub->level == c->level) {
 					variables_t* vars = &i->variables;
 					if (vars->length <= c->variable || !((*vars).at[c->variable].has_data())) {
-						std::wstring error;
-						error += L"you are using a variable that has not been set yet.\r\n";
-						error += L"(一回も代入していない変数を使おうとしました)";
+						std::string error;
+						error += u8"you are using a variable that has not been set yet.\r\n";
+						error += u8"(一回も代入していない変数を使おうとしました)";
 						raise_error(error);
 					} else {
 						value* var = &(*vars).at[c->variable];

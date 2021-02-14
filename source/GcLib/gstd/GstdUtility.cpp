@@ -4,48 +4,16 @@ using namespace gstd;
 
 //================================================================
 //DebugUtility
+#if defined(_WIN32) && defined(_MSC_VER) && defined(_DEBUG)
 void DebugUtility::DumpMemoryLeaksOnExit()
 {
-#ifdef _DEBUG
 	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
-	// _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF | _CRTDBG_CHECK_ALWAYS_DF);
-	// if (!_CrtCheckMemory())
-#endif
 }
+#endif
 
 //================================================================
 //Encoding
-const unsigned char Encoding::BOM_UTF16LE[] = { 0xFF, 0xFE };
-int Encoding::Detect(const void* data, int dataSize)
-{
-	return UNKNOWN;
-}
-bool Encoding::IsUtf16Le(const void* data, int dataSize)
-{
-	if (dataSize < 2)
-		return false;
-	if (memcmp(data, "\0", 1) == 0)
-		return false;
-
-	bool res = memcmp(data, BOM_UTF16LE, 2) == 0;
-	if (!res && false) {
-		int test = IS_TEXT_UNICODE_UNICODE_MASK;
-		int resIsTextUnicode = IsTextUnicode((void*)data, dataSize, &test);
-		res = resIsTextUnicode > 0;
-	}
-	return res;
-}
-int Encoding::GetBomSize(const void* data, int dataSize)
-{
-	if (dataSize < 2)
-		return 0;
-
-	int res = 0;
-	if (memcmp(data, BOM_UTF16LE, 2) == 0)
-		res = 2;
-	return res;
-}
-
+#ifdef _WIN32
 //================================================================
 //StringUtility
 std::string StringUtility::ConvertWideToMulti(std::wstring const& wstr, int codeMulti)
@@ -90,25 +58,7 @@ std::wstring StringUtility::ConvertMultiToWide(std::string const& str, int codeM
 	::MultiByteToWideChar(codeMulti, 0, str.c_str(), -1, &wstr[0], sizeWide);
 	return wstr;
 }
-
-std::string StringUtility::ConvertUtf8ToMulti(std::vector<char>& text)
-{
-	std::wstring wstr = ConvertUtf8ToWide(text); //UTF16に変換
-	std::string strShiftJIS = ConvertWideToMulti(wstr); //ShiftJISに変換
-
-	return strShiftJIS;
-}
-std::wstring StringUtility::ConvertUtf8ToWide(std::vector<char>& text)
-{
-	int posText = 0;
-	if ((unsigned char)&text[0] == 0xef && (unsigned char)&text[1] == 0xbb && (unsigned char)&text[2] == 0xbf) {
-		posText += 3;
-	}
-
-	std::string str = &text[posText];
-	std::wstring wstr = ConvertMultiToWide(str, CP_UTF8); //UTF16に変換
-	return wstr;
-}
+#endif
 
 //----------------------------------------------------------------
 std::vector<std::string> StringUtility::Split(std::string str, std::string delim)
@@ -119,51 +69,28 @@ std::vector<std::string> StringUtility::Split(std::string str, std::string delim
 }
 void StringUtility::Split(std::string str, std::string delim, std::vector<std::string>& res)
 {
-	//wcstok
-	std::wstring wstr = StringUtility::ConvertMultiToWide(str);
-	wchar_t* wsource = new wchar_t[wstr.size() + sizeof(wchar_t)];
-	memcpy(wsource, wstr.c_str(), wstr.size() * sizeof(wchar_t));
-	wsource[wstr.size()] = 0;
-	std::wstring wdelim = StringUtility::ConvertMultiToWide(delim);
-
-	wchar_t* pStr = NULL;
-	wchar_t* cDelim = const_cast<wchar_t*>(wdelim.c_str());
-	while ((pStr = wcstok(pStr == NULL ? wsource : NULL, cDelim)) != NULL) {
+	char* wsource = (char*)str.c_str();
+	char* pStr = nullptr;
+	char* cDelim = const_cast<char*>(delim.c_str());
+	while ((pStr = strtok(pStr == nullptr ? wsource : nullptr, cDelim)) != nullptr) {
 		//切り出した文字列を追加
-		std::string s = StringUtility::ConvertWideToMulti(std::wstring(pStr));
-		s = s.substr(0, s.size() - 1); //最後の\0を削除
+		std::string s = std::string(pStr);
+		// s = s.substr(0, s.size() - 1);//最後の\0を削除
 		res.push_back(s);
 	}
-	delete[] wsource;
-
-	/*
-	char* source = new char[str.size()+1];
-	memcpy(source, str.c_str(), str.size());
-	source[str.size()]='\0';
-
-	char* pStr = NULL;
-	char* cDelim = const_cast<char*>(delim.c_str());
-	while ( (pStr = strtok(pStr==NULL ? source : NULL, cDelim)) != NULL )
-	{
-		//切り出した文字列を追加
-		res.push_back(std::string(pStr));
-	}
-	delete[] source;
-	*/
 }
-
-std::string StringUtility::Format(char* str, ...)
+std::string StringUtility::Format(const char* str, ...)
 {
 	std::string res;
 	char buf[256];
 	va_list vl;
 	va_start(vl, str);
-	if (_vsnprintf(buf, sizeof(buf), str, vl) < 0) { //バッファを超えていた場合、動的に確保する
+	if (_vsnprintf(buf, sizeof(buf) / 2, str, vl) < 0) { //バッファを超えていた場合、動的に確保する
 		int size = sizeof(buf);
 		while (true) {
 			size *= 2;
 			char* nBuf = new char[size];
-			if (_vsnprintf(nBuf, size, str, vl) >= 0) {
+			if (_vsnprintf(nBuf, size / 2, str, vl) >= 0) {
 				res = nBuf;
 				delete[] nBuf;
 				break;
@@ -176,90 +103,58 @@ std::string StringUtility::Format(char* str, ...)
 	va_end(vl);
 	return res;
 }
-
-int StringUtility::CountCharacter(std::string& str, char c)
+size_t StringUtility::CountCharacter(std::vector<char>& str, char c)
 {
-	int count = 0;
+	if (str.size() == 0)
+		return 0;
+
+	size_t count = 0;
 	char* pbuf = &str[0];
 	char* ebuf = &str[str.size() - 1];
 	while (pbuf <= ebuf) {
 		if (*pbuf == c)
 			count++;
-
-		if (IsDBCSLeadByteEx(Encoding::CP_SHIFT_JIS, *pbuf))
-			pbuf += 2;
-		else
-			pbuf++;
+		
+		pbuf++;
 	}
 	return count;
 }
-int StringUtility::CountCharacter(std::vector<char>& str, char c)
+size_t StringUtility::CountCharacter(std::string& str, char c)
 {
-	if (str.size() == 0)
-		return 0;
-
-	int encoding = Encoding::SHIFT_JIS;
-	if (Encoding::IsUtf16Le(&str[0], str.size()))
-		encoding = Encoding::UTF16LE;
-
-	int count = 0;
+	size_t count = 0;
 	char* pbuf = &str[0];
 	char* ebuf = &str[str.size() - 1];
 	while (pbuf <= ebuf) {
-		if (encoding == Encoding::UTF16LE) {
-			wchar_t ch = (wchar_t&)*pbuf;
-			if (ch == (wchar_t)c)
-				count++;
-			pbuf += 2;
-		} else {
-			if (*pbuf == c)
-				count++;
-			if (IsDBCSLeadByteEx(Encoding::CP_SHIFT_JIS, *pbuf))
-				pbuf += 2;
-			else
-				pbuf++;
-		}
+		if (*pbuf == c)
+			count++;
 	}
 	return count;
 }
 int StringUtility::ToInteger(std::string const& s)
 {
-	return atoi(s.c_str());
+	return std::stoi(s);
 }
 double StringUtility::ToDouble(std::string const& s)
 {
-	return atof(s.c_str());
+	char* stopscan;
+	return strtod(s.c_str(), &stopscan);
+	// return _wtof(s.c_str());
 }
 std::string StringUtility::Replace(std::string& source, std::string pattern, std::string placement)
 {
-	std::string res = ReplaceAll(source, pattern, placement, 1);
-	return res;
+	return ReplaceAll(source, pattern, placement, 1);
 }
-std::string StringUtility::ReplaceAll(std::string& source, std::string pattern, std::string placement, int replaceCount, int start, int end)
+std::string StringUtility::ReplaceAll(std::string& source, std::string pattern, std::string placement, size_t replaceCount, size_t start, size_t end)
 {
-	bool bDBCSLeadByteCheck = (pattern.size() == 1);
 	std::string result;
 	if (end == 0)
 		end = source.size();
-	std::string::size_type pos_before = 0;
-	std::string::size_type pos = start;
-	std::string::size_type len = pattern.size();
+	size_t pos_before = 0;
+	size_t pos = start;
+	size_t len = pattern.size();
 
-	int count = 0;
+	size_t count = 0;
 	while ((pos = source.find(pattern, pos)) != std::string::npos) {
-		if (pos > 0) {
-			char ch = source[pos - 1];
-			if (bDBCSLeadByteCheck && IsDBCSLeadByteEx(Encoding::CP_SHIFT_JIS, ch)) {
-				pos++;
-				if (pos >= end)
-					break;
-				else
-					continue;
-			}
-			if (pos >= end)
-				break;
-		}
-
 		result.append(source, pos_before, pos - pos_before);
 		result.append(placement);
 		pos += len;
@@ -272,9 +167,9 @@ std::string StringUtility::ReplaceAll(std::string& source, std::string pattern, 
 	result.append(source, pos_before, source.size() - pos_before);
 	return result;
 }
-std::string StringUtility::Slice(std::string const& s, int length)
+std::string StringUtility::Slice(std::string const& s, size_t length)
 {
-	length = min(s.size() - 1, length);
+	length = MIN(s.size() - 1, length);
 	return s.substr(0, length);
 }
 std::string StringUtility::Trim(const std::string& str)
@@ -282,257 +177,88 @@ std::string StringUtility::Trim(const std::string& str)
 	if (str.size() == 0)
 		return str;
 
-	std::wstring wstr = StringUtility::ConvertMultiToWide(str);
-	int left = 0;
-	for (; left < wstr.size(); left++) {
-		wchar_t wch = wstr[left];
-		if (wch != 0x20 && wch != 0x09)
-			break;
-	}
-
-	int right = wstr.size() - 1;
-	for (; right >= 0; right--) {
-		wchar_t wch = wstr[right];
-		if (wch != 0x20 && wch != 0x09 && wch != 0x0 && wch != '\r' && wch != '\n') {
-			right++;
-			break;
-		}
-	}
-
-	std::wstring wres = wstr;
-	if (left <= right) {
-		wres = wstr.substr(left, right - left);
-	}
-
-	std::string res = StringUtility::ConvertWideToMulti(wres);
-	return res;
-}
-//----------------------------------------------------------------
-std::vector<std::wstring> StringUtility::Split(std::wstring str, std::wstring delim)
-{
-	std::vector<std::wstring> res;
-	Split(str, delim, res);
-	return res;
-}
-void StringUtility::Split(std::wstring str, std::wstring delim, std::vector<std::wstring>& res)
-{
-	wchar_t* wsource = (wchar_t*)str.c_str();
-	wchar_t* pStr = NULL;
-	wchar_t* cDelim = const_cast<wchar_t*>(delim.c_str());
-	while ((pStr = wcstok(pStr == NULL ? wsource : NULL, cDelim)) != NULL) {
-		//切り出した文字列を追加
-		std::wstring s = std::wstring(pStr);
-		// s = s.substr(0, s.size() - 1);//最後の\0を削除
-		res.push_back(s);
-	}
-}
-std::wstring StringUtility::Format(wchar_t* str, ...)
-{
-	std::wstring res;
-	wchar_t buf[256];
-	va_list vl;
-	va_start(vl, str);
-	if (_vsnwprintf(buf, sizeof(buf) / 2, str, vl) < 0) { //バッファを超えていた場合、動的に確保する
-		int size = sizeof(buf);
-		while (true) {
-			size *= 2;
-			wchar_t* nBuf = new wchar_t[size];
-			if (_vsnwprintf(nBuf, size / 2, str, vl) >= 0) {
-				res = nBuf;
-				delete[] nBuf;
-				break;
-			}
-			delete[] nBuf;
-		}
-	} else {
-		res = buf;
-	}
-	va_end(vl);
-	return res;
-}
-std::wstring StringUtility::FormatToWide(char* str, ...)
-{
-	std::string res;
-	char buf[256];
-	va_list vl;
-	va_start(vl, str);
-	if (_vsnprintf(buf, sizeof(buf), str, vl) < 0) { //バッファを超えていた場合、動的に確保する
-		int size = sizeof(buf);
-		while (true) {
-			size *= 2;
-			char* nBuf = new char[size];
-			if (_vsnprintf(nBuf, size, str, vl) >= 0) {
-				res = nBuf;
-				delete[] nBuf;
-				break;
-			}
-			delete[] nBuf;
-		}
-	} else {
-		res = buf;
-	}
-	va_end(vl);
-
-	std::wstring wres = StringUtility::ConvertMultiToWide(res);
-	return wres;
-}
-
-int StringUtility::CountCharacter(std::wstring& str, wchar_t c)
-{
-	int count = 0;
-	wchar_t* pbuf = &str[0];
-	wchar_t* ebuf = &str[str.size() - 1];
-	while (pbuf <= ebuf) {
-		if (*pbuf == c)
-			count++;
-	}
-	return count;
-}
-int StringUtility::ToInteger(std::wstring const& s)
-{
-	return _wtoi(s.c_str());
-}
-double StringUtility::ToDouble(std::wstring const& s)
-{
-	wchar_t* stopscan;
-	return wcstod(s.c_str(), &stopscan);
-	// return _wtof(s.c_str());
-}
-std::wstring StringUtility::Replace(std::wstring& source, std::wstring pattern, std::wstring placement)
-{
-	std::wstring res = ReplaceAll(source, pattern, placement, 1);
-	return res;
-}
-std::wstring StringUtility::ReplaceAll(std::wstring& source, std::wstring pattern, std::wstring placement, int replaceCount, int start, int end)
-{
-	std::wstring result;
-	if (end == 0)
-		end = source.size();
-	std::wstring::size_type pos_before = 0;
-	std::wstring::size_type pos = start;
-	std::wstring::size_type len = pattern.size();
-
-	int count = 0;
-	while ((pos = source.find(pattern, pos)) != std::wstring::npos) {
-		result.append(source, pos_before, pos - pos_before);
-		result.append(placement);
-		pos += len;
-		pos_before = pos;
-
-		count++;
-		if (count >= replaceCount)
-			break;
-	}
-	result.append(source, pos_before, source.size() - pos_before);
-	return result;
-}
-std::wstring StringUtility::Slice(std::wstring const& s, int length)
-{
-	length = min(s.size() - 1, length);
-	return s.substr(0, length);
-}
-std::wstring StringUtility::Trim(const std::wstring& str)
-{
-	if (str.size() == 0)
-		return str;
-
 	int left = 0;
 	for (; left < str.size(); left++) {
-		wchar_t wch = str[left];
+		char wch = str[left];
 		if (wch != 0x20 && wch != 0x09)
 			break;
 	}
 
 	int right = str.size() - 1;
 	for (; right >= 0; right--) {
-		wchar_t wch = str[right];
+		char wch = str[right];
 		if (wch != 0x20 && wch != 0x09 && wch != 0x0 && wch != '\r' && wch != '\n') {
 			right++;
 			break;
 		}
 	}
 
-	std::wstring res = str;
+	std::string res = str;
 	if (left <= right) {
 		res = str.substr(left, right - left);
 	}
 	return res;
 }
-int StringUtility::CountAsciiSizeCharacter(std::wstring& str)
-{
-	if (str.size() == 0)
-		return 0;
-
-	int wcount = str.size();
-	WORD* listType = new WORD[wcount];
-	GetStringTypeEx(0, CT_CTYPE3, str.c_str(), wcount, listType);
-
-	int res = 0;
-	for (int iType = 0; iType < wcount; iType++) {
-		WORD type = listType[iType];
-		if ((type & C3_HALFWIDTH) == C3_HALFWIDTH) {
-			res++;
-		} else {
-			res += 2;
-		}
-	}
-
-	delete[] listType;
-	return res;
-}
-int StringUtility::GetByteSize(std::wstring& str)
-{
-	int res = str.size() * sizeof(wchar_t);
-	return res;
-}
 
 //================================================================
 //ErrorUtility
-std::wstring ErrorUtility::GetLastErrorMessage(DWORD error)
+#ifdef _WIN32
+std::string ErrorUtility::GetLastErrorMessage(DWORD error)
 {
 	LPVOID lpMsgBuf;
-	::FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+	::FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
 		NULL,
 		error,
 		MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), // 既定の言語
 		(LPTSTR)&lpMsgBuf,
 		0,
 		NULL);
-	std::wstring res = (wchar_t*)lpMsgBuf;
+	std::string res = StringUtility::ConvertWideToMulti(reinterpret_cast<const wchar_t*>(lpMsgBuf), CP_UTF8);
 	::LocalFree(lpMsgBuf);
 	return res;
 }
-std::wstring ErrorUtility::GetLastErrorMessage()
+#else
+std::string ErrorUtility::GetLastErrorMessage(errno_t error)
 {
+	return strerror(error);
+}
+#endif
+
+std::string ErrorUtility::GetLastErrorMessage()
+{
+#ifdef _WIN32
 	return GetLastErrorMessage(GetLastError());
+#else
+	return GetLastErrorMessage(errno);
+#endif
 }
-std::wstring ErrorUtility::GetErrorMessage(int type)
+std::string ErrorUtility::GetErrorMessage(int type)
 {
-	std::wstring res = L"unknown error";
+	std::string res = u8"unknown error";
 	if (type == ERROR_FILE_NOTFOUND)
-		res = L"cannot file open";
+		res = u8"cannot file open";
 	else if (type == ERROR_PARSE)
-		res = L"parse failed";
+		res = u8"parse failed";
 	else if (type == ERROR_END_OF_FILE)
-		res = L"end of file error";
+		res = u8"end of file error";
 	else if (type == ERROR_OUTOFRANGE_INDEX)
-		res = L"invalid index";
+		res = u8"invalid index";
 	return res;
 }
-std::wstring ErrorUtility::GetFileNotFoundErrorMessage(std::wstring path)
+std::string ErrorUtility::GetFileNotFoundErrorMessage(std::string path)
 {
-	std::wstring res = GetErrorMessage(ERROR_FILE_NOTFOUND);
-	res += StringUtility::Format(L" path[%s]", path.c_str());
+	std::string res = GetErrorMessage(ERROR_FILE_NOTFOUND);
+	res += StringUtility::Format(" path[%s]", path.c_str());
 	return res;
 }
-std::wstring ErrorUtility::GetParseErrorMessage(int line, std::wstring what)
+std::string ErrorUtility::GetParseErrorMessage(int line, std::string what)
 {
-	return GetParseErrorMessage(L"", line, what);
+	return GetParseErrorMessage("", line, what);
 }
-std::wstring ErrorUtility::GetParseErrorMessage(std::wstring path, int line, std::wstring what)
+std::string ErrorUtility::GetParseErrorMessage(std::string path, int line, std::string what)
 {
-	std::wstring res = GetErrorMessage(ERROR_PARSE);
-	res += StringUtility::Format(L" path[%s] line[%d] msg[%s]", path.c_str(), line, what.c_str());
+	std::string res = GetErrorMessage(ERROR_PARSE);
+	res += StringUtility::Format(" path[%s] line[%d] msg[%s]", path.c_str(), line, what.c_str());
 	return res;
 }
 
@@ -540,16 +266,16 @@ std::wstring ErrorUtility::GetParseErrorMessage(std::wstring path, int line, std
 //Math
 void Math::InitializeFPU()
 {
-	__asm
-	{
-		finit
-	}
-	;
+#ifdef _MSC_VER
+	__asm { finit };
+#else
+	__asm__("finit");
+#endif
 }
 
 //================================================================
 //ByteOrder
-void ByteOrder::Reverse(LPVOID buf, DWORD size)
+void ByteOrder::Reverse(void* buf, size_t size)
 {
 	unsigned char* pStart = (unsigned char*)buf;
 	unsigned char* pEnd = (unsigned char*)buf + size - 1;
@@ -572,98 +298,68 @@ Scanner::Scanner(char* str, int size)
 	buf.resize(size);
 	memcpy(&buf[0], str, size);
 	buf.push_back('\0');
-	this->Scanner::Scanner(buf);
+	_Initialize(buf);
 }
 Scanner::Scanner(std::string str)
 {
 	std::vector<char> buf;
 	buf.resize(str.size() + 1);
 	memcpy(&buf[0], str.c_str(), str.size() + 1);
-	this->Scanner::Scanner(buf);
+	_Initialize(buf);
 }
-Scanner::Scanner(std::wstring wstr)
+
+Scanner::Scanner(std::vector<char> buf)
 {
-	std::vector<char> buf;
-	int textSize = wstr.size() * sizeof(wchar_t);
-	buf.resize(textSize + 4);
-	memcpy(&buf[0], &Encoding::BOM_UTF16LE[0], 2);
-	memcpy(&buf[2], wstr.c_str(), textSize + 2);
-	this->Scanner::Scanner(buf);
+	_Initialize(buf);
 }
-Scanner::Scanner(std::vector<char>& buf)
+
+void Scanner::_Initialize(std::vector<char> buf)
 {
 	bPermitSignNumber_ = true;
 	buffer_ = buf;
 	pointer_ = 0;
-	textStartPointer_ = 0;
-
-	typeEncoding_ = Encoding::SHIFT_JIS;
-	if (Encoding::IsUtf16Le(&buf[0], buf.size())) {
-		typeEncoding_ = Encoding::UTF16LE;
-		textStartPointer_ = Encoding::GetBomSize(&buf[0], buf.size());
-	}
 
 	buffer_.push_back(0);
-	if (typeEncoding_ == Encoding::UTF16LE) {
-		buffer_.push_back(0);
-	}
-
-	SetPointerBegin();
 }
+
 Scanner::~Scanner()
 {
 }
-wchar_t Scanner::_CurrentChar()
+char Scanner::_CurrentChar()
 {
-	wchar_t res = L'\0';
-	if (typeEncoding_ == Encoding::UTF16LE) {
-		if (pointer_ + 1 < buffer_.size())
-			res = (wchar_t&)buffer_[pointer_];
-	} else {
-		if (pointer_ < buffer_.size()) {
-			char ch = buffer_[pointer_];
-			res = ch;
-		}
+	char res = '\0';
+	if (pointer_ < buffer_.size()) {
+		char ch = buffer_[pointer_];
+		res = ch;
 	}
 	return res;
 }
 
-wchar_t Scanner::_NextChar()
+char Scanner::_NextChar()
 {
 	if (HasNext() == false) {
-		Logger::WriteTop(L"終端異常発生->");
+		Logger::WriteTop(u8"終端異常発生->");
 
-		int size = buffer_.size() - textStartPointer_;
-		std::wstring source = GetString(textStartPointer_, size);
-		std::wstring target = StringUtility::Format(L"字句解析対象 -> \r\n%s...", source.c_str());
+		int size = buffer_.size();
+		std::string source = GetString(0, size);
+		std::string target = StringUtility::Format(u8"字句解析対象 -> \r\n%s...", source.c_str());
 		Logger::WriteTop(target);
 
 		int index = 1;
 		std::list<Token>::iterator itr;
 		for (itr = listDebugToken_.begin(); itr != listDebugToken_.end(); itr++) {
 			Token token = *itr;
-			std::wstring log = StringUtility::Format(L"  %2d token -> type=%2d, element=%s, start=%d, end=%d",
+			std::string log = StringUtility::Format("  %2d token -> type=%2d, element=%s, start=%d, end=%d",
 				index, token.GetType(), token.GetElement().c_str(), token.GetStartPointer(), token.GetEndPointer());
 			Logger::WriteTop(log);
 			index++;
 		}
 
-		_RaiseError(L"_NextChar:すでに文字列終端です");
+		_RaiseError(u8"_NextChar:すでに文字列終端です");
 	}
+	pointer_++;
 
-	if (typeEncoding_ == Encoding::UTF16LE) {
-		pointer_ += 2;
-	} else {
-		if (IsDBCSLeadByteEx(Encoding::CP_SHIFT_JIS, buffer_[pointer_])) {
-			while (IsDBCSLeadByteEx(Encoding::CP_SHIFT_JIS, buffer_[pointer_]))
-				pointer_ += 2;
-		} else {
-			pointer_++;
-		}
-	}
-
-	wchar_t res = _CurrentChar();
-	return res;
+	return _CurrentChar();
 }
 void Scanner::_SkipComment()
 {
@@ -673,25 +369,25 @@ void Scanner::_SkipComment()
 
 		wchar_t ch = _CurrentChar();
 
-		if (ch == L'/') { //コメントアウト処理
+		if (ch == '/') { //コメントアウト処理
 			int tPos = pointer_;
 			ch = _NextChar();
-			if (ch == L'/') { // "//"
-				while (ch != L'\r' && ch != L'\n' && HasNext())
+			if (ch == '/') { // "//"
+				while (ch != '\r' && ch != '\n' && HasNext())
 					ch = _NextChar();
-			} else if (ch == L'*') { // "/*"-"*/"
+			} else if (ch == '*') { // "/*"-"*/"
 				while (true) {
 					ch = _NextChar();
-					if (ch == L'*') {
+					if (ch == '*') {
 						ch = _NextChar();
-						if (ch == L'/')
+						if (ch == '/')
 							break;
 					}
 				}
 				ch = _NextChar();
 			} else {
 				pointer_ = tPos;
-				ch = L'/';
+				ch = '/';
 			}
 		}
 
@@ -702,16 +398,16 @@ void Scanner::_SkipComment()
 }
 void Scanner::_SkipSpace()
 {
-	wchar_t ch = _CurrentChar();
+	char ch = _CurrentChar();
 	while (true) {
-		if (ch != L' ' && ch != L'\t')
+		if (ch != ' ' && ch != '\t')
 			break;
 		ch = _NextChar();
 	}
 }
-void Scanner::_RaiseError(std::wstring str)
+void Scanner::_RaiseError(std::string str)
 {
-	throw gstd::wexception(str);
+	throw std::runtime_error(str);
 }
 
 Token& Scanner::GetToken()
@@ -721,107 +417,107 @@ Token& Scanner::GetToken()
 Token& Scanner::Next()
 {
 	if (!HasNext()) {
-		_RaiseError(L"Next:すでに終端です");
+		_RaiseError(u8"Next:すでに終端です");
 	}
 
 	_SkipComment(); //コメントをとばします
 
-	wchar_t ch = _CurrentChar();
+	char ch = _CurrentChar();
 
-	Token::Type type = Token::TK_UNKNOWN;
+	Token::Type type = Token::Type::Unknown;
 	int posStart = pointer_; //先頭を保存
 
 	switch (ch) {
-	case L'\0':
-		type = Token::TK_EOF;
+	case '\0':
+		type = Token::Type::EndOfFile;
 		break; //終端
-	case L',':
+	case ',':
 		_NextChar();
-		type = Token::TK_COMMA;
+		type = Token::Type::Comma;
 		break;
-	case L'.':
+	case '.':
 		_NextChar();
-		type = Token::TK_PERIOD;
+		type = Token::Type::Period;
 		break;
-	case L'=':
+	case '=':
 		_NextChar();
-		type = Token::TK_EQUAL;
+		type = Token::Type::Equal;
 		break;
-	case L'(':
+	case '(':
 		_NextChar();
-		type = Token::TK_OPENP;
+		type = Token::Type::OpenP;
 		break;
-	case L')':
+	case ')':
 		_NextChar();
-		type = Token::TK_CLOSEP;
+		type = Token::Type::CloseP;
 		break;
-	case L'[':
+	case '[':
 		_NextChar();
-		type = Token::TK_OPENB;
+		type = Token::Type::OpenB;
 		break;
-	case L']':
+	case ']':
 		_NextChar();
-		type = Token::TK_CLOSEB;
+		type = Token::Type::CloseB;
 		break;
-	case L'{':
+	case '{':
 		_NextChar();
-		type = Token::TK_OPENC;
+		type = Token::Type::OpenC;
 		break;
-	case L'}':
+	case '}':
 		_NextChar();
-		type = Token::TK_CLOSEC;
+		type = Token::Type::CloseC;
 		break;
-	case L'*':
+	case '*':
 		_NextChar();
-		type = Token::TK_ASTERISK;
+		type = Token::Type::Asterisk;
 		break;
-	case L'/':
+	case '/':
 		_NextChar();
-		type = Token::TK_SLASH;
+		type = Token::Type::Slash;
 		break;
-	case L':':
+	case ':':
 		_NextChar();
-		type = Token::TK_COLON;
+		type = Token::Type::Colon;
 		break;
-	case L';':
+	case ';':
 		_NextChar();
-		type = Token::TK_SEMICOLON;
+		type = Token::Type::Semicolon;
 		break;
-	case L'~':
+	case '~':
 		_NextChar();
-		type = Token::TK_TILDE;
+		type = Token::Type::Tilde;
 		break;
-	case L'!':
+	case '!':
 		_NextChar();
-		type = Token::TK_EXCLAMATION;
+		type = Token::Type::Exclamation;
 		break;
-	case L'#':
+	case '#':
 		_NextChar();
-		type = Token::TK_SHARP;
+		type = Token::Type::Sharp;
 		break;
-	case L'|':
+	case '|':
 		_NextChar();
-		type = Token::TK_PIPE;
+		type = Token::Type::Pipe;
 		break;
-	case L'&':
+	case '&':
 		_NextChar();
-		type = Token::TK_AMPERSAND;
+		type = Token::Type::Ampersand;
 		break;
-	case L'<':
+	case '<':
 		_NextChar();
-		type = Token::TK_LESS;
+		type = Token::Type::Less;
 		break;
-	case L'>':
+	case '>':
 		_NextChar();
-		type = Token::TK_GREATER;
+		type = Token::Type::Greater;
 		break;
 
-	case L'"': {
+	case '"': {
 		ch = _NextChar(); //1つ進めて
 		//while( ch != '"' )ch = _NextChar();//次のダブルクオーテーションまで進める
-		wchar_t pre = ch;
+		char pre = ch;
 		while (true) {
-			if (ch == L'"' && pre != L'\\')
+			if (ch == '"' && pre != '\\')
 				break;
 			pre = ch;
 			ch = _NextChar(); //次のダブルクオーテーションまで進める
@@ -829,108 +525,85 @@ Token& Scanner::Next()
 		if (ch == L'"')
 			_NextChar(); //ダブルクオーテーションだったら1つ進める
 		else {
-			std::wstring error = GetString(posStart, pointer_);
-			std::wstring log = StringUtility::Format(L"Next:すでに文字列終端です(String字句解析) -> %s", error.c_str());
+			std::string error = GetString(posStart, pointer_);
+			std::string log = StringUtility::Format(u8"Next:すでに文字列終端です(String字句解析) -> %s", error.c_str());
 			_RaiseError(log);
 		}
-		type = Token::TK_STRING;
+		type = Token::Type::String;
 		break;
 	}
 
-	case L'\r':
-	case L'\n': //改行
+	case '\r':
+	case '\n': //改行
 		//改行がいつまでも続くようなのも1つの改行として扱う
-		while (ch == L'\r' || ch == L'\n')
+		while (ch == '\r' || ch == '\n')
 			ch = _NextChar();
-		type = Token::TK_NEWLINE;
+		type = Token::Type::Newline;
 		break;
 
-	case L'+':
-	case L'-': {
-		if (ch == L'+') {
+	case '+':
+	case '-': {
+		if (ch == '+') {
 			ch = _NextChar();
-			type = Token::TK_PLUS;
+			type = Token::Type::Plus;
 
-		} else if (ch == L'-') {
+		} else if (ch == '-') {
 			ch = _NextChar();
-			type = Token::TK_MINUS;
+			type = Token::Type::Minus;
 		}
 
-		if (!bPermitSignNumber_ || !iswdigit(ch))
+		if (!bPermitSignNumber_ || !isdigit(ch))
 			break; //次が数字でないなら抜ける
 	}
 
 	default: {
-		if (IsDBCSLeadByteEx(Encoding::CP_SHIFT_JIS, ch)) {
-			//Shift-JIS先行バイト
-			//たぶん識別子
-			while (iswalpha(ch) || iswdigit(ch) || ch == L'_' || IsDBCSLeadByteEx(Encoding::CP_SHIFT_JIS, ch))
-				ch = _NextChar(); //たぶん識別子な間ポインタを進める
-			type = Token::TK_ID;
-		} else if (iswdigit(ch)) {
+		if (isdigit(ch)) {
 			//整数か実数
-			while (iswdigit(ch))
+			while (isdigit(ch))
 				ch = _NextChar(); //数字だけの間ポインタを進める
-			type = Token::TK_INT;
-			if (ch == L'.') {
+			type = Token::Type::Int;
+			if (ch == '.') {
 				//実数か整数かを調べる。小数点があったら実数
 				ch = _NextChar();
-				while (iswdigit(ch))
+				while (isdigit(ch))
 					ch = _NextChar(); //数字だけの間ポインタを進める
-				type = Token::TK_REAL;
+				type = Token::Type::Real;
 			}
 
-			if (ch == L'E' || ch == L'e') {
+			if (ch == 'E' || ch == 'e') {
 				//1E-5みたいなケース
 				ch = _NextChar();
-				while (iswdigit(ch) || ch == L'-')
+				while (isdigit(ch) || ch == '-')
 					ch = _NextChar(); //数字だけの間ポインタを進める
-				type = Token::TK_REAL;
+				type = Token::Type::Real;
 			}
 
-		} else if (iswalpha(ch) || ch == L'_') {
+		} else if (isalpha(ch) || ch == '_') {
 			//たぶん識別子
-			while (iswalpha(ch) || iswdigit(ch) || ch == L'_')
+			while (isalpha(ch) || isdigit(ch) || ch == '_')
 				ch = _NextChar(); //たぶん識別子な間ポインタを進める
-			type = Token::TK_ID;
+			type = Token::Type::ID;
 		} else {
 			_NextChar();
-			type = Token::TK_UNKNOWN;
+			type = Token::Type::Unknown;
 		}
 
 		break;
 	}
 	}
 
-	if (type == Token::TK_STRING) {
-		std::wstring wstr;
-		if (typeEncoding_ == Encoding::UTF16LE) {
-			wchar_t* pPosStart = (wchar_t*)&buffer_[posStart];
-			wchar_t* pPosEnd = (wchar_t*)&buffer_[pointer_];
-			wstr = std::wstring(pPosStart, pPosEnd);
-			wstr = StringUtility::ReplaceAll(wstr, L"\\\"", L"\"");
-		} else {
-			char* pPosStart = &buffer_[posStart];
-			char* pPosEnd = &buffer_[pointer_];
-			std::string str = std::string(pPosStart, pPosEnd);
-			str = StringUtility::ReplaceAll(str, "\\\"", "\"");
-			wstr = StringUtility::ConvertMultiToWide(str);
-		}
+	if (type == Token::Type::String) {
+		char* pPosStart = &buffer_[posStart];
+		char* pPosEnd = &buffer_[pointer_];
+		std::string str = std::string(pPosStart, pPosEnd);
+		str = StringUtility::ReplaceAll(str, "\\\"", "\"");
 
-		token_ = Token(type, wstr, posStart, pointer_);
+		token_ = Token(type, str, posStart, pointer_);
 	} else {
-		std::wstring wstr;
-		if (typeEncoding_ == Encoding::UTF16LE) {
-			wchar_t* pPosStart = (wchar_t*)&buffer_[posStart];
-			wchar_t* pPosEnd = (wchar_t*)&buffer_[pointer_];
-			wstr = std::wstring(pPosStart, pPosEnd);
-		} else {
-			char* pPosStart = &buffer_[posStart];
-			char* pPosEnd = &buffer_[pointer_];
-			std::string str = std::string(pPosStart, pPosEnd);
-			wstr = StringUtility::ConvertMultiToWide(str);
-		}
-		token_ = Token(type, wstr, posStart, pointer_);
+		char* pPosStart = &buffer_[posStart];
+		char* pPosEnd = &buffer_[pointer_];
+		std::string str = std::string(pPosStart, pPosEnd);
+		token_ = Token(type, str, posStart, pointer_);
 	}
 
 	listDebugToken_.push_back(token_);
@@ -943,20 +616,18 @@ bool Scanner::HasNext()
 	// res &= pointer_ < buffer_.size();
 	// res &= _CurrentChar() != L'\0';
 	// res &= token_.GetType() != Token::TK_EOF;
-	return pointer_ < buffer_.size() && _CurrentChar() != L'\0' && token_.GetType() != Token::TK_EOF;
+	return pointer_ < buffer_.size() && _CurrentChar() != '\0' && token_.GetType() != Token::Type::EndOfFile;
 }
 void Scanner::CheckType(Token& tok, Token::Type type)
 {
 	if (tok.type_ != type) {
-		std::wstring str = StringUtility::Format(L"CheckType error[%s]:", tok.element_.c_str());
-		_RaiseError(str);
+		_RaiseError(StringUtility::Format(u8"CheckType error[%s]:", tok.element_.c_str()));
 	}
 }
-void Scanner::CheckIdentifer(Token& tok, std::wstring id)
+void Scanner::CheckIdentifer(Token& tok, std::string id)
 {
-	if (tok.type_ != Token::TK_ID || tok.GetIdentifier() != id) {
-		std::wstring str = StringUtility::Format(L"CheckID error[%s]:", tok.element_.c_str());
-		_RaiseError(str);
+	if (tok.type_ != Token::Type::ID || tok.GetIdentifier() != id) {
+		_RaiseError(StringUtility::Format(u8"CheckID error[%s]:", tok.element_.c_str()));
 	}
 }
 int Scanner::GetCurrentLine()
@@ -968,24 +639,11 @@ int Scanner::GetCurrentLine()
 	char* pbuf = &buffer_[0];
 	char* ebuf = &buffer_[pointer_];
 	while (true) {
-		if (typeEncoding_ == Encoding::UTF16LE) {
-			if (pbuf + 1 >= ebuf)
-				break;
-			wchar_t wch = (wchar_t&)*pbuf;
-			if (wch == L'\n')
-				line++;
-			pbuf += 2;
-		} else {
-			if (pbuf >= ebuf)
-				break;
-			if (IsDBCSLeadByteEx(Encoding::CP_SHIFT_JIS, *pbuf)) {
-				pbuf += 2;
-			} else {
-				if (*pbuf == '\n')
-					line++;
-				pbuf++;
-			}
-		}
+		if (pbuf >= ebuf)
+			break;
+		if (*pbuf == '\n')
+			line++;
+		pbuf++;
 	}
 	return line;
 }
@@ -997,24 +655,14 @@ void Scanner::SetCurrentPointer(int pos)
 {
 	pointer_ = pos;
 }
-void Scanner::SetPointerBegin()
+
+std::string Scanner::GetString(int start, int end)
 {
-	pointer_ = textStartPointer_;
-}
-std::wstring Scanner::GetString(int start, int end)
-{
-	std::wstring res;
-	if (typeEncoding_ == Encoding::UTF16LE) {
-		wchar_t* pPosStart = (wchar_t*)&buffer_[start];
-		wchar_t* pPosEnd = (wchar_t*)&buffer_[end];
-		res = std::wstring(pPosStart, pPosEnd);
-	} else {
-		char* pPosStart = &buffer_[start];
-		char* pPosEnd = &buffer_[end];
-		std::string str = std::string(pPosStart, pPosEnd);
-		res = StringUtility::ConvertMultiToWide(str);
-	}
-	return res;
+	char* pPosStart = &buffer_[start];
+	char* pPosEnd = &buffer_[end];
+	std::string str = std::string(pPosStart, pPosEnd);
+
+	return str;
 }
 bool Scanner::CompareMemory(int start, int end, const char* data)
 {
@@ -1027,61 +675,42 @@ bool Scanner::CompareMemory(int start, int end, const char* data)
 }
 
 //Token
-std::wstring& Token::GetIdentifier()
+std::string Token::GetIdentifier()
 {
-	if (type_ != TK_ID) {
-		throw gstd::wexception(L"Token::GetIdentifier:データのタイプが違います");
+	if (type_ != Type::ID) {
+		throw std::runtime_error(u8"Token::GetIdentifier:データのタイプが違います");
 	}
 	return element_;
 }
-std::wstring Token::GetString()
+std::string Token::GetString()
 {
-	if (type_ != TK_STRING) {
-		throw gstd::wexception(L"Token::GetString:データのタイプが違います");
+	if (type_ != Type::String) {
+		throw std::runtime_error(u8"Token::GetString:データのタイプが違います");
 	}
 	return element_.substr(1, element_.size() - 2);
 }
 int Token::GetInteger()
 {
-	if (type_ != TK_INT) {
-		throw gstd::wexception(L"Token::GetInterger:データのタイプが違います");
+	if (type_ != Type::Int) {
+		throw std::runtime_error(u8"Token::GetInterger:データのタイプが違います");
 	}
 	return StringUtility::ToInteger(element_);
 }
 double Token::GetReal()
 {
-	if (type_ != TK_REAL && type_ != TK_INT) {
-		throw gstd::wexception(L"Token::GetReal:データのタイプが違います");
+	if (type_ != Type::Real && type_ != Type::Int) {
+		throw std::runtime_error(u8"Token::GetReal:データのタイプが違います");
 	}
 	return StringUtility::ToDouble(element_);
 }
 bool Token::GetBoolean()
 {
 	bool res = false;
-	if (type_ == TK_REAL && type_ == TK_INT) {
+	if (type_ == Type::Real || type_ == Type::Int) {
 		res = GetReal() == 1;
 	} else {
-		res = element_ == L"true";
+		res = element_ == "true";
 	}
-	return res;
-}
-
-std::string Token::GetElementA()
-{
-	std::wstring wstr = GetElement();
-	std::string res = StringUtility::ConvertWideToMulti(wstr);
-	return res;
-}
-std::string Token::GetStringA()
-{
-	std::wstring wstr = GetString();
-	std::string res = StringUtility::ConvertWideToMulti(wstr);
-	return res;
-}
-std::string Token::GetIdentifierA()
-{
-	std::wstring wstr = GetIdentifier();
-	std::string res = StringUtility::ConvertWideToMulti(wstr);
 	return res;
 }
 
@@ -1089,6 +718,7 @@ std::string Token::GetIdentifierA()
 //TextParser
 TextParser::TextParser()
 {
+	
 }
 TextParser::TextParser(std::string source)
 {
@@ -1097,9 +727,9 @@ TextParser::TextParser(std::string source)
 TextParser::~TextParser()
 {
 }
-void TextParser::_RaiseError(std::wstring message)
+void TextParser::_RaiseError(std::string message)
 {
-	throw gstd::wexception(message);
+	throw std::runtime_error(message);
 }
 TextParser::Result TextParser::_ParseComparison(int pos)
 {
@@ -1108,48 +738,48 @@ TextParser::Result TextParser::_ParseComparison(int pos)
 		scan_->SetCurrentPointer(res.pos_);
 
 		Token& tok = scan_->Next();
-		int type = tok.GetType();
-		if (type == Token::TK_EXCLAMATION || type == Token::TK_EQUAL) {
+		Token::Type type = tok.GetType();
+		if (type == Token::Type::Exclamation || type == Token::Type::Equal) {
 			//「==」「!=」
-			bool bNot = type == Token::TK_EXCLAMATION;
+			bool bNot = type == Token::Type::Exclamation;
 			tok = scan_->Next();
 			type = tok.GetType();
-			if (type != Token::TK_EQUAL)
+			if (type != Token::Type::Equal)
 				break;
 
 			Result tRes = _ParseSum(scan_->GetCurrentPointer());
 			res.pos_ = tRes.pos_;
-			if (res.type_ == TYPE_BOOLEAN && tRes.type_ == TYPE_BOOLEAN) {
+			if (res.type_ == Type::Boolean && tRes.type_ == Type::Boolean) {
 				res.valueBoolean_ = bNot ? res.valueBoolean_ != tRes.valueBoolean_ : res.valueBoolean_ == tRes.valueBoolean_;
-			} else if (res.type_ == TYPE_REAL && tRes.type_ == TYPE_REAL) {
+			} else if (res.type_ == Type::Real && tRes.type_ == Type::Real) {
 				res.valueBoolean_ = bNot ? res.valueReal_ != tRes.valueReal_ : res.valueReal_ == tRes.valueReal_;
 			} else {
-				_RaiseError(L"比較できない型");
+				_RaiseError(u8"比較できない型");
 			}
-			res.type_ = TYPE_BOOLEAN;
-		} else if (type == Token::TK_PIPE) {
+			res.type_ = Type::Boolean;
+		} else if (type == Token::Type::Pipe) {
 			tok = scan_->Next();
 			type = tok.GetType();
-			if (type != Token::TK_PIPE)
+			if (type != Token::Type::Pipe)
 				break;
 			Result tRes = _ParseSum(scan_->GetCurrentPointer());
 			res.pos_ = tRes.pos_;
-			if (res.type_ == TYPE_BOOLEAN && tRes.type_ == TYPE_BOOLEAN) {
+			if (res.type_ == Type::Boolean && tRes.type_ == Type::Boolean) {
 				res.valueBoolean_ = res.valueBoolean_ || tRes.valueBoolean_;
 			} else {
-				_RaiseError(L"真偽値以外での||");
+				_RaiseError(u8"真偽値以外での||");
 			}
-		} else if (type == Token::TK_AMPERSAND) {
+		} else if (type == Token::Type::Ampersand) {
 			tok = scan_->Next();
 			type = tok.GetType();
-			if (type != Token::TK_AMPERSAND)
+			if (type != Token::Type::Ampersand)
 				break;
 			Result tRes = _ParseSum(scan_->GetCurrentPointer());
 			res.pos_ = tRes.pos_;
-			if (res.type_ == TYPE_BOOLEAN && tRes.type_ == TYPE_BOOLEAN) {
+			if (res.type_ == Type::Boolean && tRes.type_ == Type::Boolean) {
 				res.valueBoolean_ = res.valueBoolean_ && tRes.valueBoolean_;
 			} else {
-				_RaiseError(L"真偽値以外での&&");
+				_RaiseError(u8"真偽値以外での&&");
 			}
 		} else
 			break;
@@ -1164,21 +794,21 @@ TextParser::Result TextParser::_ParseSum(int pos)
 		scan_->SetCurrentPointer(res.pos_);
 
 		Token& tok = scan_->Next();
-		int type = tok.GetType();
-		if (type != Token::TK_PLUS && type != Token::TK_MINUS)
+		Token::Type type = tok.GetType();
+		if (type != Token::Type::Plus && type != Token::Type::Minus)
 			break;
 
 		Result tRes = _ParseProduct(scan_->GetCurrentPointer());
 		if (res.IsString() || tRes.IsString()) {
-			res.type_ = TYPE_STRING;
+			res.type_ = Type::String;
 			res.valueString_ = res.GetString() + tRes.GetString();
 		} else {
-			if (tRes.type_ == TYPE_BOOLEAN)
-				_RaiseError(L"真偽値の加算減算");
+			if (tRes.type_ == Type::Boolean)
+				_RaiseError(u8"真偽値の加算減算");
 			res.pos_ = tRes.pos_;
-			if (type == Token::TK_PLUS) {
+			if (type == Token::Type::Plus) {
 				res.valueReal_ += tRes.valueReal_;
-			} else if (type == Token::TK_MINUS) {
+			} else if (type == Token::Type::Minus) {
 				res.valueReal_ -= tRes.valueReal_;
 			}
 		}
@@ -1191,19 +821,19 @@ TextParser::Result TextParser::_ParseProduct(int pos)
 	while (scan_->HasNext()) {
 		scan_->SetCurrentPointer(res.pos_);
 		Token& tok = scan_->Next();
-		int type = tok.GetType();
-		if (type != Token::TK_ASTERISK && type != Token::TK_SLASH)
+		Token::Type type = tok.GetType();
+		if (type != Token::Type::Asterisk && type != Token::Type::Slash)
 			break;
 
 		Result tRes = _ParseTerm(scan_->GetCurrentPointer());
-		if (tRes.type_ == TYPE_BOOLEAN)
-			_RaiseError(L"真偽値の乗算除算");
+		if (tRes.type_ == Type::Boolean)
+			_RaiseError(u8"真偽値の乗算除算");
 
 		res.type_ = tRes.type_;
 		res.pos_ = tRes.pos_;
-		if (type == Token::TK_ASTERISK) {
+		if (type == Token::Type::Asterisk) {
 			res.valueReal_ *= tRes.valueReal_;
-		} else if (type == Token::TK_SLASH) {
+		} else if (type == Token::Type::Slash) {
 			res.valueReal_ /= tRes.valueReal_;
 		}
 	}
@@ -1218,44 +848,44 @@ TextParser::Result TextParser::_ParseTerm(int pos)
 
 	bool bMinus = false;
 	bool bNot = false;
-	int type = tok.GetType();
-	if (type == Token::TK_PLUS || type == Token::TK_MINUS || type == Token::TK_EXCLAMATION) {
-		if (type == Token::TK_MINUS)
+	Token::Type type = tok.GetType();
+	if (type == Token::Type::Plus || type == Token::Type::Minus || type == Token::Type::Exclamation) {
+		if (type == Token::Type::Minus)
 			bMinus = true;
-		if (type == Token::TK_EXCLAMATION)
+		if (type == Token::Type::Exclamation)
 			bNot = true;
 		tok = scan_->Next();
 	}
 
-	if (tok.GetType() == Token::TK_OPENP) {
+	if (tok.GetType() == Token::Type::OpenP) {
 		res = _ParseComparison(scan_->GetCurrentPointer());
 		scan_->SetCurrentPointer(res.pos_);
 		tok = scan_->Next();
-		if (tok.GetType() != Token::TK_CLOSEP)
-			_RaiseError(L")がありません");
+		if (tok.GetType() != Token::Type::CloseP)
+			_RaiseError(u8")がありません");
 	} else {
-		int type = tok.GetType();
-		if (type == Token::TK_INT || type == Token::TK_REAL) {
+		Token::Type type = tok.GetType();
+		if (type == Token::Type::Int || type == Token::Type::Real) {
 			res.valueReal_ = tok.GetReal();
-			res.type_ = TYPE_REAL;
-		} else if (type == Token::TK_ID) {
+			res.type_ = Type::Real;
+		} else if (type == Token::Type::ID) {
 			Result tRes = _ParseIdentifer(scan_->GetCurrentPointer());
 			res = tRes;
-		} else if (type == Token::TK_STRING) {
+		} else if (type == Token::Type::String) {
 			res.valueString_ = tok.GetString();
-			res.type_ = TYPE_STRING;
+			res.type_ = Type::String;
 		} else
-			_RaiseError(StringUtility::Format(L"不正なトークン:%s", tok.GetElement().c_str()));
+			_RaiseError(StringUtility::Format(u8"不正なトークン:%s", tok.GetElement().c_str()));
 	}
 
 	if (bMinus) {
-		if (res.type_ != TYPE_REAL)
-			_RaiseError(L"実数以外での負記号");
+		if (res.type_ != Type::Real)
+			_RaiseError(u8"実数以外での負記号");
 		res.valueReal_ = -res.valueReal_;
 	}
 	if (bNot) {
-		if (res.type_ != TYPE_BOOLEAN)
-			_RaiseError(L"真偽値以外での否定");
+		if (res.type_ != Type::Boolean)
+			_RaiseError(u8"真偽値以外での否定");
 		res.valueBoolean_ = !res.valueBoolean_;
 	}
 	res.pos_ = scan_->GetCurrentPointer();
@@ -1267,15 +897,15 @@ TextParser::Result TextParser::_ParseIdentifer(int pos)
 	res.pos_ = scan_->GetCurrentPointer();
 
 	Token& tok = scan_->GetToken();
-	std::wstring id = tok.GetElement();
-	if (id == L"true") {
-		res.type_ = TYPE_BOOLEAN;
+	std::string id = tok.GetElement();
+	if (id == "true") {
+		res.type_ = Type::Boolean;
 		res.valueBoolean_ = true;
-	} else if (id == L"false") {
-		res.type_ = TYPE_BOOLEAN;
+	} else if (id == "false") {
+		res.type_ = Type::Boolean;
 		res.valueBoolean_ = false;
 	} else {
-		_RaiseError(StringUtility::Format(L"不正な識別子:%s", id.c_str()));
+		_RaiseError(StringUtility::Format(u8"不正な識別子:%s", id.c_str()));
 	}
 	return res;
 }
@@ -1285,30 +915,29 @@ void TextParser::SetSource(std::string source)
 	std::vector<char> buf;
 	buf.resize(source.size() + 1);
 	memcpy(&buf[0], source.c_str(), source.size() + 1);
-	scan_ = new Scanner(buf);
+	scan_ = std::make_unique<Scanner>(buf);
 	scan_->SetPermitSignNumber(false);
 }
 TextParser::Result TextParser::GetResult()
 {
 	if (scan_ == NULL)
-		_RaiseError(L"テキストが設定されていません");
-	scan_->SetPointerBegin();
+		_RaiseError(u8"テキストが設定されていません");
 	Result res = _ParseComparison(scan_->GetCurrentPointer());
 	if (scan_->HasNext())
-		_RaiseError(StringUtility::Format(L"不正なトークン:%s", scan_->GetToken().GetElement().c_str()));
+		_RaiseError(StringUtility::Format(u8"不正なトークン:%s", scan_->GetToken().GetElement().c_str()));
 	return res;
 }
 double TextParser::GetReal()
 {
 	if (scan_ == NULL)
-		_RaiseError(L"テキストが設定されていません");
-	scan_->SetPointerBegin();
+		_RaiseError(u8"テキストが設定されていません");
 	Result res = _ParseSum(scan_->GetCurrentPointer());
 	if (scan_->HasNext())
-		_RaiseError(StringUtility::Format(L"不正なトークン:%s", scan_->GetToken().GetElement().c_str()));
+		_RaiseError(StringUtility::Format(u8"不正なトークン:%s", scan_->GetToken().GetElement().c_str()));
 	return res.GetReal();
 }
 
+#ifdef _WIN32
 //================================================================
 //Font
 // const wchar_t* Font::GOTHIC  = L"標準ゴシック";
@@ -1319,6 +948,7 @@ const wchar_t* Font::MINCHOH = L"MS Mincho";
 Font::Font()
 {
 	hFont_ = NULL;
+	ZeroMemory(&info_, sizeof(LOGFONT));
 }
 Font::~Font()
 {
@@ -1334,7 +964,7 @@ void Font::Clear()
 }
 void Font::CreateFont(const wchar_t* type, int size, bool bBold, bool bItalic, bool bLine)
 {
-	LOGFONT fontInfo;
+	LOGFONTW fontInfo;
 
 	lstrcpy(fontInfo.lfFaceName, type);
 	fontInfo.lfWeight = (bBold == false) * FW_NORMAL + (bBold == TRUE) * FW_BOLD;
@@ -1345,7 +975,7 @@ void Font::CreateFont(const wchar_t* type, int size, bool bBold, bool bItalic, b
 	fontInfo.lfUnderline = bLine;
 	fontInfo.lfCharSet = ANSI_CHARSET;
 	for (int i = 0; i < (int)wcslen(type); i++) {
-		if (!(IsCharAlphaNumeric(type[i]) || type[i] == L' ' || type[i] == L'-')) {
+		if (!(IsCharAlphaNumericW(type[i]) || type[i] == L' ' || type[i] == L'-')) {
 			fontInfo.lfCharSet = SHIFTJIS_CHARSET;
 			break;
 		}
@@ -1357,6 +987,7 @@ void Font::CreateFontIndirect(LOGFONT& fontInfo)
 {
 	if (hFont_ != NULL)
 		this->Clear();
-	hFont_ = ::CreateFontIndirect(&fontInfo);
+	hFont_ = ::CreateFontIndirectW(&fontInfo);
 	info_ = fontInfo;
 }
+#endif

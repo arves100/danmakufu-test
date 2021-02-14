@@ -27,15 +27,13 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <memory>
 
 //重複宣言チェックをしない
 //#define __SCRIPT_H__NO_CHECK_DUPLICATED
 
 //-------- 汎用
 namespace gstd {
-
-std::string to_mbcs(std::wstring const& s);
-std::wstring to_wide(std::string const& s);
 
 template <typename T>
 class lightweight_vector {
@@ -251,7 +249,7 @@ public:
 		data->real_value = v;
 	}
 
-	value(type_data* t, wchar_t v)
+	value(type_data* t, char v)
 	{
 		data = new body();
 		data->ref_count = 1;
@@ -267,7 +265,7 @@ public:
 		data->boolean_value = v;
 	}
 
-	value(type_data* t, std::wstring v);
+	value(type_data* t, std::string v);
 
 	value(value const& source)
 	{
@@ -314,9 +312,9 @@ public:
 	void concatenate(value const& x);
 
 	long double as_real() const;
-	wchar_t as_char() const;
+	char as_char() const;
 	bool as_boolean() const;
-	std::wstring as_string() const;
+	std::string as_string() const;
 	unsigned length_as_array() const;
 	value const& index_as_array(unsigned i) const;
 	value& index_as_array(unsigned i);
@@ -354,7 +352,7 @@ private:
 
 		union {
 			long double real_value;
-			wchar_t char_value;
+			char char_value;
 			bool boolean_value;
 		};
 	};
@@ -423,7 +421,7 @@ public:
 		return error;
 	}
 
-	std::wstring& get_error_message()
+	std::string& get_error_message()
 	{
 		return error_message;
 	}
@@ -464,9 +462,9 @@ public:
 		return type_manager->get_string_type();
 	}
 
-#ifndef _MSC_VER
+//#ifndef _MSC_VER
 private:
-#endif
+//#endif
 
 	//コピー、代入演算子の自動生成を無効に
 	script_engine(script_engine const& source);
@@ -474,7 +472,7 @@ private:
 
 	//エラー
 	bool error;
-	std::wstring error_message;
+	std::string error_message;
 	int error_line;
 
 	//型
@@ -548,7 +546,7 @@ private:
 		{
 		}
 
-		code(int the_line, command_kind the_command, int the_level, unsigned the_variable)
+		code(int the_line, command_kind the_command, int the_level, unsigned int the_variable)
 			: line(the_line)
 			, command(the_command)
 			, level(the_level)
@@ -626,7 +624,7 @@ private:
 
 class script_machine {
 public:
-	script_machine(script_engine* the_engine);
+	script_machine(std::shared_ptr<script_engine>& the_engine);
 	virtual ~script_machine();
 
 	void* data; //クライアント用空間
@@ -656,7 +654,7 @@ public:
 		return error;
 	}
 
-	std::wstring& get_error_message()
+	std::string& get_error_message()
 	{
 		return error_message;
 	}
@@ -666,13 +664,13 @@ public:
 		return error_line;
 	}
 
-	void raise_error(std::wstring const& message)
+	void raise_error(std::string const& message)
 	{
 		error = true;
 		error_message = message;
 		finished = true;
 	}
-	void terminate(std::wstring const& message)
+	void terminate(std::string const& message)
 	{
 		bTerminate = true;
 		error = true;
@@ -680,7 +678,7 @@ public:
 		finished = true;
 	}
 
-	script_engine* get_engine()
+	std::shared_ptr<script_engine>& get_engine()
 	{
 		return engine;
 	}
@@ -696,10 +694,10 @@ private:
 	script_machine(script_machine const& source);
 	script_machine& operator=(script_machine const& source);
 
-	script_engine* engine;
+	std::shared_ptr<script_engine> engine;
 
 	bool error;
-	std::wstring error_message;
+	std::string error_message;
 	int error_line;
 
 	bool bTerminate;
@@ -744,6 +742,171 @@ private:
 
 	void advance();
 };
+
+enum token_kind {
+	tk_end,
+	tk_invalid,
+	tk_word,
+	tk_real,
+	tk_char,
+	tk_string,
+	tk_open_par,
+	tk_close_par,
+	tk_open_bra,
+	tk_close_bra,
+	tk_open_cur,
+	tk_close_cur,
+	tk_open_abs,
+	tk_close_abs,
+	tk_comma,
+	tk_semicolon,
+	tk_tilde,
+	tk_assign,
+	tk_plus,
+	tk_minus,
+	tk_inc,
+	tk_dec,
+	tk_asterisk,
+	tk_slash,
+	tk_percent,
+	tk_caret,
+	tk_e,
+	tk_g,
+	tk_ge,
+	tk_l,
+	tk_le,
+	tk_ne,
+	tk_exclamation,
+	tk_ampersand,
+	tk_and_then,
+	tk_vertical,
+	tk_or_else,
+	tk_at,
+	tk_add_assign,
+	tk_subtract_assign,
+	tk_multiply_assign,
+	tk_divide_assign,
+	tk_remainder_assign,
+	tk_power_assign,
+	tk_range,
+	tk_ALTERNATIVE,
+	tk_ASCENT,
+	tk_BREAK,
+	tk_CASE,
+	tk_DESCENT,
+	tk_ELSE,
+	tk_FUNCTION,
+	tk_IF,
+	tk_IN,
+	tk_LET,
+	tk_LOCAL,
+	tk_LOOP,
+	tk_OTHERS,
+	tk_REAL,
+	tk_RETURN,
+	tk_SUB,
+	tk_TASK,
+	tk_TIMES,
+	tk_WHILE,
+	tk_YIELD,
+};
+
+class scanner {
+public:
+	token_kind next;
+	std::string word;
+	long double real_value;
+	char char_value;
+	std::string string_value;
+	int line;
+
+	scanner(char const* source, char const* end)
+		: current(source)
+		, line(1)
+	{
+		endPoint = end;
+
+		advance();
+	}
+
+	scanner(scanner const& source)
+		: current(source.current)
+		, endPoint(source.endPoint)
+		, next(source.next)
+		, word(source.word)
+		, line(source.line)
+	{
+	}
+
+	void skip();
+	void advance();
+
+	void AddLog(const char* data);
+
+private:
+	char const* current;
+	char const* endPoint;
+
+	inline char current_char();
+	inline char index_from_current_char(int index);
+	inline char next_char();
+};
+
+class parser {
+public:
+	struct symbol {
+		int level;
+		script_engine::block* sub;
+		int variable;
+	};
+
+	struct scope : public std::map<std::string, symbol> {
+		script_engine::block_kind kind;
+
+		scope(script_engine::block_kind the_kind)
+			: kind(the_kind)
+		{
+		}
+	};
+
+	std::vector<scope> frame;
+	scanner* lex;
+	script_engine* engine;
+	bool error;
+	std::string error_message;
+	int error_line;
+	std::map<std::string, script_engine::block*> events;
+
+	parser(script_engine* e, scanner* s, int funcc, function const* funcv);
+
+	virtual ~parser()
+	{
+	}
+
+	void parse_parentheses(script_engine::block* block);
+	void parse_clause(script_engine::block* block);
+	void parse_prefix(script_engine::block* block);
+	void parse_suffix(script_engine::block* block);
+	void parse_product(script_engine::block* block);
+	void parse_sum(script_engine::block* block);
+	void parse_comparison(script_engine::block* block);
+	void parse_logic(script_engine::block* block);
+	void parse_expression(script_engine::block* block);
+	int parse_arguments(script_engine::block* block);
+	void parse_statements(script_engine::block* block);
+	void parse_inline_block(script_engine::block* block, script_engine::block_kind kind);
+	void parse_block(script_engine::block* block, std::vector<std::string> const* args, bool adding_result);
+
+private:
+	void register_function(function const& func);
+	symbol* search(std::string const& name);
+	symbol* search_result();
+	void scan_current_scope(int level, std::vector<std::string> const* args, bool adding_result);
+	void write_operation(script_engine::block* block, char const* name, int clauses);
+
+	typedef script_engine::code code;
+};
+
 
 template <int num>
 class constant {

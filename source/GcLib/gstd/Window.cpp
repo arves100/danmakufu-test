@@ -7,7 +7,7 @@ using namespace gstd;
 **********************************************************/
 WindowBase::WindowBase()
 {
-	hWnd_ = NULL;
+	hWnd_ = nullptr;
 	bShutdown_ = false;
 
 	// SDL2 does have a window id for us
@@ -18,7 +18,7 @@ WindowBase::~WindowBase()
 	if (hWnd_)
 	{
 		SDL_DestroyWindow(hWnd_);
-		hWnd_ = NULL;
+		hWnd_ = nullptr;
 	}
 }
 

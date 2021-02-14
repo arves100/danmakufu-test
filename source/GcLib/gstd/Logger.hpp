@@ -18,11 +18,11 @@ public:
 	Logger();
 	virtual ~Logger();
 	virtual bool Initialize() { return true; }
-	void AddLogger(ref_count_ptr<Logger> logger) { listLogger_.push_back(logger); }
-	virtual void Write(std::wstring str);
+	void AddLogger(std::shared_ptr<Logger> logger) { listLogger_.push_back(logger); }
+	virtual void Write(std::string str);
 
 	static void SetTop(Logger* logger) { top_ = logger; }
-	static void WriteTop(std::wstring str)
+	static void WriteTop(std::string str)
 	{
 		if (top_ != NULL)
 			top_->Write(str);
@@ -31,9 +31,9 @@ public:
 protected:
 	static Logger* top_;
 	gstd::CriticalSection lock_;
-	std::list<ref_count_ptr<Logger>> listLogger_; //子のロガ
-	virtual void _WriteChild(SYSTEMTIME& time, std::wstring str);
-	virtual void _Write(SYSTEMTIME& time, std::wstring str) = 0;
+	std::list<std::shared_ptr<Logger>> listLogger_; //子のロガ
+	virtual void _WriteChild(struct tm* time, std::string str);
+	virtual void _Write(struct tm* time, std::string str) = 0;
 };
 
 /**********************************************************
@@ -45,16 +45,16 @@ public:
 	~FileLogger();
 	void Clear();
 	bool Initialize(bool bEnable = true);
-	bool Initialize(std::wstring path, bool bEnable = true);
-	bool SetPath(std::wstring path);
+	bool Initialize(std::string path, bool bEnable = true);
+	bool SetPath(std::string path);
 	void SetMaxFileSize(int size) { sizeMax_ = size; }
 
 protected:
 	bool bEnable_;
-	std::wstring path_;
-	std::wstring path2_;
+	std::string path_;
+	std::string path2_;
 	int sizeMax_;
-	virtual void _Write(SYSTEMTIME& systemTime, std::wstring str);
+	virtual void _Write(struct tm* systemTime, std::string str);
 	void _CreateFile(File& file);
 };
 

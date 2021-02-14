@@ -6,26 +6,28 @@ using namespace gstd;
 /**********************************************************
 //Application
 **********************************************************/
-Application* Application::thisBase_ = NULL;
-Application::Application()
+Application* Application::thisBase_ = nullptr;
+Application::Application() : bAppActive_(false), bAppRun_(false)
 {
+#ifdef _WIN32
 	::InitCommonControls();
+#endif
 }
 Application::~Application()
 {
 	SDL_Quit();
 
-	thisBase_ = NULL;
+	thisBase_ = nullptr;
 }
 bool Application::Initialize()
 {
-	if (thisBase_ != NULL)
+	if (thisBase_ != nullptr)
 		return false;
 	thisBase_ = this;
 	bAppRun_ = true;
 	bAppActive_ = true;
 
-	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK | SDL_INIT_GAMECONTROLLER) != 0)
+	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER) != 0)
 		return false;
 
 	return true;
@@ -39,19 +41,13 @@ bool Application::Run()
 	try {
 		bool res = _Initialize();
 		if (res == false)
-			throw gstd::wexception(L"初期化中に例外が発生しました。");
+			throw std::runtime_error(u8"初期化中に例外が発生しました。");
 	} catch (std::exception& e) {
-		std::wstring log = StringUtility::ConvertMultiToWide(e.what());
-		Logger::WriteTop(log);
-		Logger::WriteTop(L"初期化中に例外が発生しました。強制終了します。");
-		bAppRun_ = false;
-	} catch (gstd::wexception& e) {
-		std::wstring log = e.what();
-		Logger::WriteTop(log);
-		Logger::WriteTop(L"初期化中に例外が発生しました。強制終了します。");
+		Logger::WriteTop(e.what());
+		Logger::WriteTop(u8"初期化中に例外が発生しました。強制終了します。");
 		bAppRun_ = false;
 	} catch (...) {
-		Logger::WriteTop(L"初期化中に例外が発生しました。強制終了します。");
+		Logger::WriteTop(u8"初期化中に例外が発生しました。強制終了します。");
 		bAppRun_ = false;
 	}
 
@@ -63,26 +59,25 @@ bool Application::Run()
 			OnEvent(&evt);
 		} else {
 			if (bAppActive_ == false) {
+#ifdef _WIN32
 				Sleep(10);
+#else
+				sleep(10);
+#endif
 				continue;
 			}
 			try {
 				if (_Loop() == false)
 					break;
-			} catch (std::exception& e) {
-				std::wstring log = StringUtility::ConvertMultiToWide(e.what());
-				Logger::WriteTop(log);
-				Logger::WriteTop(L"実行中に例外が発生しました。終了します。");
-				break;
-			} catch (gstd::wexception& e) {
-				std::wstring log = e.what();
-				Logger::WriteTop(log);
-				Logger::WriteTop(L"実行中に例外が発生しました。終了します。");
+			}
+			catch (std::exception& e) {
+				Logger::WriteTop(e.what());
+				Logger::WriteTop(u8"実行中に例外が発生しました。終了します。");
 				break;
 			}
 			// catch(...)
 			// {
-			// 	Logger::WriteTop(L"実行中に例外が発生しました。終了します。");
+			// 	Logger::WriteTop(u8"実行中に例外が発生しました。終了します。");
 			// 	break;
 			// }
 		}
@@ -93,18 +88,12 @@ bool Application::Run()
 	try {
 		bool res = _Finalize();
 		if (res == false)
-			throw gstd::wexception(L"終了中に例外が発生しました。");
+			throw std::runtime_error(u8"終了中に例外が発生しました。");
 	} catch (std::exception& e) {
-		std::wstring log = StringUtility::ConvertMultiToWide(e.what());
-		Logger::WriteTop(log);
-		Logger::WriteTop(L"正常に終了できませんでした。");
-	} catch (gstd::wexception& e) {
-		std::wstring log = e.what();
-		Logger::WriteTop(log);
-		Logger::WriteTop(L"正常に終了できませんでした。");
-		bAppRun_ = false;
+		Logger::WriteTop(e.what());
+		Logger::WriteTop(u8"正常に終了できませんでした。");
 	} catch (...) {
-		Logger::WriteTop(L"正常に終了できませんでした。");
+		Logger::WriteTop(u8"正常に終了できませんでした。");
 	}
 	return true;
 }

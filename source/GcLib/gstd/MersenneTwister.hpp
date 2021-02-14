@@ -46,8 +46,8 @@ public:
 	int SeedRNG();
 	long GetInt();
 	long GetInt(long min, long max);
-	_int64 GetInt64();
-	_int64 GetInt64(_int64 min, _int64 max);
+	int64_t GetInt64();
+	int64_t GetInt64(int64_t min, int64_t max);
 	long double GetReal();
 	long double GetReal(long double min, long double max);
 };

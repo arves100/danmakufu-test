@@ -9,10 +9,10 @@ namespace gstd {
 //Thread
 class Thread {
 public:
-	enum Status {
-		RUN,
-		STOP,
-		REQUEST_STOP,
+	enum class Status {
+		Run,
+		Stop,
+		RequestStop,
 	};
 
 public:
@@ -21,18 +21,18 @@ public:
 	virtual void Start();
 	virtual void Stop();
 	bool IsStop();
-	DWORD Join(int mills = INFINITE);
+	void Join();
 
 	Status GetStatus() { return status_; }
 
 protected:
-	volatile HANDLE hThread_;
-	unsigned int idThread_;
+	SDL_Thread* hThread_;
+	SDL_threadID idThread_;
 	volatile Status status_;
 	virtual void _Run() = 0;
 
 private:
-	static unsigned int __stdcall _StaticRun(LPVOID data);
+	static int _StaticRun(void* data);
 };
 
 //================================================================
@@ -45,8 +45,8 @@ public:
 	void Leave();
 
 private:
-	CRITICAL_SECTION cs_;
-	volatile DWORD idThread_;
+	SDL_mutex* cs_;
+	volatile SDL_threadID idThread_;
 	volatile int countLock_;
 };
 
@@ -69,13 +69,14 @@ protected:
 //ThreadSignal
 class ThreadSignal {
 public:
-	ThreadSignal(bool bManualReset = false);
+	ThreadSignal();
 	virtual ~ThreadSignal();
-	DWORD Wait(int mills = INFINITE);
-	void SetSignal(bool bOn = true);
+	void Wait(Uint32 mills = SDL_MUTEX_MAXWAIT);
+	void SetSignal(bool bLock);
 
 private:
-	HANDLE hEvent_;
+	SDL_cond* pCond_;
+	SDL_mutex* pMutex_;
 };
 
 } // namespace gstd
