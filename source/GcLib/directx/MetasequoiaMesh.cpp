@@ -16,7 +16,7 @@ MetasequoiaMeshData::MetasequoiaMeshData()
 MetasequoiaMeshData::~MetasequoiaMeshData()
 {
 }
-bool MetasequoiaMeshData::CreateFromFileReader(gstd::ref_count_ptr<gstd::FileReader> reader)
+bool MetasequoiaMeshData::CreateFromFileReader(std::shared_ptr<gstd::FileReader> reader)
 {
 	bool res = false;
 	path_ = reader->GetOriginalPath();
@@ -213,7 +213,7 @@ void MetasequoiaMeshData::_ReadObject(gstd::Scanner& scanner)
 			countVert += face->vertices_.size() == 3 ? 3 : 6;
 		}
 
-		std::vector<ref_count_ptr<NormalData>> listNormalData;
+		std::vector<std::shared_ptr<NormalData>> listNormalData;
 		listNormalData.resize(countVert);
 		render->SetVertexCount(countVert);
 		int posVert = 0;
@@ -238,7 +238,7 @@ void MetasequoiaMeshData::_ReadObject(gstd::Scanner& scanner)
 					vert->texcoord = face->vertices_[iVert].tcoord_;
 					vert->normal = normal;
 					/*
-					ref_count_ptr<NormalData> norlamData = listNormalData[mqoVertexIndex];
+					std::shared_ptr<NormalData> norlamData = listNormalData[mqoVertexIndex];
 					if (norlamData == NULL) {
 						norlamData = new NormalData();
 						norlamData->normal_ = normal;
@@ -290,7 +290,7 @@ void MetasequoiaMeshData::_ReadObject(gstd::Scanner& scanner)
 					vert->texcoord = face->vertices_[indexFace].tcoord_;
 					vert->normal = iVert < 3 ? normals[0] : normals[1];
 					/*
-					ref_count_ptr<NormalData> norlamData = listNormalData[mqoVertexIndex];
+					std::shared_ptr<NormalData> norlamData = listNormalData[mqoVertexIndex];
 					if (norlamData == NULL) {
 						norlamData = new NormalData();
 						norlamData->normal_ = vert->normal;
@@ -313,7 +313,7 @@ void MetasequoiaMeshData::_ReadObject(gstd::Scanner& scanner)
 
 		int countNormalData = listNormalData.size();
 		for (int iData = 0; iData < countNormalData; iData++) {
-			ref_count_ptr<NormalData> normalData = listNormalData[iData];
+			std::shared_ptr<NormalData> normalData = listNormalData[iData];
 			if (normalData != NULL) {
 				int countVertexIndex = normalData->listIndex_.size();
 				for (int iVert = 0; iVert < countVertexIndex; iVert++) {
@@ -342,7 +342,7 @@ void MetasequoiaMeshData::RenderObject::Render()
 }
 
 //MetasequoiaMesh
-bool MetasequoiaMesh::CreateFromFileReader(gstd::ref_count_ptr<gstd::FileReader> reader)
+bool MetasequoiaMesh::CreateFromFileReader(std::shared_ptr<gstd::FileReader> reader)
 {
 	bool res = false;
 	{
@@ -355,7 +355,7 @@ bool MetasequoiaMesh::CreateFromFileReader(gstd::ref_count_ptr<gstd::FileReader>
 		data_ = _GetFromManager(name);
 		if (data_ == NULL) {
 			if (!reader->Open())
-				throw gstd::wexception(L"ファイルが開けません");
+				throw std::runtime_error("ファイルが開けません");
 			data_ = new MetasequoiaMeshData();
 			data_->SetName(name);
 			MetasequoiaMeshData* data = (MetasequoiaMeshData*)data_.GetPointer();

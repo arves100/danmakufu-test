@@ -14,7 +14,7 @@ SystemController::SystemController()
 
 	//常駐タスク登録
 	ETaskManager* taskManager = ETaskManager::GetInstance();
-	ref_count_ptr<SystemResidentTask> task = new SystemResidentTask();
+	std::shared_ptr<SystemResidentTask> task = new SystemResidentTask();
 	taskManager->AddTask(task);
 	taskManager->AddRenderFunction(TTaskFunction<SystemResidentTask>::Create(task, &SystemResidentTask::RenderFps),
 		SystemResidentTask::TASK_PRI_RENDER_FPS);
@@ -35,7 +35,7 @@ void SystemController::Reset()
 		infoSystem_->UpdateFreePlayerScriptInformationList();
 		sceneManager_->TransTitleScene();
 	} else {
-		ref_count_ptr<ScriptInformation> info = ScriptInformation::CreateScriptInformation(pathPackageScript, false);
+		std::shared_ptr<ScriptInformation> info = ScriptInformation::CreateScriptInformation(pathPackageScript, false);
 		if (info == NULL)
 			ShowErrorDialog(ErrorUtility::GetFileNotFoundErrorMessage(pathPackageScript));
 		sceneManager_->TransPackageScene(info, true);
@@ -74,7 +74,7 @@ void SceneManager::TransTitleScene()
 	SystemController::GetInstance()->ClearTaskWithoutSystem();
 
 	ETaskManager* taskManager = ETaskManager::GetInstance();
-	ref_count_ptr<TitleScene> task = new TitleScene();
+	std::shared_ptr<TitleScene> task = new TitleScene();
 	taskManager->AddTask(task);
 	taskManager->AddWorkFunction(TTaskFunction<TitleScene>::Create(task, &TitleScene::Work),
 		TitleScene::TASK_PRI_WORK);
@@ -91,14 +91,14 @@ void SceneManager::TransScriptSelectScene(int type)
 	SystemController::GetInstance()->ClearTaskWithoutSystem();
 
 	ETaskManager* taskManager = ETaskManager::GetInstance();
-	ref_count_ptr<ScriptSelectScene> task = new ScriptSelectScene();
+	std::shared_ptr<ScriptSelectScene> task = new ScriptSelectScene();
 	taskManager->AddTask(task);
 	taskManager->AddWorkFunction(TTaskFunction<ScriptSelectScene>::Create(task, &ScriptSelectScene::Work),
 		ScriptSelectScene::TASK_PRI_WORK);
 	taskManager->AddRenderFunction(TTaskFunction<ScriptSelectScene>::Create(task, &ScriptSelectScene::Render),
 		ScriptSelectScene::TASK_PRI_RENDER);
 
-	ref_count_ptr<ScriptSelectModel> model = NULL;
+	std::shared_ptr<ScriptSelectModel> model = NULL;
 	if (type == ScriptSelectScene::TYPE_SINGLE
 		|| type == ScriptSelectScene::TYPE_PLURAL
 		|| type == ScriptSelectScene::TYPE_STAGE
@@ -145,16 +145,16 @@ void SceneManager::TransScriptSelectScene_Last()
 	int type = SystemController::GetInstance()->GetSystemInformation()->GetLastSelectScriptSceneType();
 	TransScriptSelectScene(type);
 }
-void SceneManager::TransStgScene(ref_count_ptr<ScriptInformation> infoMain, ref_count_ptr<ScriptInformation> infoPlayer, ref_count_ptr<ReplayInformation> infoReplay)
+void SceneManager::TransStgScene(std::shared_ptr<ScriptInformation> infoMain, std::shared_ptr<ScriptInformation> infoPlayer, std::shared_ptr<ReplayInformation> infoReplay)
 {
 	EDirectInput* input = EDirectInput::GetInstance();
 	input->ClearKeyState();
 
 	try {
 		//STGシーン初期化
-		ref_count_ptr<StgSystemInformation> infoStgSystem = new StgSystemInformation();
+		std::shared_ptr<StgSystemInformation> infoStgSystem = new StgSystemInformation();
 		infoStgSystem->SetMainScriptInformation(infoMain);
-		ref_count_ptr<StgSystemController> task = new EStgSystemController();
+		std::shared_ptr<StgSystemController> task = new EStgSystemController();
 
 		//STGタスク初期化
 		ETaskManager* taskManager = ETaskManager::GetInstance();
@@ -181,15 +181,15 @@ void SceneManager::TransStgScene(ref_count_ptr<ScriptInformation> infoMain, ref_
 	}
 }
 
-void SceneManager::TransStgScene(ref_count_ptr<ScriptInformation> infoMain, ref_count_ptr<ReplayInformation> infoReplay)
+void SceneManager::TransStgScene(std::shared_ptr<ScriptInformation> infoMain, std::shared_ptr<ReplayInformation> infoReplay)
 {
 	try {
 		std::wstring replayPlayerID = infoReplay->GetPlayerScriptID();
 		std::wstring replayPlayerScriptFileName = infoReplay->GetPlayerScriptFileName();
 
 		//自機を検索
-		ref_count_ptr<ScriptInformation> infoPlayer;
-		std::vector<ref_count_ptr<ScriptInformation>> listPlayer;
+		std::shared_ptr<ScriptInformation> infoPlayer;
+		std::vector<std::shared_ptr<ScriptInformation>> listPlayer;
 		std::vector<std::wstring> listPlayerPath = infoMain->GetPlayerList();
 		if (listPlayerPath.size() == 0) {
 			listPlayer = SystemController::GetInstance()->GetSystemInformation()->GetFreePlayerScriptInformationList();
@@ -198,7 +198,7 @@ void SceneManager::TransStgScene(ref_count_ptr<ScriptInformation> infoMain, ref_
 		}
 
 		for (int iPlayer = 0; iPlayer < listPlayer.size(); iPlayer++) {
-			ref_count_ptr<ScriptInformation> tInfo = listPlayer[iPlayer];
+			std::shared_ptr<ScriptInformation> tInfo = listPlayer[iPlayer];
 			if (tInfo->GetID() != replayPlayerID)
 				continue;
 			std::wstring tPlayerScriptFileName = PathProperty::GetFileName(tInfo->GetScriptPath());
@@ -223,16 +223,16 @@ void SceneManager::TransStgScene(ref_count_ptr<ScriptInformation> infoMain, ref_
 		system->GetSceneManager()->TransScriptSelectScene_Last();
 	}
 }
-void SceneManager::TransPackageScene(ref_count_ptr<ScriptInformation> infoMain, bool bOnlyPackage)
+void SceneManager::TransPackageScene(std::shared_ptr<ScriptInformation> infoMain, bool bOnlyPackage)
 {
 	EDirectInput* input = EDirectInput::GetInstance();
 	input->ClearKeyState();
 
 	try {
 		//STGシーン初期化
-		ref_count_ptr<StgSystemInformation> infoStgSystem = new StgSystemInformation();
+		std::shared_ptr<StgSystemInformation> infoStgSystem = new StgSystemInformation();
 		infoStgSystem->SetMainScriptInformation(infoMain);
-		ref_count_ptr<StgSystemController> task = NULL;
+		std::shared_ptr<StgSystemController> task = NULL;
 		if (!bOnlyPackage)
 			task = new EStgSystemController();
 		else
@@ -281,7 +281,7 @@ void TransitionManager::_CreateCurrentSceneTexture()
 	DirectGraphics* graphics = EDirectGraphics::GetInstance();
 	WorkRenderTaskManager* taskManager = ETaskManager::GetInstance();
 	TextureManager* textureManager = ETextureManager::GetInstance();
-	ref_count_ptr<Texture> texture = textureManager->GetTexture(TextureManager::TARGET_TRANSITION);
+	std::shared_ptr<Texture> texture = textureManager->GetTexture(TextureManager::TARGET_TRANSITION);
 
 	graphics->SetRenderTarget(texture);
 	graphics->ClearRenderTarget();
@@ -290,12 +290,12 @@ void TransitionManager::_CreateCurrentSceneTexture()
 	graphics->EndScene();
 	graphics->SetRenderTarget(NULL);
 }
-void TransitionManager::_AddTask(ref_count_ptr<TransitionEffect> effect)
+void TransitionManager::_AddTask(std::shared_ptr<TransitionEffect> effect)
 {
 	WorkRenderTaskManager* taskManager = ETaskManager::GetInstance();
 	taskManager->RemoveTask(typeid(SystemTransitionEffectTask));
 
-	ref_count_ptr<SystemTransitionEffectTask> task = new SystemTransitionEffectTask();
+	std::shared_ptr<SystemTransitionEffectTask> task = new SystemTransitionEffectTask();
 	task->SetTransition(effect);
 	taskManager->AddTask(task);
 	taskManager->AddWorkFunction(TTaskFunction<SystemTransitionEffectTask>::Create(task, &SystemTransitionEffectTask::Work),
@@ -306,10 +306,10 @@ void TransitionManager::_AddTask(ref_count_ptr<TransitionEffect> effect)
 void TransitionManager::DoFadeOut()
 {
 	TextureManager* textureManager = ETextureManager::GetInstance();
-	ref_count_ptr<Texture> texture = textureManager->GetTexture(TextureManager::TARGET_TRANSITION);
+	std::shared_ptr<Texture> texture = textureManager->GetTexture(TextureManager::TARGET_TRANSITION);
 	_CreateCurrentSceneTexture();
 
-	ref_count_ptr<TransitionEffect_FadeOut> effect = new TransitionEffect_FadeOut();
+	std::shared_ptr<TransitionEffect_FadeOut> effect = new TransitionEffect_FadeOut();
 	effect->Initialize(10, texture);
 	_AddTask(effect);
 
@@ -349,7 +349,7 @@ void SystemInformation::_SearchFreePlayerScript(std::wstring dir)
 {
 	listFreePlayer_ = ScriptInformation::FindPlayerScriptInformationList(dir);
 	for (int iPlayer = 0; iPlayer < listFreePlayer_.size(); iPlayer++) {
-		ref_count_ptr<ScriptInformation> info = listFreePlayer_[iPlayer];
+		std::shared_ptr<ScriptInformation> info = listFreePlayer_[iPlayer];
 		std::wstring path = info->GetScriptPath();
 		std::wstring log = StringUtility::Format(L"自機スクリプト：%s", path.c_str());
 		ELogger::WriteTop(log);

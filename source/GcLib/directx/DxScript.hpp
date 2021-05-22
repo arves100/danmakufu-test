@@ -41,22 +41,22 @@ public:
 	void SetRenderPriority(double pri) { priRender_ = pri; }
 	void SetRenderPriorityI(int pri);
 
-	bool IsObjectValueExists(std::wstring key) { return mapObjectValue_.find(key) != mapObjectValue_.end(); }
-	gstd::value GetObjectValue(std::wstring key) { return mapObjectValue_[key]; }
-	void SetObjectValue(std::wstring key, gstd::value val) { mapObjectValue_[key] = val; }
-	void DeleteObjectValue(std::wstring key) { mapObjectValue_.erase(key); }
+	bool IsObjectValueExists(std::string key) { return mapObjectValue_.find(key) != mapObjectValue_.end(); }
+	gstd::value GetObjectValue(std::string key) { return mapObjectValue_[key]; }
+	void SetObjectValue(std::string key, gstd::value val) { mapObjectValue_[key] = val; }
+	void DeleteObjectValue(std::string key) { mapObjectValue_.erase(key); }
 
 protected:
 	int idObject_;
 	int typeObject_;
 	_int64 idScript_;
-	DxScriptObjectManager* manager_;
+	std::shared_ptr<DxScriptObjectManager> manager_;
 	double priRender_;
 	bool bVisible_;
 	bool bDeleted_;
 	bool bActive_;
 
-	std::map<std::wstring, gstd::value> mapObjectValue_;
+	std::map<std::string, gstd::value> mapObjectValue_;
 };
 
 /**********************************************************
@@ -87,14 +87,14 @@ public:
 	void SetScale(D3DXVECTOR3 scale) { scale_ = scale; }
 
 	int GetBlendType() { return typeBlend_; }
-	void SetRelativeObject(int id, std::wstring bone)
+	void SetRelativeObject(int id, std::string bone)
 	{
 		idRelative_ = id;
 		nameRelativeBone_ = bone;
 	}
 
-	virtual gstd::ref_count_ptr<Shader> GetShader() { return NULL; }
-	virtual void SetShader(gstd::ref_count_ptr<Shader> shader) {}
+	virtual std::shared_ptr<Shader> GetShader() { return NULL; }
+	virtual void SetShader(std::shared_ptr<Shader> shader) {}
 	virtual void Render() {}
 	virtual void SetRenderState() {}
 
@@ -110,7 +110,7 @@ protected:
 	int typeBlend_;
 
 	int idRelative_;
-	std::wstring nameRelativeBone_;
+	std::string nameRelativeBone_;
 };
 
 /**********************************************************
@@ -119,14 +119,14 @@ protected:
 class DxScriptShaderObject : public DxScriptRenderObject {
 public:
 	DxScriptShaderObject();
-	virtual gstd::ref_count_ptr<Shader> GetShader() { return shader_; }
-	virtual void SetShader(gstd::ref_count_ptr<Shader> shader) { shader_ = shader; }
+	virtual std::shared_ptr<Shader> GetShader() { return shader_; }
+	virtual void SetShader(std::shared_ptr<Shader> shader) { shader_ = shader; }
 
 	virtual void SetColor(int r, int g, int b) {}
 	virtual void SetAlpha(int alpha) {}
 
 private:
-	gstd::ref_count_ptr<Shader> shader_;
+	std::shared_ptr<Shader> shader_;
 };
 
 /**********************************************************
@@ -140,8 +140,8 @@ public:
 	void SetPrimitiveType(D3DPRIMITIVETYPE type);
 	void SetVertexCount(int count);
 	int GetVertexCount();
-	gstd::ref_count_ptr<Texture> GetTexture();
-	virtual void SetTexture(gstd::ref_count_ptr<Texture> texture);
+	std::shared_ptr<Texture> GetTexture();
+	virtual void SetTexture(std::shared_ptr<Texture> texture);
 
 	virtual bool IsValidVertexIndex(int index) = 0;
 	virtual void SetVertexPosition(int index, float x, float y, float z) = 0;
@@ -150,11 +150,11 @@ public:
 	virtual void SetVertexColor(int index, int r, int g, int b) = 0;
 	virtual D3DXVECTOR3 GetVertexPosition(int index) = 0;
 
-	virtual gstd::ref_count_ptr<Shader> GetShader();
-	virtual void SetShader(gstd::ref_count_ptr<Shader> shader);
+	virtual std::shared_ptr<Shader> GetShader();
+	virtual void SetShader(std::shared_ptr<Shader> shader);
 
 protected:
-	gstd::ref_count_ptr<RenderObject> objRender_;
+	std::shared_ptr<RenderObject> objRender_;
 };
 
 /**********************************************************
@@ -165,7 +165,7 @@ public:
 	DxScriptPrimitiveObject2D();
 	virtual void Render();
 	virtual void SetRenderState();
-	RenderObjectTLX* GetObjectPointer() { return (RenderObjectTLX*)objRender_.GetPointer(); }
+	std::shared_ptr<RenderObjectTLX> GetObjectPointer() { return std::dynamic_pointer_cast<RenderObjectTLX>(objRender_); }
 	virtual bool IsValidVertexIndex(int index);
 	virtual void SetColor(int r, int g, int b);
 	virtual void SetAlpha(int alpha);
@@ -184,7 +184,7 @@ class DxScriptSpriteObject2D : public DxScriptPrimitiveObject2D {
 public:
 	DxScriptSpriteObject2D();
 	void Copy(DxScriptSpriteObject2D* src);
-	Sprite2D* GetSpritePointer() { return (Sprite2D*)objRender_.GetPointer(); }
+	std::shared_ptr<Sprite2D> GetSpritePointer() { return std::dynamic_pointer_cast<Sprite2D>(objRender_); }
 };
 
 /**********************************************************
@@ -197,7 +197,7 @@ public:
 	virtual void SetAlpha(int alpha);
 	void AddVertex();
 	void CloseVertex();
-	SpriteList2D* GetSpritePointer() { return (SpriteList2D*)objRender_.GetPointer(); }
+	std::shared_ptr<SpriteList2D> GetSpritePointer() { return std::dynamic_pointer_cast<SpriteList2D>(objRender_); }
 };
 
 /**********************************************************
@@ -210,7 +210,7 @@ public:
 	DxScriptPrimitiveObject3D();
 	virtual void Render();
 	virtual void SetRenderState();
-	RenderObjectLX* GetObjectPointer() { return (RenderObjectLX*)objRender_.GetPointer(); }
+	std::shared_ptr<RenderObjectLX> GetObjectPointer() { return std::dynamic_pointer_cast<RenderObjectLX>(objRender_); }
 	virtual bool IsValidVertexIndex(int index);
 	virtual void SetColor(int r, int g, int b);
 	virtual void SetAlpha(int alpha);
@@ -226,7 +226,7 @@ public:
 class DxScriptSpriteObject3D : public DxScriptPrimitiveObject3D {
 public:
 	DxScriptSpriteObject3D();
-	Sprite3D* GetSpritePointer() { return (Sprite3D*)objRender_.GetPointer(); }
+	std::shared_ptr<Sprite3D> GetSpritePointer() { return std::dynamic_pointer_cast<Sprite3D>(objRender_); }
 };
 
 /**********************************************************
@@ -238,7 +238,7 @@ public:
 	virtual void Work();
 	virtual void Render();
 	virtual void SetRenderState();
-	TrajectoryObject3D* GetObjectPointer() { return (TrajectoryObject3D*)objRender_.GetPointer(); }
+	std::shared_ptr<TrajectoryObject3D> GetObjectPointer() { return std::dynamic_pointer_cast<TrajectoryObject3D>(objRender_); }
 
 	virtual bool IsValidVertexIndex(int index) { return false; }
 	virtual void SetColor(int r, int g, int b);
@@ -262,10 +262,10 @@ public:
 	virtual void SetRenderState();
 	virtual void SetColor(int r, int g, int b);
 	virtual void SetAlpha(int alpha);
-	void SetMesh(gstd::ref_count_ptr<DxMesh> mesh) { mesh_ = mesh; }
-	gstd::ref_count_ptr<DxMesh> GetMesh() { return mesh_; }
+	void SetMesh(std::shared_ptr<DxMesh> mesh) { mesh_ = mesh; }
+	std::shared_ptr<DxMesh> GetMesh() { return mesh_; }
 	int GetAnimeFrame() { return time_; }
-	std::wstring GetAnimeName() { return anime_; }
+	std::string GetAnimeName() { return anime_; }
 
 	virtual void SetX(float x)
 	{
@@ -312,12 +312,12 @@ public:
 		scale_.z = z;
 		_UpdateMeshState();
 	}
-	virtual void SetShader(gstd::ref_count_ptr<Shader> shader);
+	virtual void SetShader(std::shared_ptr<Shader> shader);
 
 protected:
-	gstd::ref_count_ptr<DxMesh> mesh_;
+	std::shared_ptr<DxMesh> mesh_;
 	int time_;
-	std::wstring anime_;
+	std::string anime_;
 	D3DCOLOR color_;
 	bool bCoordinate2D_;
 	void _UpdateMeshState();
@@ -334,12 +334,12 @@ public:
 	virtual void Render();
 	virtual void SetRenderState();
 
-	void SetText(std::wstring text)
+	void SetText(std::string text)
 	{
 		text_.SetText(text);
 		bChange_ = true;
 	}
-	std::wstring GetText() { return text_.GetText(); }
+	std::string GetText() { return text_.GetText(); }
 	std::vector<int> GetTextCountCU();
 	int GetTotalWidth();
 	int GetTotalHeight();
@@ -347,6 +347,11 @@ public:
 	void SetFontType(std::wstring type)
 	{
 		text_.SetFontType(type.c_str());
+		bChange_ = true;
+	}
+	void SetFontType(std::string type)
+	{
+		text_.SetFontType(StringUtility::ConvertMultiToWide(type, CP_UTF8).c_str());
 		bChange_ = true;
 	}
 	void SetFontSize(int size)
@@ -428,13 +433,13 @@ public:
 	virtual void SetAlpha(int alpha);
 	virtual void SetColor(int r, int g, int b);
 	void SetVertexColor(D3DCOLOR color) { text_.SetVertexColor(color); }
-	virtual void SetShader(gstd::ref_count_ptr<Shader> shader);
+	virtual void SetShader(std::shared_ptr<Shader> shader);
 
 protected:
 	bool bChange_;
 	DxText text_;
-	gstd::ref_count_ptr<DxTextInfo> textInfo_;
-	gstd::ref_count_ptr<DxTextRenderObject> objRender_;
+	std::shared_ptr<DxTextInfo> textInfo_;
+	std::shared_ptr<DxTextRenderObject> objRender_;
 	D3DXVECTOR2 center_; //座標変換の中心
 	bool bAutoCenter_;
 
@@ -453,14 +458,14 @@ public:
 	virtual void Render() {}
 	virtual void SetRenderState() {}
 
-	bool Load(std::wstring path);
+	bool Load(std::string path);
 	void Play();
 
-	gstd::ref_count_ptr<SoundPlayer> GetPlayer() { return player_; }
+	std::shared_ptr<SoundPlayer> GetPlayer() { return player_; }
 	SoundPlayer::PlayStyle& GetStyle() { return style_; }
 
 protected:
-	gstd::ref_count_ptr<SoundPlayer> player_;
+	std::shared_ptr<SoundPlayer> player_;
 	SoundPlayer::PlayStyle style_;
 };
 
@@ -473,18 +478,18 @@ class DxFileObject : public DxScriptObjectBase {
 public:
 	DxFileObject();
 	~DxFileObject();
-	gstd::ref_count_ptr<gstd::File> GetFile() { return file_; }
+	std::shared_ptr<gstd::File> GetFile() { return file_; }
 
 	virtual void Render() {}
 	virtual void SetRenderState() {}
 
-	virtual bool OpenR(std::wstring path);
-	virtual bool OpenW(std::wstring path);
+	virtual bool OpenR(std::string path);
+	virtual bool OpenW(std::string path);
 	virtual bool Store() = 0;
 	virtual void Close();
 
 protected:
-	gstd::ref_count_ptr<gstd::File> file_;
+	std::shared_ptr<gstd::File> file_;
 };
 
 /**********************************************************
@@ -494,8 +499,8 @@ class DxTextFileObject : public DxFileObject {
 public:
 	DxTextFileObject();
 	virtual ~DxTextFileObject();
-	virtual bool OpenR(std::wstring path);
-	virtual bool OpenW(std::wstring path);
+	virtual bool OpenR(std::string path);
+	virtual bool OpenW(std::string path);
 	virtual bool Store();
 	int GetLineCount() { return listLine_.size(); }
 	std::string GetLine(int line);
@@ -514,11 +519,11 @@ class DxBinaryFileObject : public DxFileObject {
 public:
 	DxBinaryFileObject();
 	virtual ~DxBinaryFileObject();
-	virtual bool OpenR(std::wstring path);
-	virtual bool OpenW(std::wstring path);
+	virtual bool OpenR(std::string path);
+	virtual bool OpenW(std::string path);
 	virtual bool Store();
 
-	gstd::ref_count_ptr<gstd::ByteBuffer> GetBuffer() { return buffer_; }
+	std::shared_ptr<gstd::ByteBuffer> GetBuffer() { return buffer_; }
 	bool IsReadableSize(int size);
 
 	unsigned int GetCodePage() { return codePage_; }
@@ -530,7 +535,7 @@ public:
 protected:
 	int byteOrder_;
 	unsigned int codePage_;
-	gstd::ref_count_ptr<gstd::ByteBuffer> buffer_;
+	std::shared_ptr<gstd::ByteBuffer> buffer_;
 };
 
 /**********************************************************
@@ -541,7 +546,7 @@ class DxScriptObjectManager {
 
 public:
 	struct SoundInfo {
-		gstd::ref_count_ptr<SoundPlayer> player_;
+		std::shared_ptr<SoundPlayer> player_;
 		SoundPlayer::PlayStyle style_;
 		virtual ~SoundInfo() {}
 	};
@@ -554,30 +559,30 @@ public:
 	int GetAliveObjectCount() { return obj_.size() - listUnusedIndex_.size(); }
 	int GetRenderBucketCapacity() { return objRender_.size(); }
 	void SetRenderBucketCapacity(int capacity);
-	virtual int AddObject(gstd::ref_count_ptr<DxScriptObjectBase>::unsync obj, bool bActivate = true);
-	void AddObject(int id, gstd::ref_count_ptr<DxScriptObjectBase>::unsync obj, bool bActivate = true);
+	virtual int AddObject(std::shared_ptr<DxScriptObjectBase> obj, bool bActivate = true);
+	void AddObject(int id, std::shared_ptr<DxScriptObjectBase> obj, bool bActivate = true);
 	void ActivateObject(int id, bool bActivate);
-	gstd::ref_count_ptr<DxScriptObjectBase>::unsync GetObject(int id) { return obj_[id]; }
+	std::shared_ptr<DxScriptObjectBase> GetObject(int id) { return obj_[id]; }
 	std::vector<int> GetValidObjectIdentifier();
-	DxScriptObjectBase* GetObjectPointer(int id);
+	std::shared_ptr<DxScriptObjectBase> GetObjectPointer(int id);
 	virtual void DeleteObject(int id);
 	void ClearObject();
 	void DeleteObjectByScriptID(_int64 idScript);
-	void AddRenderObject(gstd::ref_count_ptr<DxScriptObjectBase>::unsync obj); //要フレームごとに登録
+	void AddRenderObject(std::shared_ptr<DxScriptObjectBase> obj); //要フレームごとに登録
 	void WorkObject();
 	void RenderObject();
 
 	void PrepareRenderObject();
 	void ClearRenderObject();
-	std::vector<std::list<gstd::ref_count_ptr<DxScriptObjectBase>::unsync>>* GetRenderObjectListPointer() { return &objRender_; }
+	std::vector<std::list<std::shared_ptr<DxScriptObjectBase>>>* GetRenderObjectListPointer() { return &objRender_; }
 
-	void SetShader(gstd::ref_count_ptr<Shader> shader, double min, double max);
+	void SetShader(std::shared_ptr<Shader> shader, double min, double max);
 	void ResetShader();
 	void ResetShader(double min, double max);
-	gstd::ref_count_ptr<Shader> GetShader(int index);
+	std::shared_ptr<Shader> GetShader(int index);
 
-	void ReserveSound(gstd::ref_count_ptr<SoundPlayer> player, SoundPlayer::PlayStyle& style);
-	void DeleteReservedSound(gstd::ref_count_ptr<SoundPlayer> player);
+	void ReserveSound(std::shared_ptr<SoundPlayer> player, SoundPlayer::PlayStyle& style);
+	void DeleteReservedSound(std::shared_ptr<SoundPlayer> player);
 	void SetFogParam(bool bEnable, D3DCOLOR fogColor, float start, float end);
 	_int64 GetTotalObjectCreateCount() { return totalObjectCreateCount_; }
 
@@ -589,9 +594,9 @@ public:
 protected:
 	_int64 totalObjectCreateCount_;
 	std::list<int> listUnusedIndex_;
-	std::vector<gstd::ref_count_ptr<DxScriptObjectBase>::unsync> obj_; //オブジェクト
-	std::list<gstd::ref_count_ptr<DxScriptObjectBase>::unsync> listActiveObject_;
-	std::map<std::wstring, gstd::ref_count_ptr<SoundInfo>> mapReservedSound_;
+	std::vector<std::shared_ptr<DxScriptObjectBase>> obj_; //オブジェクト
+	std::list<std::shared_ptr<DxScriptObjectBase>> listActiveObject_;
+	std::map<std::string, std::shared_ptr<SoundInfo>> mapReservedSound_;
 
 	//フォグ
 	bool bFogEnable_;
@@ -599,8 +604,8 @@ protected:
 	float fogStart_;
 	float fogEnd_;
 
-	std::vector<std::list<gstd::ref_count_ptr<DxScriptObjectBase>::unsync>> objRender_; //描画バケットソート
-	std::vector<gstd::ref_count_ptr<Shader>> listShader_;
+	std::vector<std::list<std::shared_ptr<DxScriptObjectBase>>> objRender_; //描画バケットソート
+	std::vector<std::shared_ptr<Shader>> listShader_;
 
 	void _SetObjectID(DxScriptObjectBase* obj, int index)
 	{
@@ -643,20 +648,20 @@ public:
 	DxScript();
 	virtual ~DxScript();
 
-	void SetObjectManager(gstd::ref_count_ptr<DxScriptObjectManager> manager) { objManager_ = manager; }
-	gstd::ref_count_ptr<DxScriptObjectManager> GetObjectManager() { return objManager_; }
+	void SetObjectManager(std::shared_ptr<DxScriptObjectManager> manager) { objManager_ = manager; }
+	std::shared_ptr<DxScriptObjectManager> GetObjectManager() { return objManager_; }
 	void SetMaxObject(int max) { objManager_->SetMaxObject(max); }
 	void SetRenderBucketCapacity(int capacity) { objManager_->SetRenderBucketCapacity(capacity); }
-	virtual int AddObject(gstd::ref_count_ptr<DxScriptObjectBase>::unsync obj, bool bActivate = true);
+	virtual int AddObject(std::shared_ptr<DxScriptObjectBase> obj, bool bActivate = true);
 	virtual void ActivateObject(int id, bool bActivate) { objManager_->ActivateObject(id, bActivate); }
-	gstd::ref_count_ptr<DxScriptObjectBase>::unsync GetObject(int id) { return objManager_->GetObject(id); }
-	DxScriptObjectBase* GetObjectPointer(int id) { return objManager_->GetObjectPointer(id); }
+	std::shared_ptr<DxScriptObjectBase> GetObject(int id) { return objManager_->GetObject(id); }
+	DxScriptObjectBase* GetObjectPointer(int id) { return objManager_->GetObjectPointer(id).get(); }
 	virtual void DeleteObject(int id) { objManager_->DeleteObject(id); }
 	void ClearObject() { objManager_->ClearObject(); }
 	virtual void WorkObject() { objManager_->WorkObject(); }
 	virtual void RenderObject() { objManager_->RenderObject(); }
 
-	void AddMeshResource(std::wstring name, gstd::ref_count_ptr<DxMesh> mesh) { mapMesh_[name] = mesh; }
+	void AddMeshResource(std::wstring name, std::shared_ptr<DxMesh> mesh) { mapMesh_[name] = mesh; }
 
 	//Dx関数：システム系
 	static gstd::value Func_InstallFont(gstd::script_machine* machine, int argc, gstd::value const* argv);
@@ -925,15 +930,15 @@ public:
 	static gstd::value Func_ObjFileB_ReadString(gstd::script_machine* machine, int argc, gstd::value const* argv);
 
 protected:
-	gstd::ref_count_ptr<DxScriptObjectManager> objManager_;
+	std::shared_ptr<DxScriptObjectManager> objManager_;
 
 	//リソース
-	std::map<std::wstring, gstd::ref_count_ptr<Texture>> mapTexture_;
-	std::map<std::wstring, gstd::ref_count_ptr<SoundPlayer>> mapSoundPlayer_;
-	std::map<std::wstring, gstd::ref_count_ptr<DxMesh>> mapMesh_;
+	std::map<std::string, std::shared_ptr<Texture>> mapTexture_;
+	std::map<std::string, std::shared_ptr<SoundPlayer>> mapSoundPlayer_;
+	std::map<std::string, std::shared_ptr<DxMesh>> mapMesh_;
 
 	void _ClearResource();
-	gstd::ref_count_ptr<Texture> _GetTexture(std::wstring name);
+	std::shared_ptr<Texture> _GetTexture(std::string name);
 };
 
 } // namespace directx

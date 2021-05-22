@@ -53,35 +53,35 @@ public:
 	void ReleaseDxResource();
 	void RestoreDxResource();
 
-	virtual bool IsDataExists(std::wstring name);
-	gstd::ref_count_ptr<ShaderData> GetShaderData(std::wstring name);
-	gstd::ref_count_ptr<Shader> CreateFromFile(std::wstring path); //読み込みます。ShaderDataは保持しますが、Shaderは保持しません。
-	gstd::ref_count_ptr<Shader> CreateFromText(std::string source); //読み込みます。ShaderDataは保持しますが、Shaderは保持しません。
-	gstd::ref_count_ptr<Shader> CreateFromFileInLoadThread(std::wstring path);
-	virtual void CallFromLoadThread(gstd::ref_count_ptr<gstd::FileManager::LoadThreadEvent> event);
+	virtual bool IsDataExists(std::string name);
+	std::shared_ptr<ShaderData> GetShaderData(std::string name);
+	std::shared_ptr<Shader> CreateFromFile(std::string path); //読み込みます。ShaderDataは保持しますが、Shaderは保持しません。
+	std::shared_ptr<Shader> CreateFromText(std::string source); //読み込みます。ShaderDataは保持しますが、Shaderは保持しません。
+	std::shared_ptr<Shader> CreateFromFileInLoadThread(std::string path);
+	virtual void CallFromLoadThread(std::unique_ptr<gstd::FileManager::LoadThreadEvent>& event);
 
-	void AddShader(std::wstring name, gstd::ref_count_ptr<Shader> shader);
-	void DeleteShader(std::wstring name);
-	gstd::ref_count_ptr<Shader> GetShader(std::wstring name);
-	gstd::ref_count_ptr<Shader> GetDefaultSkinnedMeshShader();
+	void AddShader(std::string name, std::shared_ptr<Shader> shader);
+	void DeleteShader(std::string name);
+	std::shared_ptr<Shader> GetShader(std::string name);
+	std::shared_ptr<Shader> GetDefaultSkinnedMeshShader();
 
 	void CheckExecutingShaderZero();
-	std::wstring GetLastError();
+	std::string GetLastError();
 
 protected:
 	gstd::CriticalSection lock_;
-	std::map<std::wstring, gstd::ref_count_ptr<Shader>> mapShader_;
-	std::map<std::wstring, gstd::ref_count_ptr<ShaderData>> mapShaderData_;
+	std::map<std::string, std::shared_ptr<Shader>> mapShader_;
+	std::map<std::string, std::shared_ptr<ShaderData>> mapShaderData_;
 
 	std::list<Shader*> listExecuteShader_;
-	std::wstring lastError_;
+	std::string lastError_;
 
-	void _ReleaseShaderData(std::wstring name);
-	bool _CreateFromFile(std::wstring path);
+	void _ReleaseShaderData(std::string name);
+	bool _CreateFromFile(std::string path);
 	bool _CreateFromText(std::string& source);
 	void _BeginShader(Shader* shader, int pass);
 	void _EndShader(Shader* shader);
-	static std::wstring _GetTextSourceID(std::string& source);
+	static std::string _GetTextSourceID(std::string& source);
 
 private:
 	static ShaderManager* thisBase_;
@@ -117,13 +117,13 @@ public:
 	float GetFloat();
 	void SetFloatArray(std::vector<float>& values);
 	std::vector<float> GetFloatArray();
-	void SetTexture(gstd::ref_count_ptr<Texture> texture);
-	gstd::ref_count_ptr<Texture> GetTexture();
+	void SetTexture(std::shared_ptr<Texture> texture);
+	std::shared_ptr<Texture> GetTexture();
 
 private:
 	int type_;
-	gstd::ref_count_ptr<gstd::ByteBuffer> value_;
-	gstd::ref_count_ptr<Texture> texture_;
+	std::shared_ptr<gstd::ByteBuffer> value_;
+	std::shared_ptr<Texture> texture_;
 };
 
 /**********************************************************
@@ -145,7 +145,7 @@ public:
 	void ReleaseDxResource();
 	void RestoreDxResource();
 
-	bool CreateFromFile(std::wstring path);
+	bool CreateFromFile(std::string path);
 	bool CreateFromText(std::string& source);
 	bool IsLoad() { return data_ != NULL && data_->bLoad_; }
 
@@ -155,20 +155,19 @@ public:
 	bool SetVector(std::string name, D3DXVECTOR4& vector);
 	bool SetFloat(std::string name, float value);
 	bool SetFloatArray(std::string name, std::vector<float>& values);
-	bool SetTexture(std::string name, gstd::ref_count_ptr<Texture> texture);
+	bool SetTexture(std::string name, std::shared_ptr<Texture> texture);
 
 protected:
-	gstd::ref_count_ptr<ShaderData> data_;
+	std::unique_ptr<ShaderData> data_;
 
 	// bool bLoadShader_;
 	// IDirect3DVertexShader9* pVertexShader_;
 	// IDirect3DPixelShader9* pPixelShader_;
 
 	std::string technique_;
-	std::map<std::string, gstd::ref_count_ptr<ShaderParameter>> mapParam_;
+	std::map<std::string, std::shared_ptr<ShaderParameter>> mapParam_;
 
-	ShaderData* _GetShaderData() { return data_.GetPointer(); }
-	gstd::ref_count_ptr<ShaderParameter> _GetParameter(std::string name, bool bCreate);
+	std::shared_ptr<ShaderParameter> _GetParameter(std::string name, bool bCreate);
 
 	int _Begin();
 	void _End();

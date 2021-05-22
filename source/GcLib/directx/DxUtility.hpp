@@ -137,17 +137,18 @@ private:
 	void _Compute()
 	{
 		D3DXVECTOR3 lv[3];
+		D3DXVECTOR3 dm;
 		lv[0] = vertex_[1] - vertex_[0];
-		lv[0] = *D3DXVec3Normalize(&D3DXVECTOR3(), &lv[0]);
+		lv[0] = *D3DXVec3Normalize(&dm, &lv[0]);
 
 		lv[1] = vertex_[2] - vertex_[1];
-		lv[1] = *D3DXVec3Normalize(&D3DXVECTOR3(), &lv[1]);
+		lv[1] = *D3DXVec3Normalize(&dm, &lv[1]);
 
 		lv[2] = vertex_[0] - vertex_[2];
-		lv[2] = *D3DXVec3Normalize(&D3DXVECTOR3(), &lv[2]);
+		lv[2] = *D3DXVec3Normalize(&dm, &lv[2]);
 
-		D3DXVECTOR3 cross = *D3DXVec3Cross(&D3DXVECTOR3(), &lv[0], &lv[1]);
-		normal_ = *D3DXVec3Normalize(&D3DXVECTOR3(), &cross);
+		D3DXVECTOR3 cross = *D3DXVec3Cross(&dm, &lv[0], &lv[1]);
+		normal_ = *D3DXVec3Normalize(&dm, &cross);
 	}
 };
 
@@ -158,11 +159,13 @@ class DxMath {
 public:
 	static D3DXVECTOR2 Normalize(const D3DXVECTOR2& v)
 	{
-		return *D3DXVec2Normalize(&D3DXVECTOR2(), &v);
+		D3DXVECTOR2 dm;
+		return *D3DXVec2Normalize(&dm, &v);
 	}
 	static D3DXVECTOR3 Normalize(const D3DXVECTOR3& v)
 	{
-		return *D3DXVec3Normalize(&D3DXVECTOR3(), &v);
+		D3DXVECTOR3 dm;
+		return *D3DXVec3Normalize(&dm, &v);
 	}
 	static float DotProduct(const D3DXVECTOR2& v1, const D3DXVECTOR2& v2)
 	{
@@ -178,7 +181,8 @@ public:
 	}
 	static D3DXVECTOR3 CrossProduct(const D3DXVECTOR3& v1, const D3DXVECTOR3& v2)
 	{
-		return *D3DXVec3Cross(&D3DXVECTOR3(), &v1, &v2);
+		D3DXVECTOR3 dm;
+		return *D3DXVec3Cross(&dm, &v1, &v2);
 	}
 
 	//ベクトルと行列の積

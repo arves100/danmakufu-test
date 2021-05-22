@@ -36,7 +36,7 @@ public:
 		}
 	}
 
-	gstd::ref_count_ptr<ManagedScript> GetScript(_int64 id);
+	std::shared_ptr<ManagedScript> GetScript(_int64 id);
 	void StartScript(_int64 id);
 	void CloseScript(_int64 id);
 	void CloseScriptOnType(int type);
@@ -45,13 +45,13 @@ public:
 	int GetAllScriptThreadCount();
 	void TerminateScriptAll(std::wstring message);
 
-	_int64 LoadScript(std::wstring path, gstd::ref_count_ptr<ManagedScript> script);
+	_int64 LoadScript(std::wstring path, std::shared_ptr<ManagedScript> script);
 	_int64 LoadScript(std::wstring path, int type);
-	_int64 LoadScriptInThread(std::wstring path, gstd::ref_count_ptr<ManagedScript> script);
+	_int64 LoadScriptInThread(std::wstring path, std::shared_ptr<ManagedScript> script);
 	_int64 LoadScriptInThread(std::wstring path, int type);
-	virtual void CallFromLoadThread(gstd::ref_count_ptr<gstd::FileManager::LoadThreadEvent> event);
+	virtual void CallFromLoadThread(std::unique_ptr<FileManager::LoadThreadEvent>& event)
 
-	virtual gstd::ref_count_ptr<ManagedScript> Create(int type) = 0;
+	virtual std::shared_ptr<ManagedScript> Create(int type) = 0;
 	virtual void RequestEventAll(int type, std::vector<gstd::value>& listValue = std::vector<gstd::value>());
 	gstd::value GetScriptResult(_int64 idScript);
 	void AddRelativeScriptManager(gstd::ref_count_weak_ptr<ScriptManager> manager) { listRelativeManager_.push_back(manager); }
@@ -63,14 +63,14 @@ protected:
 	bool bHasCloseScriptWork_;
 
 	std::wstring error_;
-	std::map<_int64, gstd::ref_count_ptr<ManagedScript>> mapScriptLoad_;
-	std::list<gstd::ref_count_ptr<ManagedScript>> listScriptRun_;
+	std::map<_int64, std::shared_ptr<ManagedScript>> mapScriptLoad_;
+	std::list<std::shared_ptr<ManagedScript>> listScriptRun_;
 	std::map<_int64, gstd::value> mapClosedScriptResult_;
 	std::list<gstd::ref_count_weak_ptr<ScriptManager>> listRelativeManager_;
 
 	int mainThreadID_;
 
-	_int64 _LoadScript(std::wstring path, gstd::ref_count_ptr<ManagedScript> script);
+	_int64 _LoadScript(std::wstring path, std::shared_ptr<ManagedScript> script);
 };
 
 /**********************************************************
@@ -92,8 +92,8 @@ public:
 public:
 	ManagedScript();
 	virtual void SetScriptManager(ScriptManager* manager);
-	virtual void SetScriptParameter(gstd::ref_count_ptr<ManagedScriptParameter> param) { scriptParam_ = param; }
-	gstd::ref_count_ptr<ManagedScriptParameter> GetScriptParameter() { return scriptParam_; }
+	virtual void SetScriptParameter(std::shared_ptr<ManagedScriptParameter> param) { scriptParam_ = param; }
+	std::shared_ptr<ManagedScriptParameter> GetScriptParameter() { return scriptParam_; }
 
 	int GetScriptType() { return typeScript_; }
 	bool IsLoad() { return bLoad_; }
@@ -127,7 +127,7 @@ protected:
 	ScriptManager* scriptManager_;
 
 	int typeScript_;
-	gstd::ref_count_ptr<ManagedScriptParameter> scriptParam_;
+	std::shared_ptr<ManagedScriptParameter> scriptParam_;
 	volatile bool bLoad_;
 	bool bEndScript_;
 	bool bAutoDeleteObject_;

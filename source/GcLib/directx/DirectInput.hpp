@@ -84,28 +84,22 @@ protected:
 /**********************************************************
 //VirtualKeyManager
 **********************************************************/
-class VirtualKeyManager;
-class VirtualKey {
-	friend VirtualKeyManager;
+struct VirtualKey {
+	VirtualKey() : button(0), state(KEY_FREE) {}
+	VirtualKey(int b) : button(b), state(KEY_FREE) {}
 
-public:
-	VirtualKey(int keyboard, int padIndex, int padButton);
-	virtual ~VirtualKey();
-	int GetKeyState() { return state_; }
-	void SetKeyState(int state) { state_ = state; }
+	int state;
+	int button;
+};
 
-	int GetKeyCode() { return keyboard_; }
-	void SetKeyCode(int code) { keyboard_ = code; }
-	int GetPadIndex() { return padIndex_; }
-	void SetPadIndex(int index) { padIndex_ = index; }
-	int GetPadButton() { return padButton_; }
-	void SetPadButton(int button) { padButton_ = button; }
+struct GVirtualKey {
+	GVirtualKey() : padId(0), button(0), bAxis(0), state(KEY_FREE) {}
+	GVirtualKey(int id, int b, bool ax) : padId(id), button(b), bAxis(ax), state(KEY_FREE) {}
 
-private:
-	int keyboard_; //キーボードのキー
-	int padIndex_; //ジョイパッドの番号
-	int padButton_; //ジョイパッドのボタン
-	int state_; //現在の状態
+	int state;
+	int button;
+	bool bAxis;
+	int padId;
 };
 
 class VirtualKeyManager : public DirectInput {
@@ -116,16 +110,20 @@ public:
 	virtual void EventUpdate(SDL_Event* evt);
 	void ClearKeyState();
 
-	void AddKeyMap(int id, gstd::ref_count_ptr<VirtualKey> key) { mapKey_[id] = key; }
-	void DeleteKeyMap(int id) { mapKey_.erase(id); };
-	void ClearKeyMap() { mapKey_.clear(); };
+	void AddKeyMap(int id, int button) { mapKey_.insert(std::make_pair(id, VirtualKey(button))); }
+	void AddGKeyMap(int id, int button, int padId, bool bAxis) { mapKeyG_.insert(std::make_pair(id, GVirtualKey(padId, button, bAxis))); }
+	void DeleteKeyMap(int id) { mapKey_.erase(id); mapKeyG_.erase(id); };
+	void ClearKeyMap() { mapKey_.clear(); mapKeyG_.clear(); };
 	int GetVirtualKeyState(int id);
-	gstd::ref_count_ptr<VirtualKey> GetVirtualKey(int id);
 	bool IsTargetKeyCode(int key);
+	bool HaveKeyMap(int id) { return mapKey_.count(id) > 0;  }
+
+	// Only used for replay mode!
+	void ForceSetKeyMap(int id, int state) { mapKey_[id].state = state; }
 
 protected:
-	std::map<int, gstd::ref_count_ptr<VirtualKey>> mapKey_;
-	int _GetVirtualKeyState(int id);
+	std::map<int, VirtualKey> mapKey_;
+	std::map<int, GVirtualKey> mapKeyG_; // GameController
 };
 
 /**********************************************************

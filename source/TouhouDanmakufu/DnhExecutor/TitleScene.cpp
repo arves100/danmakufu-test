@@ -9,7 +9,7 @@ TitleScene::TitleScene()
 	pageMaxY_ = ITEM_COUNT - 1;
 
 	std::wstring pathBack = EPathProperty::GetSystemImageDirectory() + L"System_Title_Background.png";
-	ref_count_ptr<Texture> textureBack = new Texture();
+	std::shared_ptr<Texture> textureBack = new Texture();
 	textureBack->CreateFromFile(pathBack);
 
 	DirectGraphics* graphics = DirectGraphics::GetBase();

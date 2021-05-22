@@ -39,7 +39,7 @@ bool TransitionEffect_FadeOut::IsEnd()
 	bool res = (alpha_ <= 0);
 	return res;
 }
-void TransitionEffect_FadeOut::Initialize(int frame, gstd::ref_count_ptr<Texture> texture)
+void TransitionEffect_FadeOut::Initialize(int frame, std::shared_ptr<Texture> texture)
 {
 	diffAlpha_ = 255.0 / frame;
 	alpha_ = 255.0;
@@ -62,7 +62,7 @@ TransitionEffectTask::TransitionEffectTask()
 TransitionEffectTask::~TransitionEffectTask()
 {
 }
-void TransitionEffectTask::SetTransition(gstd::ref_count_ptr<TransitionEffect> effect)
+void TransitionEffectTask::SetTransition(std::shared_ptr<TransitionEffect> effect)
 {
 	effect_ = effect;
 }

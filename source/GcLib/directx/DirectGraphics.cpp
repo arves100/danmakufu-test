@@ -36,12 +36,12 @@ DirectGraphics::DirectGraphics()
 	pDevice_ = NULL;
 	pBackSurf_ = NULL;
 	pZBuffer_ = NULL;
-	camera_ = new DxCamera();
-	camera2D_ = new DxCamera2D();
+	camera_ = std::make_shared<DxCamera>();
+	camera2D_ = std::make_shared<DxCamera2D>();
 }
 DirectGraphics::~DirectGraphics()
 {
-	Logger::WriteTop(L"DirectGraphics：終了開始");
+	Logger::WriteTop(u8"DirectGraphics：終了開始");
 
 	if (pZBuffer_ != NULL)
 		pZBuffer_->Release();
@@ -52,7 +52,7 @@ DirectGraphics::~DirectGraphics()
 	if (pDirect3D_ != NULL)
 		pDirect3D_->Release();
 	thisBase_ = NULL;
-	Logger::WriteTop(L"DirectGraphics：終了完了");
+	Logger::WriteTop(u8"DirectGraphics：終了完了");
 }
 bool DirectGraphics::Initialize(SDL_Window* hWnd)
 {
@@ -69,16 +69,15 @@ bool DirectGraphics::Initialize(SDL_Window* SDL_hWnd, DirectGraphicsConfig& conf
 	SDL_VERSION(&info.version);
 	if (!SDL_GetWindowWMInfo(SDL_hWnd, &info))
 	{
-		OutputDebugStringA(SDL_GetError()); // Not based ...
-		throw gstd::wexception(L"Cannot get SDL window info");
+		throw std::runtime_error(u8"Cannot get SDL window info");
 	}
 
 	HWND hWnd = info.info.win.window;
 
-	Logger::WriteTop(L"DirectGraphics：初期化");
+	Logger::WriteTop(u8"DirectGraphics：初期化");
 	pDirect3D_ = Direct3DCreate9(D3D_SDK_VERSION);
 	if (pDirect3D_ == NULL)
-		throw gstd::wexception(L"Direct3DCreate9失敗");
+		throw std::runtime_error(u8"Direct3DCreate9失敗");
 
 	config_ = config;
 	hAttachedWindow_ = SDL_hWnd;
@@ -137,26 +136,26 @@ bool DirectGraphics::Initialize(SDL_Window* SDL_hWnd, DirectGraphicsConfig& conf
 		if (caps.VertexShaderVersion >= D3DVS_VERSION(2, 0)) {
 			hrDevice = pDirect3D_->CreateDevice(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, hWnd, D3DCREATE_HARDWARE_VERTEXPROCESSING | D3DCREATE_MULTITHREADED | D3DCREATE_FPU_PRESERVE, &d3dpp, &pDevice_);
 			if (!FAILED(hrDevice))
-				Logger::WriteTop(L"DirectGraphics：デバイス初期化完了->D3DCREATE_HARDWARE_VERTEXPROCESSING");
+				Logger::WriteTop(u8"DirectGraphics：デバイス初期化完了->D3DCREATE_HARDWARE_VERTEXPROCESSING");
 			if (FAILED(hrDevice)) {
 				hrDevice = pDirect3D_->CreateDevice(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, hWnd, D3DCREATE_SOFTWARE_VERTEXPROCESSING | D3DCREATE_MULTITHREADED | D3DCREATE_FPU_PRESERVE, &d3dpp, &pDevice_);
 				if (!FAILED(hrDevice))
-					Logger::WriteTop(L"DirectGraphics：デバイス初期化完了->D3DCREATE_SOFTWARE_VERTEXPROCESSING");
+					Logger::WriteTop(u8"DirectGraphics：デバイス初期化完了->D3DCREATE_SOFTWARE_VERTEXPROCESSING");
 			}
 		} else {
 			hrDevice = pDirect3D_->CreateDevice(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, hWnd, D3DCREATE_SOFTWARE_VERTEXPROCESSING | D3DCREATE_MULTITHREADED | D3DCREATE_FPU_PRESERVE, &d3dpp, &pDevice_);
 			if (!FAILED(hrDevice))
-				Logger::WriteTop(L"DirectGraphics：デバイス初期化完了->D3DCREATE_SOFTWARE_VERTEXPROCESSING");
+				Logger::WriteTop(u8"DirectGraphics：デバイス初期化完了->D3DCREATE_SOFTWARE_VERTEXPROCESSING");
 		}
 
 		if (FAILED(hrDevice)) {
-			Logger::WriteTop(L"DirectGraphics：HEL動作します。おそらく正常動作しません。");
+			Logger::WriteTop(u8"DirectGraphics：HEL動作します。おそらく正常動作しません。");
 			hrDevice = pDirect3D_->CreateDevice(D3DADAPTER_DEFAULT, D3DDEVTYPE_REF, hWnd, D3DCREATE_SOFTWARE_VERTEXPROCESSING | D3DCREATE_MULTITHREADED | D3DCREATE_FPU_PRESERVE, &d3dpp, &pDevice_);
 		}
 	}
 
 	if (FAILED(hrDevice)) {
-		throw gstd::wexception(L"IDirect3DDevice9::CreateDevice失敗");
+		throw std::runtime_error(u8"IDirect3DDevice9::CreateDevice失敗");
 	}
 
 	// BackSurface取得
@@ -174,7 +173,7 @@ bool DirectGraphics::Initialize(SDL_Window* SDL_hWnd, DirectGraphicsConfig& conf
 	BeginScene();
 	EndScene();
 
-	Logger::WriteTop(L"DirectGraphics：初期化完了");
+	Logger::WriteTop(u8"DirectGraphics：初期化完了");
 	return true;
 }
 
@@ -201,7 +200,7 @@ void DirectGraphics::_RestoreDxResource()
 }
 void DirectGraphics::_Restore()
 {
-	Logger::WriteTop(L"DirectGraphics：_Restore開始");
+	Logger::WriteTop(u8"DirectGraphics：_Restore開始");
 	// ディスプレイの協調レベルを調査
 	HRESULT hr = pDevice_->TestCooperativeLevel();
 	if (hr == D3DERR_DEVICELOST) {
@@ -226,7 +225,7 @@ void DirectGraphics::_Restore()
 
 	_RestoreDxResource();
 
-	Logger::WriteTop(L"DirectGraphics：_Restore完了");
+	Logger::WriteTop(u8"DirectGraphics：_Restore完了");
 }
 void DirectGraphics::_InitializeDeviceState()
 {
@@ -235,8 +234,8 @@ void DirectGraphics::_InitializeDeviceState()
 	if (camera_ != NULL) {
 		camera_->UpdateDeviceWorldViewMatrix();
 	} else {
-		D3DVECTOR viewFrom = D3DXVECTOR3(100, 300, -500);
-		D3DXMatrixLookAtLH(&viewMat, (D3DXVECTOR3*)&viewFrom, &D3DXVECTOR3(0, 0, 0), &D3DXVECTOR3(0, 1, 0));
+		auto viewFrom = D3DXVECTOR3(100, 300, -500), at = D3DXVECTOR3(0, 0, 0), up = D3DXVECTOR3(0, 1, 0);
+		D3DXMatrixLookAtLH(&viewMat, &viewFrom, &at, &up);
 	}
 	D3DXMatrixPerspectiveFovLH(&persMat, D3DXToRadian(45.0),
 		(float)config_.GetScreenWidth() / (float)config_.GetScreenHeight(), 10, 2000);
@@ -326,7 +325,7 @@ void DirectGraphics::ClearRenderTarget(RECT rect)
 		pDevice_->Clear(1, &rcDest, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, D3DCOLOR_ARGB(0, 0, 0, 0), 1.0, 0);
 	}
 }
-void DirectGraphics::SetRenderTarget(gstd::ref_count_ptr<Texture> texture)
+void DirectGraphics::SetRenderTarget(std::shared_ptr<Texture> texture)
 {
 	textureTarget_ = texture;
 	if (texture == NULL) {
@@ -857,7 +856,7 @@ void DxCamera::SetProjectionMatrix(float width, float height, float posNear, flo
 	clipFar_ = posFar;
 
 	/*
-	ref_count_ptr<DxCamera2D> camera2D = graph->GetCamera2D();
+	std::shared_ptr<DxCamera2D> camera2D = graph->GetCamera2D();
 	D3DXVECTOR2 pos = camera2D->GetLeftTopPosition();
 	double ratio = camera2D->GetRatio();
 	D3DXMATRIX matScale;
@@ -925,6 +924,8 @@ DxCamera2D::DxCamera2D()
 	ratioY_ = 1.0;
 	angleZ_ = 0;
 	bEnable_ = false;
+	posReset_.x = 0;
+	posReset_.y = 0;
 }
 DxCamera2D::~DxCamera2D()
 {
@@ -934,12 +935,11 @@ void DxCamera2D::Reset()
 	DirectGraphics* graphics = DirectGraphics::GetBase();
 	int width = graphics->GetScreenWidth();
 	int height = graphics->GetScreenHeight();
-	if (posReset_ == NULL) {
+	if (posReset_.x == 0 && posReset_.y == 0) {
 		pos_.x = width / 2;
 		pos_.y = height / 2;
 	} else {
-		pos_.x = posReset_->x;
-		pos_.y = posReset_->y;
+		pos_ = posReset_;
 	}
 	ratioX_ = 1.0;
 	ratioY_ = 1.0;

@@ -21,14 +21,14 @@ public:
 	StgControlScriptInformation();
 	virtual ~StgControlScriptInformation();
 	void LoadFreePlayerList();
-	std::vector<ref_count_ptr<ScriptInformation>>& GetFreePlayerList() { return listFreePlayer_; }
+	std::vector<std::shared_ptr<ScriptInformation>>& GetFreePlayerList() { return listFreePlayer_; }
 
 	void LoadReplayInformation(std::wstring pathMainScript);
-	ref_count_ptr<ReplayInformationManager> GetReplayInformationManager() { return replayManager_; }
+	std::shared_ptr<ReplayInformationManager> GetReplayInformationManager() { return replayManager_; }
 
 private:
-	std::vector<ref_count_ptr<ScriptInformation>> listFreePlayer_; //標準自機
-	ref_count_ptr<ReplayInformationManager> replayManager_; //リプレイ情報
+	std::vector<std::shared_ptr<ScriptInformation>> listFreePlayer_; //標準自機
+	std::shared_ptr<ReplayInformationManager> replayManager_; //リプレイ情報
 };
 
 /**********************************************************
@@ -154,7 +154,7 @@ protected:
 	StgSystemController* systemController_;
 
 	//スクリプト情報のキャッシュ
-	std::map<std::wstring, ref_count_ptr<ScriptInformation>> mapScriptInfo_;
+	std::map<std::wstring, std::shared_ptr<ScriptInformation>> mapScriptInfo_;
 };
 
 #endif

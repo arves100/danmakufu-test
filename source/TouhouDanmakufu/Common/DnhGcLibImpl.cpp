@@ -132,7 +132,7 @@ bool ETextureManager::Initialize()
 
 	for (int iRender = 0; iRender < MAX_RESERVED_RENDERTARGET; iRender++) {
 		std::wstring name = GetReservedRenderTargetName(iRender);
-		ref_count_ptr<Texture> texture = new Texture();
+		std::shared_ptr<Texture> texture = new Texture();
 		res &= texture->CreateRenderTarget(name);
 		Add(name, texture);
 	}

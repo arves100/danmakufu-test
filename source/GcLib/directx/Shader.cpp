@@ -43,7 +43,7 @@ bool ShaderManager::Initialize()
 	DirectGraphics* graphics = DirectGraphics::GetBase();
 	graphics->AddDirectGraphicsListener(this);
 
-	ref_count_ptr<Shader> shaderSkinedMesh = new Shader();
+	std::shared_ptr<Shader> shaderSkinedMesh = std::make_shared<Shader>();
 	std::string sourceSkinedMesh = HLSL_DEFAULT_SKINED_MESH;
 	shaderSkinedMesh->CreateFromText(sourceSkinedMesh);
 	AddShader(NAME_DEFAULT_SKINNED_MESH, shaderSkinedMesh);
@@ -52,7 +52,7 @@ bool ShaderManager::Initialize()
 	// shaderSkinedMesh->End();
 
 	/*
-	ref_count_ptr<Shader> shaderTest = new Shader();
+	std::shared_ptr<Shader> shaderTest = new Shader();
 	std::string pathDir = PathProperty::GetModuleDirectory() + "shader\\";
 	shaderTest->CreateFromFile(pathDir + "Sharder_SkinnedMesh.txt");
 	AddShader(NAME_DEFAULT_SKINNED_MESH, shaderTest);
@@ -65,7 +65,7 @@ bool ShaderManager::Initialize()
 		str.resize(size);
 		file.Read(&str[0], size);
 
-		ref_count_ptr<Shader> shaderTestFile = new Shader();
+		std::shared_ptr<Shader> shaderTestFile = new Shader();
 		shaderTestFile->CreateFromText(str);
 	}
 	*/
@@ -79,29 +79,29 @@ void ShaderManager::Clear()
 		mapShaderData_.clear();
 	}
 }
-void ShaderManager::_ReleaseShaderData(std::wstring name)
+void ShaderManager::_ReleaseShaderData(std::string name)
 {
 	{
 		Lock lock(lock_);
 		if (IsDataExists(name)) {
 			mapShaderData_[name]->bLoad_ = true; //読み込み完了扱い
 			mapShaderData_.erase(name);
-			Logger::WriteTop(StringUtility::Format(L"ShaderManager：Shaderを解放しました(Shader Released)[%s]", name.c_str()));
+			Logger::WriteTop(StringUtility::Format("ShaderManager：Shaderを解放しました(Shader Released)[%s]", name.c_str()));
 		}
 	}
 }
-bool ShaderManager::_CreateFromFile(std::wstring path)
+bool ShaderManager::_CreateFromFile(std::string path)
 {
-	lastError_ = L"";
+	lastError_ = "";
 	if (IsDataExists(path)) {
 		return true;
 	}
 
 	path = PathProperty::GetUnique(path);
-	ref_count_ptr<FileReader> reader = FileManager::GetBase()->GetFileReader(path);
+	std::shared_ptr<FileReader> reader = FileManager::GetBase()->GetFileReader(path);
 	if (reader == NULL || !reader->Open()) {
-		std::wstring log = StringUtility::Format(L"Shader読み込み失敗(Shader Load Failed)：\r\n%s", path.c_str());
-		Logger::WriteTop(log);
+		std::wstring log = StringUtility::Format("Shader読み込み失敗(Shader Load Failed)：\r\n%s", path.c_str());
+		Logger::WriteTop(u8og);
 		lastError_ = log;
 		return false;
 	}
@@ -115,7 +115,7 @@ bool ShaderManager::_CreateFromFile(std::wstring path)
 	source.resize(size);
 	memcpy(&source[0], buf.GetPointer(), size);
 
-	gstd::ref_count_ptr<ShaderData> data(new ShaderData());
+	std::shared_ptr<ShaderData> data(new ShaderData());
 
 	DirectGraphics* graphics = DirectGraphics::GetBase();
 	ID3DXBuffer* pErr = NULL;
@@ -138,11 +138,11 @@ bool ShaderManager::_CreateFromFile(std::wstring path)
 			err = StringUtility::ConvertMultiToWide(cText);
 		}
 		std::wstring log = StringUtility::Format(L"Shader読み込み失敗(Shader Load Failed)：\r\n%s\r\n[%s]", path.c_str(), err.c_str());
-		Logger::WriteTop(log);
+		Logger::WriteTop(u8og);
 		lastError_ = log;
 	} else {
 		std::wstring log = StringUtility::Format(L"Shader読み込み(Shader Load Success)：\r\n%s", path.c_str());
-		Logger::WriteTop(log);
+		Logger::WriteTop(u8og);
 
 		mapShaderData_[path] = data;
 		data->manager_ = this;
@@ -161,7 +161,7 @@ bool ShaderManager::_CreateFromText(std::string& source)
 	bool res = true;
 	DirectGraphics* graphics = DirectGraphics::GetBase();
 
-	gstd::ref_count_ptr<ShaderData> data(new ShaderData());
+	std::shared_ptr<ShaderData> data(new ShaderData());
 	ID3DXBuffer* pErr = NULL;
 	HRESULT hr = D3DXCreateEffect(
 		graphics->GetDevice(),
@@ -180,12 +180,12 @@ bool ShaderManager::_CreateFromText(std::string& source)
 		if (pErr != NULL)
 			err = (char*)pErr->GetBufferPointer();
 		std::wstring log = StringUtility::Format(L"Shader読み込み失敗(Load Shader Failed)：\r\n%s\r\n[%s]", tStr.c_str(), err);
-		Logger::WriteTop(log);
+		Logger::WriteTop(u8og);
 		lastError_ = log;
 	} else {
 		std::wstring log = L"Shader読み込み(Load Shader Success)：";
 		log += StringUtility::FormatToWide("%s", tStr.c_str());
-		Logger::WriteTop(log);
+		Logger::WriteTop(u8og);
 
 		mapShaderData_[id] = data;
 		data->manager_ = this;
@@ -230,7 +230,7 @@ void ShaderManager::_EndShader(Shader* shader)
 	}
 
 	if (shader != preShader)
-		throw gstd::wexception(L"EndShader異常");
+		throw std::runtime_error("EndShader異常");
 
 	preShader = NULL;
 	if (listExecuteShader_.size() > 0) {
@@ -251,7 +251,7 @@ void ShaderManager::_EndShader(Shader* shader)
 
 void ShaderManager::ReleaseDxResource()
 {
-	std::map<std::wstring, gstd::ref_count_ptr<Shader>>::iterator itrMap;
+	std::map<std::wstring, std::shared_ptr<Shader>>::iterator itrMap;
 	{
 		for (itrMap = mapShader_.begin(); itrMap != mapShader_.end(); itrMap++) {
 			std::wstring name = itrMap->first;
@@ -262,7 +262,7 @@ void ShaderManager::ReleaseDxResource()
 }
 void ShaderManager::RestoreDxResource()
 {
-	std::map<std::wstring, gstd::ref_count_ptr<Shader>>::iterator itrMap;
+	std::map<std::wstring, std::shared_ptr<Shader>>::iterator itrMap;
 	{
 		for (itrMap = mapShader_.begin(); itrMap != mapShader_.end(); itrMap++) {
 			std::wstring name = itrMap->first;
@@ -281,9 +281,9 @@ bool ShaderManager::IsDataExists(std::wstring name)
 	}
 	return res;
 }
-gstd::ref_count_ptr<ShaderData> ShaderManager::GetShaderData(std::wstring name)
+std::shared_ptr<ShaderData> ShaderManager::GetShaderData(std::wstring name)
 {
-	gstd::ref_count_ptr<ShaderData> res;
+	std::shared_ptr<ShaderData> res;
 	{
 		Lock lock(lock_);
 		bool bExist = mapShaderData_.find(name) != mapShaderData_.end();
@@ -293,10 +293,10 @@ gstd::ref_count_ptr<ShaderData> ShaderManager::GetShaderData(std::wstring name)
 	}
 	return res;
 }
-gstd::ref_count_ptr<Shader> ShaderManager::CreateFromFile(std::wstring path)
+std::shared_ptr<Shader> ShaderManager::CreateFromFile(std::wstring path)
 {
 	path = PathProperty::GetUnique(path);
-	gstd::ref_count_ptr<Shader> res;
+	std::shared_ptr<Shader> res;
 	{
 		Lock lock(lock_);
 		bool bExist = mapShader_.find(path) != mapShader_.end();
@@ -312,9 +312,9 @@ gstd::ref_count_ptr<Shader> ShaderManager::CreateFromFile(std::wstring path)
 	}
 	return res;
 }
-gstd::ref_count_ptr<Shader> ShaderManager::CreateFromText(std::string source)
+std::shared_ptr<Shader> ShaderManager::CreateFromText(std::string source)
 {
-	gstd::ref_count_ptr<Shader> res;
+	std::shared_ptr<Shader> res;
 	{
 		Lock lock(lock_);
 		std::wstring id = _GetTextSourceID(source);
@@ -331,15 +331,15 @@ gstd::ref_count_ptr<Shader> ShaderManager::CreateFromText(std::string source)
 	}
 	return res;
 }
-gstd::ref_count_ptr<Shader> ShaderManager::CreateFromFileInLoadThread(std::wstring path)
+std::shared_ptr<Shader> ShaderManager::CreateFromFileInLoadThread(std::wstring path)
 {
 	return false;
 }
-void ShaderManager::CallFromLoadThread(gstd::ref_count_ptr<gstd::FileManager::LoadThreadEvent> event)
+void ShaderManager::CallFromLoadThread(std::unique_ptr<FileManager::LoadThreadEvent>& event)
 {
 }
 
-void ShaderManager::AddShader(std::wstring name, gstd::ref_count_ptr<Shader> shader)
+void ShaderManager::AddShader(std::wstring name, std::shared_ptr<Shader> shader)
 {
 	{
 		Lock lock(lock_);
@@ -353,9 +353,9 @@ void ShaderManager::DeleteShader(std::wstring name)
 		mapShader_.erase(name);
 	}
 }
-gstd::ref_count_ptr<Shader> ShaderManager::GetShader(std::wstring name)
+std::shared_ptr<Shader> ShaderManager::GetShader(std::wstring name)
 {
-	gstd::ref_count_ptr<Shader> res;
+	std::shared_ptr<Shader> res;
 	{
 		Lock lock(lock_);
 		bool bExist = mapShader_.find(name) != mapShader_.end();
@@ -365,17 +365,17 @@ gstd::ref_count_ptr<Shader> ShaderManager::GetShader(std::wstring name)
 	}
 	return res;
 }
-gstd::ref_count_ptr<Shader> ShaderManager::GetDefaultSkinnedMeshShader()
+std::shared_ptr<Shader> ShaderManager::GetDefaultSkinnedMeshShader()
 {
-	gstd::ref_count_ptr<Shader> res = GetShader(NAME_DEFAULT_SKINNED_MESH);
+	std::shared_ptr<Shader> res = GetShader(NAME_DEFAULT_SKINNED_MESH);
 	return res;
 }
 void ShaderManager::CheckExecutingShaderZero()
 {
 	if (listExecuteShader_.size() > 0)
-		throw gstd::wexception(L"CheckExecutingShaderZero");
+		throw std::runtime_error("CheckExecutingShaderZero");
 }
-std::wstring ShaderManager::GetLastError()
+std::string ShaderManager::GetLastError()
 {
 	std::wstring res;
 	{
@@ -472,12 +472,12 @@ std::vector<float> ShaderParameter::GetFloatArray()
 	value_->Read(&res[0], value_->GetSize());
 	return res;
 }
-void ShaderParameter::SetTexture(gstd::ref_count_ptr<Texture> texture)
+void ShaderParameter::SetTexture(std::shared_ptr<Texture> texture)
 {
 	type_ = TYPE_TEXTURE;
 	texture_ = texture;
 }
-gstd::ref_count_ptr<Texture> ShaderParameter::GetTexture()
+std::shared_ptr<Texture> ShaderParameter::GetTexture()
 {
 	return texture_;
 }
@@ -558,7 +558,7 @@ void Shader::RestoreDxResource()
 		return;
 	effect->OnResetDevice();
 }
-bool Shader::CreateFromFile(std::wstring path)
+bool Shader::CreateFromFile(std::string path)
 {
 	path = PathProperty::GetUnique(path);
 
@@ -568,7 +568,7 @@ bool Shader::CreateFromFile(std::wstring path)
 		if (data_ != NULL)
 			Release();
 		ShaderManager* manager = ShaderManager::GetBase();
-		ref_count_ptr<Shader> shader = manager->CreateFromFile(path);
+		std::shared_ptr<Shader> shader = manager->CreateFromFile(path);
 		if (shader != NULL) {
 			data_ = shader->data_;
 		}
@@ -585,7 +585,7 @@ bool Shader::CreateFromText(std::string& source)
 		if (data_ != NULL)
 			Release();
 		ShaderManager* manager = ShaderManager::GetBase();
-		ref_count_ptr<Shader> shader = manager->CreateFromText(source);
+		std::shared_ptr<Shader> shader = manager->CreateFromText(source);
 		if (shader != NULL) {
 			data_ = shader->data_;
 		}
@@ -663,10 +663,10 @@ bool Shader::_SetupParameter()
 	if (FAILED(hr))
 		return false;
 
-	std::map<std::string, gstd::ref_count_ptr<ShaderParameter>>::iterator itrParam;
+	std::map<std::string, std::shared_ptr<ShaderParameter>>::iterator itrParam;
 	for (itrParam = mapParam_.begin(); itrParam != mapParam_.end(); itrParam++) {
 		std::string name = itrParam->first;
-		gstd::ref_count_ptr<ShaderParameter> param = itrParam->second;
+		std::shared_ptr<ShaderParameter> param = itrParam->second;
 		int type = param->GetType();
 		switch (type) {
 		case ShaderParameter::TYPE_MATRIX: {
@@ -695,7 +695,7 @@ bool Shader::_SetupParameter()
 			break;
 		}
 		case ShaderParameter::TYPE_TEXTURE: {
-			gstd::ref_count_ptr<Texture> texture = param->GetTexture();
+			std::shared_ptr<Texture> texture = param->GetTexture();
 			IDirect3DTexture9* pTex = texture->GetD3DTexture();
 			hr = effect->SetTexture(name.c_str(), pTex);
 			break;
@@ -706,13 +706,13 @@ bool Shader::_SetupParameter()
 	}
 	return true;
 }
-gstd::ref_count_ptr<ShaderParameter> Shader::_GetParameter(std::string name, bool bCreate)
+std::shared_ptr<ShaderParameter> Shader::_GetParameter(std::string name, bool bCreate)
 {
 	bool bFind = mapParam_.find(name) != mapParam_.end();
 	if (!bFind && !bCreate)
 		return NULL;
 
-	gstd::ref_count_ptr<ShaderParameter> res = NULL;
+	std::shared_ptr<ShaderParameter> res = NULL;
 	if (!bFind) {
 		res = new ShaderParameter();
 		mapParam_[name] = res;
@@ -739,7 +739,7 @@ bool Shader::SetMatrix(std::string name, D3DXMATRIX& matrix)
 	// 	return false;
 	// effect->SetMatrix(name.c_str(), &matrix);
 
-	gstd::ref_count_ptr<ShaderParameter> param = _GetParameter(name, true);
+	std::shared_ptr<ShaderParameter> param = _GetParameter(name, true);
 	param->SetMatrix(matrix);
 
 	return true;
@@ -751,7 +751,7 @@ bool Shader::SetMatrixArray(std::string name, std::vector<D3DXMATRIX>& matrix)
 	// 	return false;
 	// effect->SetMatrixArray(name.c_str(), &matrix[0], matrix.size());
 
-	gstd::ref_count_ptr<ShaderParameter> param = _GetParameter(name, true);
+	std::shared_ptr<ShaderParameter> param = _GetParameter(name, true);
 	param->SetMatrixArray(matrix);
 
 	return true;
@@ -763,7 +763,7 @@ bool Shader::SetVector(std::string name, D3DXVECTOR4& vector)
 	// 	return false;
 	// effect->SetVector(name.c_str(), &vector);
 
-	gstd::ref_count_ptr<ShaderParameter> param = _GetParameter(name, true);
+	std::shared_ptr<ShaderParameter> param = _GetParameter(name, true);
 	param->SetVector(vector);
 	return true;
 }
@@ -774,19 +774,19 @@ bool Shader::SetFloat(std::string name, float value)
 	// 	return false;
 	//effect->SetFloat(name.c_str(), value);
 
-	gstd::ref_count_ptr<ShaderParameter> param = _GetParameter(name, true);
+	std::shared_ptr<ShaderParameter> param = _GetParameter(name, true);
 	param->SetFloat(value);
 	return true;
 }
 bool Shader::SetFloatArray(std::string name, std::vector<float>& values)
 {
-	gstd::ref_count_ptr<ShaderParameter> param = _GetParameter(name, true);
+	std::shared_ptr<ShaderParameter> param = _GetParameter(name, true);
 	param->SetFloatArray(values);
 	return true;
 }
-bool Shader::SetTexture(std::string name, gstd::ref_count_ptr<Texture> texture)
+bool Shader::SetTexture(std::string name, std::shared_ptr<Texture> texture)
 {
-	gstd::ref_count_ptr<ShaderParameter> param = _GetParameter(name, true);
+	std::shared_ptr<ShaderParameter> param = _GetParameter(name, true);
 	param->SetTexture(texture);
 	return true;
 }

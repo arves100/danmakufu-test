@@ -55,9 +55,9 @@ public:
 	void Release();
 
 	std::wstring GetName();
-	bool CreateFromFile(std::wstring path);
-	bool CreateRenderTarget(std::wstring name);
-	bool CreateFromFileInLoadThread(std::wstring path, bool bLoadImageInfo = false);
+	bool CreateFromFile(std::string path);
+	bool CreateRenderTarget(std::string name);
+	bool CreateFromFileInLoadThread(std::string path, bool bLoadImageInfo = false);
 
 	void SetTexture(IDirect3DTexture9* pTexture);
 	IDirect3DTexture9* GetD3DTexture();
@@ -69,8 +69,7 @@ public:
 	bool IsLoad() { return data_ != NULL && data_->bLoad_; }
 
 protected:
-	gstd::ref_count_ptr<TextureData> data_;
-	TextureData* _GetTextureData() { return data_.GetPointer(); }
+	std::unique_ptr<TextureData> data_;
 };
 
 /**********************************************************
@@ -83,7 +82,7 @@ class TextureManager : public DirectGraphicsListener, public gstd::FileManager::
 	static TextureManager* thisBase_;
 
 public:
-	static const std::wstring TARGET_TRANSITION;
+	static const std::string TARGET_TRANSITION;
 
 public:
 	TextureManager();
@@ -93,33 +92,33 @@ public:
 	gstd::CriticalSection& GetLock() { return lock_; }
 
 	virtual void Clear();
-	virtual void Add(std::wstring name, gstd::ref_count_ptr<Texture> texture); //テクスチャの参照を保持します
-	virtual void Release(std::wstring name); //保持している参照を解放します
-	virtual bool IsDataExists(std::wstring name);
+	virtual void Add(std::string name, std::shared_ptr<Texture> texture); //テクスチャの参照を保持します
+	virtual void Release(std::string name); //保持している参照を解放します
+	virtual bool IsDataExists(std::string name);
 
 	virtual void ReleaseDirectGraphics() { ReleaseDxResource(); }
 	virtual void RestoreDirectGraphics() { RestoreDxResource(); }
 	void ReleaseDxResource();
 	void RestoreDxResource();
 
-	gstd::ref_count_ptr<TextureData> GetTextureData(std::wstring name);
-	gstd::ref_count_ptr<Texture> CreateFromFile(std::wstring path); //テクスチャを読み込みます。TextureDataは保持しますが、Textureは保持しません。
-	gstd::ref_count_ptr<Texture> CreateRenderTarget(std::wstring name);
-	gstd::ref_count_ptr<Texture> GetTexture(std::wstring name); //作成済みのテクスチャを取得します
-	gstd::ref_count_ptr<Texture> CreateFromFileInLoadThread(std::wstring path, bool bLoadImageInfo = false);
-	virtual void CallFromLoadThread(gstd::ref_count_ptr<gstd::FileManager::LoadThreadEvent> event);
+	std::shared_ptr<TextureData> GetTextureData(std::string name);
+	std::shared_ptr<Texture> CreateFromFile(std::string path); //テクスチャを読み込みます。TextureDataは保持しますが、Textureは保持しません。
+	std::shared_ptr<Texture> CreateRenderTarget(std::string name);
+	std::shared_ptr<Texture> GetTexture(std::string name); //作成済みのテクスチャを取得します
+	std::shared_ptr<Texture> CreateFromFileInLoadThread(std::wstring path, bool bLoadImageInfo = false);
+	virtual void CallFromLoadThread(std::unique_ptr<gstd::FileManager::LoadThreadEvent>& event);
 
-	void SetInfoPanel(gstd::ref_count_ptr<TextureInfoPanel> panel) { panelInfo_ = panel; }
+	void SetInfoPanel(std::shared_ptr<TextureInfoPanel> panel) { panelInfo_ = panel; }
 
 protected:
 	gstd::CriticalSection lock_;
-	std::map<std::wstring, gstd::ref_count_ptr<Texture>> mapTexture_;
-	std::map<std::wstring, gstd::ref_count_ptr<TextureData>> mapTextureData_;
-	gstd::ref_count_ptr<TextureInfoPanel> panelInfo_;
+	std::map<std::string, std::shared_ptr<Texture>> mapTexture_;
+	std::map<std::string, std::shared_ptr<TextureData>> mapTextureData_;
+	std::shared_ptr<TextureInfoPanel> panelInfo_;
 
-	void _ReleaseTextureData(std::wstring name);
-	bool _CreateFromFile(std::wstring path);
-	bool _CreateRenderTarget(std::wstring name);
+	void _ReleaseTextureData(std::string name);
+	bool _CreateFromFile(std::string path);
+	bool _CreateRenderTarget(std::string name);
 };
 
 } // namespace directx

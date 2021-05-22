@@ -33,14 +33,14 @@ public:
 public:
 	DxWindowEvent() { type_ = 0; };
 	virtual ~DxWindowEvent(){};
-	void SetSourceWindow(gstd::ref_count_ptr<DxWindow> source) { windowSource_ = source; }
-	gstd::ref_count_ptr<DxWindow> GetSourceWindow() { return windowSource_; }
+	void SetSourceWindow(std::shared_ptr<DxWindow> source) { windowSource_ = source; }
+	std::shared_ptr<DxWindow> GetSourceWindow() { return windowSource_; }
 	void AddEventType(int type) { type_ |= type; }
 	bool HasEventType(int type) { return (type_ & type) != 0; }
 	bool IsEmpty() { return type_ == 0; }
 
 protected:
-	gstd::ref_count_ptr<DxWindow> windowSource_; //ウィンドウ
+	std::shared_ptr<DxWindow> windowSource_; //ウィンドウ
 	int type_;
 };
 
@@ -53,7 +53,7 @@ public:
 	virtual ~DxWindowManager();
 	void Clear();
 
-	void AddWindow(gstd::ref_count_ptr<DxWindow> window);
+	void AddWindow(std::shared_ptr<DxWindow> window);
 	void DeleteWindow(DxWindow* window);
 	void DeleteWindowFromID(int id);
 
@@ -63,12 +63,12 @@ public:
 	void SetAllWindowEnable(bool bEnable);
 	void SetWindowEnableWithoutArgumentWindow(bool bEnable, DxWindow* window);
 
-	gstd::ref_count_ptr<DxWindow> GetIntersectedWindow();
-	gstd::ref_count_ptr<DxWindow> GetIntersectedWindow(POINT& pos, gstd::ref_count_ptr<DxWindow> parent = NULL);
+	std::shared_ptr<DxWindow> GetIntersectedWindow();
+	std::shared_ptr<DxWindow> GetIntersectedWindow(POINT& pos, std::shared_ptr<DxWindow> parent = NULL);
 
 protected:
-	std::list<gstd::ref_count_ptr<DxWindow>> listWindow_; //最前面がアクティブ
-	gstd::ref_count_ptr<DxWindow> wndCapture_;
+	std::list<std::shared_ptr<DxWindow>> listWindow_; //最前面がアクティブ
+	std::shared_ptr<DxWindow> wndCapture_;
 	std::list<int> listLockID_;
 
 	void _ArrangeWindow(); //必要のなくなった領域削除
@@ -88,14 +88,14 @@ public:
 	bool IsWindowDelete() { return bWindowDelete_; }
 	void Dispose(); //各参照などを解放します
 	virtual void AddedManager() {}
-	void AddChild(gstd::ref_count_ptr<DxWindow> window);
+	void AddChild(std::shared_ptr<DxWindow> window);
 	virtual void Work() { _WorkChild(); }
 	virtual void Render()
 	{
 		_RenderFrame();
 		_RenderChild();
 	}
-	virtual void DispatchedEvent(gstd::ref_count_ptr<DxWindowEvent> event) { _DispatchEventToChild(event); }
+	virtual void DispatchedEvent(std::shared_ptr<DxWindowEvent> event) { _DispatchEventToChild(event); }
 
 	virtual void IntersectMouseCursor() {}
 
@@ -114,7 +114,7 @@ public:
 	int GetAlpha() { return ColorAccess::GetColorA(color_); }
 	int GetAbsoluteAlpha();
 
-	void SetFrameSprite(gstd::ref_count_ptr<Sprite2D> sprite) { spriteFrame_ = sprite; }
+	void SetFrameSprite(std::shared_ptr<Sprite2D> sprite) { spriteFrame_ = sprite; }
 
 protected:
 	DxWindowManager* manager_;
@@ -124,15 +124,15 @@ protected:
 	bool bWindowVisible_;
 	RECT rectWindow_; //ウィンドウ相対座標
 	DxWindow* windowParent_; //親ウィンドウ
-	std::list<gstd::ref_count_ptr<DxWindow>> listWindowChild_; //子ウィンドウ
+	std::list<std::shared_ptr<DxWindow>> listWindowChild_; //子ウィンドウ
 
 	D3DCOLOR color_;
-	gstd::ref_count_ptr<Sprite2D> spriteFrame_;
+	std::shared_ptr<Sprite2D> spriteFrame_;
 	int typeRenderFrame_;
 
 	void _WorkChild();
 	void _RenderChild();
-	void _DispatchEventToChild(gstd::ref_count_ptr<DxWindowEvent> event);
+	void _DispatchEventToChild(std::shared_ptr<DxWindowEvent> event);
 	virtual void _RenderFrame();
 
 private:
@@ -147,11 +147,11 @@ public:
 	DxLabel();
 	virtual void Work();
 	virtual void Render();
-	void SetText(std::wstring str);
-	void SetText(gstd::ref_count_ptr<DxText> text, bool bArrange = false);
+	void SetText(std::string str);
+	void SetText(std::shared_ptr<DxText> text, bool bArrange = false);
 
 protected:
-	gstd::ref_count_ptr<DxText> text_;
+	std::shared_ptr<DxText> text_;
 };
 
 /**********************************************************
@@ -185,16 +185,16 @@ public:
 
 public:
 	DxMessageBox();
-	virtual void DispatchedEvent(gstd::ref_count_ptr<DxWindowEvent> event);
-	void SetText(gstd::ref_count_ptr<DxText> text);
-	void SetButton(std::vector<gstd::ref_count_ptr<DxButton>> listButton);
+	virtual void DispatchedEvent(std::shared_ptr<DxWindowEvent> event);
+	void SetText(std::shared_ptr<DxText> text);
+	void SetButton(std::vector<std::shared_ptr<DxButton>> listButton);
 	int GetSelectedIndex() { return index_; }
 	void UpdateWindowRect();
 
 protected:
 	int index_;
-	gstd::ref_count_ptr<DxText> text_;
-	std::vector<gstd::ref_count_ptr<DxButton>> listButton_;
+	std::shared_ptr<DxText> text_;
+	std::vector<std::shared_ptr<DxButton>> listButton_;
 };
 
 } // namespace directx

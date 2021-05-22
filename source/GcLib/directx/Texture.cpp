@@ -72,7 +72,7 @@ std::wstring Texture::GetName()
 	}
 	return res;
 }
-bool Texture::CreateFromFile(std::wstring path)
+bool Texture::CreateFromFile(std::string path)
 {
 	path = PathProperty::GetUnique(path);
 
@@ -82,7 +82,7 @@ bool Texture::CreateFromFile(std::wstring path)
 		if (data_ != NULL)
 			Release();
 		TextureManager* manager = TextureManager::GetBase();
-		ref_count_ptr<Texture> texture = manager->CreateFromFile(path);
+		std::shared_ptr<Texture> texture = manager->CreateFromFile(path);
 		if (texture != NULL) {
 			data_ = texture->data_;
 		}
@@ -100,7 +100,7 @@ bool Texture::CreateRenderTarget(std::wstring name)
 		if (data_ != NULL)
 			Release();
 		TextureManager* manager = TextureManager::GetBase();
-		ref_count_ptr<Texture> texture = manager->CreateRenderTarget(name);
+		std::shared_ptr<Texture> texture = manager->CreateRenderTarget(name);
 		if (texture != NULL) {
 			data_ = texture->data_;
 		}
@@ -118,7 +118,7 @@ bool Texture::CreateFromFileInLoadThread(std::wstring path, bool bLoadImageInfo)
 		if (data_ != NULL)
 			Release();
 		TextureManager* manager = TextureManager::GetBase();
-		ref_count_ptr<Texture> texture = manager->CreateFromFileInLoadThread(path, bLoadImageInfo);
+		std::shared_ptr<Texture> texture = manager->CreateFromFileInLoadThread(path, bLoadImageInfo);
 		if (texture != NULL) {
 			data_ = texture->data_;
 		}
@@ -223,7 +223,7 @@ int Texture::GetHeight()
 /**********************************************************
 //TextureManager
 **********************************************************/
-const std::wstring TextureManager::TARGET_TRANSITION = L"__RENDERTARGET_TRANSITION__";
+const std::string TextureManager::TARGET_TRANSITION = "__RENDERTARGET_TRANSITION__";
 TextureManager* TextureManager::thisBase_ = NULL;
 TextureManager::TextureManager()
 {
@@ -248,7 +248,7 @@ bool TextureManager::Initialize()
 	DirectGraphics* graphics = DirectGraphics::GetBase();
 	graphics->AddDirectGraphicsListener(this);
 
-	ref_count_ptr<Texture> texTransition = new Texture();
+	std::shared_ptr<Texture> texTransition = new Texture();
 	bool res = texTransition->CreateRenderTarget(TARGET_TRANSITION);
 	Add(TARGET_TRANSITION, texTransition);
 
@@ -277,7 +277,7 @@ void TextureManager::_ReleaseTextureData(std::wstring name)
 }
 void TextureManager::ReleaseDxResource()
 {
-	std::map<std::wstring, gstd::ref_count_ptr<TextureData>>::iterator itrMap;
+	std::map<std::wstring, std::shared_ptr<TextureData>>::iterator itrMap;
 	{
 		Lock lock(GetLock());
 		for (itrMap = mapTextureData_.begin(); itrMap != mapTextureData_.end(); itrMap++) {
@@ -297,7 +297,7 @@ void TextureManager::ReleaseDxResource()
 void TextureManager::RestoreDxResource()
 {
 	DirectGraphics* graphics = DirectGraphics::GetBase();
-	std::map<std::wstring, gstd::ref_count_ptr<TextureData>>::iterator itrMap;
+	std::map<std::wstring, std::shared_ptr<TextureData>>::iterator itrMap;
 	{
 		Lock lock(GetLock());
 		for (itrMap = mapTextureData_.begin(); itrMap != mapTextureData_.end(); itrMap++) {
@@ -332,11 +332,11 @@ bool TextureManager::_CreateFromFile(std::wstring path)
 
 	//まだ作成されていないなら、作成
 	try {
-		ref_count_ptr<FileReader> reader = FileManager::GetBase()->GetFileReader(path);
+		std::shared_ptr<FileReader> reader = FileManager::GetBase()->GetFileReader(path);
 		if (reader == NULL)
-			throw gstd::wexception(L"ファイルが見つかりません");
+			throw std::runtime_error("ファイルが見つかりません");
 		if (!reader->Open())
-			throw gstd::wexception(L"ファイルが開けません");
+			throw std::runtime_error("ファイルが開けません");
 
 		int size = reader->GetFileSize();
 		ByteBuffer buf;
@@ -351,7 +351,7 @@ bool TextureManager::_CreateFromFile(std::wstring path)
 			colorKey = 0;
 		D3DFORMAT pixelFormat = D3DFMT_A8R8G8B8;
 
-		ref_count_ptr<TextureData> data(new TextureData());
+		std::shared_ptr<TextureData> data(new TextureData());
 
 		HRESULT hr = D3DXCreateTextureFromFileInMemoryEx(DirectGraphics::GetBase()->GetDevice(),
 			buf.GetPointer(), size,
@@ -368,7 +368,7 @@ bool TextureManager::_CreateFromFile(std::wstring path)
 			NULL,
 			&data->pTexture_);
 		if (FAILED(hr)) {
-			throw gstd::wexception(L"D3DXCreateTextureFromFileInMemoryEx失敗");
+			throw std::runtime_error("D3DXCreateTextureFromFileInMemoryEx失敗");
 		}
 
 		mapTextureData_[path] = data;
@@ -392,7 +392,7 @@ bool TextureManager::_CreateRenderTarget(std::wstring name)
 
 	bool res = true;
 	try {
-		ref_count_ptr<TextureData> data = new TextureData();
+		std::shared_ptr<TextureData> data = new TextureData();
 		DirectGraphics* graphics = DirectGraphics::GetBase();
 		int screenWidth = graphics->GetScreenWidth();
 		int screenHeight = graphics->GetScreenHeight();
@@ -442,10 +442,10 @@ bool TextureManager::_CreateRenderTarget(std::wstring name)
 	}
 	return res;
 }
-gstd::ref_count_ptr<Texture> TextureManager::CreateFromFile(std::wstring path)
+std::shared_ptr<Texture> TextureManager::CreateFromFile(std::wstring path)
 {
 	path = PathProperty::GetUnique(path);
-	gstd::ref_count_ptr<Texture> res;
+	std::shared_ptr<Texture> res;
 	{
 		Lock lock(lock_);
 		bool bExist = mapTexture_.find(path) != mapTexture_.end();
@@ -462,9 +462,9 @@ gstd::ref_count_ptr<Texture> TextureManager::CreateFromFile(std::wstring path)
 	return res;
 }
 
-gstd::ref_count_ptr<Texture> TextureManager::CreateRenderTarget(std::wstring name)
+std::shared_ptr<Texture> TextureManager::CreateRenderTarget(std::wstring name)
 {
-	gstd::ref_count_ptr<Texture> res;
+	std::shared_ptr<Texture> res;
 	{
 		Lock lock(lock_);
 		bool bExist = mapTexture_.find(name) != mapTexture_.end();
@@ -480,10 +480,10 @@ gstd::ref_count_ptr<Texture> TextureManager::CreateRenderTarget(std::wstring nam
 	}
 	return res;
 }
-gstd::ref_count_ptr<Texture> TextureManager::CreateFromFileInLoadThread(std::wstring path, bool bLoadImageInfo)
+std::shared_ptr<Texture> TextureManager::CreateFromFileInLoadThread(std::wstring path, bool bLoadImageInfo)
 {
 	path = PathProperty::GetUnique(path);
-	gstd::ref_count_ptr<Texture> res;
+	std::shared_ptr<Texture> res;
 	{
 		Lock lock(lock_);
 		bool bExist = mapTexture_.find(path) != mapTexture_.end();
@@ -494,7 +494,7 @@ gstd::ref_count_ptr<Texture> TextureManager::CreateFromFileInLoadThread(std::wst
 			bool bLoadTarget = true;
 			res = new Texture();
 			if (!IsDataExists(path)) {
-				ref_count_ptr<TextureData> data(new TextureData());
+				std::shared_ptr<TextureData> data(new TextureData());
 				mapTextureData_[path] = data;
 				data->manager_ = this;
 				data->name_ = path;
@@ -503,11 +503,11 @@ gstd::ref_count_ptr<Texture> TextureManager::CreateFromFileInLoadThread(std::wst
 				//画像情報だけ事前に読み込み
 				if (bLoadImageInfo) {
 					try {
-						ref_count_ptr<FileReader> reader = FileManager::GetBase()->GetFileReader(path);
+						std::shared_ptr<FileReader> reader = FileManager::GetBase()->GetFileReader(path);
 						if (reader == NULL)
-							throw gstd::wexception(L"ファイルが見つかりません");
+							throw std::runtime_error("ファイルが見つかりません");
 						if (!reader->Open())
-							throw gstd::wexception(L"ファイルが開けません");
+							throw std::runtime_error("ファイルが開けません");
 
 						int size = reader->GetFileSize();
 						ByteBuffer buf;
@@ -517,7 +517,7 @@ gstd::ref_count_ptr<Texture> TextureManager::CreateFromFileInLoadThread(std::wst
 						D3DXIMAGE_INFO info;
 						HRESULT hr = D3DXGetImageInfoFromFileInMemory(buf.GetPointer(), size, &info);
 						if (FAILED(hr)) {
-							throw gstd::wexception(L"D3DXGetImageInfoFromFileInMemory失敗");
+							throw std::runtime_error("D3DXGetImageInfoFromFileInMemory失敗");
 						}
 
 						data->infoImage_ = info;
@@ -533,24 +533,24 @@ gstd::ref_count_ptr<Texture> TextureManager::CreateFromFileInLoadThread(std::wst
 
 			res->data_ = mapTextureData_[path];
 			if (bLoadTarget) {
-				ref_count_ptr<FileManager::LoadObject> source = res;
-				ref_count_ptr<FileManager::LoadThreadEvent> event = new FileManager::LoadThreadEvent(this, path, res);
+				std::shared_ptr<FileManager::LoadObject> source = res;
+				std::shared_ptr<FileManager::LoadThreadEvent> event = new FileManager::LoadThreadEvent(this, path, res);
 				FileManager::GetBase()->AddLoadThreadEvent(event);
 			}
 		}
 	}
 	return res;
 }
-void TextureManager::CallFromLoadThread(ref_count_ptr<FileManager::LoadThreadEvent> event)
+void TextureManager::CallFromLoadThread(std::shared_ptr<FileManager::LoadThreadEvent> event)
 {
 	std::wstring path = event->GetPath();
 	{
 		Lock lock(lock_);
-		ref_count_ptr<Texture> texture = ref_count_ptr<Texture>::DownCast(event->GetSource());
+		std::shared_ptr<Texture> texture = std::shared_ptr<Texture>::DownCast(event->GetSource());
 		if (texture == NULL)
 			return;
 
-		ref_count_ptr<TextureData> data = texture->data_;
+		std::shared_ptr<TextureData> data = texture->data_;
 		if (data == NULL || data->bLoad_)
 			return;
 
@@ -562,11 +562,11 @@ void TextureManager::CallFromLoadThread(ref_count_ptr<FileManager::LoadThreadEve
 		}
 
 		try {
-			ref_count_ptr<FileReader> reader = FileManager::GetBase()->GetFileReader(path);
+			std::shared_ptr<FileReader> reader = FileManager::GetBase()->GetFileReader(path);
 			if (reader == NULL)
-				throw gstd::wexception(L"ファイルが見つかりません");
+				throw std::runtime_error("ファイルが見つかりません");
 			if (!reader->Open())
-				throw gstd::wexception(L"ファイルが開けません");
+				throw std::runtime_error("ファイルが開けません");
 
 			int size = reader->GetFileSize();
 			ByteBuffer buf;
@@ -593,7 +593,7 @@ void TextureManager::CallFromLoadThread(ref_count_ptr<FileManager::LoadThreadEve
 				NULL,
 				&data->pTexture_);
 			if (FAILED(hr)) {
-				throw gstd::wexception(L"D3DXCreateTextureFromFileInMemoryEx失敗");
+				throw std::runtime_error("D3DXCreateTextureFromFileInMemoryEx失敗");
 			}
 
 			D3DXGetImageInfoFromFileInMemory(buf.GetPointer(), size, &data->infoImage_);
@@ -607,9 +607,9 @@ void TextureManager::CallFromLoadThread(ref_count_ptr<FileManager::LoadThreadEve
 	}
 }
 
-gstd::ref_count_ptr<TextureData> TextureManager::GetTextureData(std::wstring name)
+std::shared_ptr<TextureData> TextureManager::GetTextureData(std::wstring name)
 {
-	gstd::ref_count_ptr<TextureData> res;
+	std::shared_ptr<TextureData> res;
 	{
 		Lock lock(lock_);
 		bool bExist = mapTextureData_.find(name) != mapTextureData_.end();
@@ -620,9 +620,9 @@ gstd::ref_count_ptr<TextureData> TextureManager::GetTextureData(std::wstring nam
 	return res;
 }
 
-gstd::ref_count_ptr<Texture> TextureManager::GetTexture(std::wstring name)
+std::shared_ptr<Texture> TextureManager::GetTexture(std::wstring name)
 {
-	gstd::ref_count_ptr<Texture> res;
+	std::shared_ptr<Texture> res;
 	{
 		Lock lock(lock_);
 		bool bExist = mapTexture_.find(name) != mapTexture_.end();
@@ -633,7 +633,7 @@ gstd::ref_count_ptr<Texture> TextureManager::GetTexture(std::wstring name)
 	return res;
 }
 
-void TextureManager::Add(std::wstring name, gstd::ref_count_ptr<Texture> texture)
+void TextureManager::Add(std::wstring name, std::shared_ptr<Texture> texture)
 {
 	{
 		Lock lock(lock_);

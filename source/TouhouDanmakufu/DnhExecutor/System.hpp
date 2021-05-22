@@ -28,9 +28,9 @@ public:
 private:
 	SystemController();
 
-	ref_count_ptr<SceneManager> sceneManager_;
-	ref_count_ptr<TransitionManager> transitionManager_;
-	ref_count_ptr<SystemInformation> infoSystem_;
+	std::shared_ptr<SceneManager> sceneManager_;
+	std::shared_ptr<TransitionManager> transitionManager_;
+	std::shared_ptr<SystemInformation> infoSystem_;
 };
 
 /**********************************************************
@@ -53,10 +53,10 @@ public:
 	void TransScriptSelectScene_Directory();
 	void TransScriptSelectScene_Last();
 
-	void TransStgScene(ref_count_ptr<ScriptInformation> infoMain, ref_count_ptr<ScriptInformation> infoPlayer, ref_count_ptr<ReplayInformation> infoReplay);
-	void TransStgScene(ref_count_ptr<ScriptInformation> infoMain, ref_count_ptr<ReplayInformation> infoReplay);
+	void TransStgScene(std::shared_ptr<ScriptInformation> infoMain, std::shared_ptr<ScriptInformation> infoPlayer, std::shared_ptr<ReplayInformation> infoReplay);
+	void TransStgScene(std::shared_ptr<ScriptInformation> infoMain, std::shared_ptr<ReplayInformation> infoReplay);
 
-	void TransPackageScene(ref_count_ptr<ScriptInformation> infoMain, bool bOnlyPackage = false);
+	void TransPackageScene(std::shared_ptr<ScriptInformation> infoMain, bool bOnlyPackage = false);
 };
 
 /**********************************************************
@@ -74,7 +74,7 @@ public:
 
 private:
 	void _CreateCurrentSceneTexture();
-	void _AddTask(ref_count_ptr<TransitionEffect> effect);
+	void _AddTask(std::shared_ptr<TransitionEffect> effect);
 };
 
 class SystemTransitionEffectTask : public TransitionEffectTask {
@@ -101,15 +101,15 @@ public:
 	void SetLastSelectScriptSceneType(int type) { lastSelectScriptSceneType_ = type; }
 
 	int GetLastSelectedPlayerIndex() { return lastPlayerSelectIndex_; }
-	std::vector<ref_count_ptr<ScriptInformation>>& GetLastPlayerSelectedList() { return listLastPlayerSelect_; }
-	void SetLastSelectedPlayerIndex(int index, std::vector<ref_count_ptr<ScriptInformation>>& list)
+	std::vector<std::shared_ptr<ScriptInformation>>& GetLastPlayerSelectedList() { return listLastPlayerSelect_; }
+	void SetLastSelectedPlayerIndex(int index, std::vector<std::shared_ptr<ScriptInformation>>& list)
 	{
 		lastPlayerSelectIndex_ = index;
 		listLastPlayerSelect_ = list;
 	}
 
 	void UpdateFreePlayerScriptInformationList();
-	std::vector<ref_count_ptr<ScriptInformation>>& GetFreePlayerScriptInformationList() { return listFreePlayer_; }
+	std::vector<std::shared_ptr<ScriptInformation>>& GetFreePlayerScriptInformationList() { return listFreePlayer_; }
 
 private:
 	void _SearchFreePlayerScript(std::wstring dir);
@@ -120,9 +120,9 @@ private:
 	int lastSelectScriptSceneType_;
 
 	int lastPlayerSelectIndex_;
-	std::vector<ref_count_ptr<ScriptInformation>> listLastPlayerSelect_;
+	std::vector<std::shared_ptr<ScriptInformation>> listLastPlayerSelect_;
 
-	std::vector<ref_count_ptr<ScriptInformation>> listFreePlayer_;
+	std::vector<std::shared_ptr<ScriptInformation>> listFreePlayer_;
 };
 
 /**********************************************************

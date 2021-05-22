@@ -15,13 +15,13 @@ StgItemManager::StgItemManager(StgStageController* stageController)
 
 	listSpriteItem_ = new SpriteList2D();
 	std::wstring pathItem = dir + L"System_Stg_Item.png";
-	ref_count_ptr<Texture> textureItem = new Texture();
+	std::shared_ptr<Texture> textureItem = new Texture();
 	textureItem->CreateFromFile(pathItem);
 	listSpriteItem_->SetTexture(textureItem);
 
 	listSpriteDigit_ = new SpriteList2D();
 	std::wstring pathDigit = dir + L"System_Stg_Digit.png";
-	ref_count_ptr<Texture> textureDigit = new Texture();
+	std::shared_ptr<Texture> textureDigit = new Texture();
 	textureDigit->CreateFromFile(pathDigit);
 	listSpriteDigit_->SetTexture(textureDigit);
 
@@ -33,15 +33,15 @@ StgItemManager::~StgItemManager()
 }
 void StgItemManager::Work()
 {
-	ref_count_ptr<StgPlayerObject>::unsync objPlayer = stageController_->GetPlayerObject();
+	std::shared_ptr<StgPlayerObject>::unsync objPlayer = stageController_->GetPlayerObject();
 	double px = objPlayer->GetX();
 	double py = objPlayer->GetY();
 	double pr = objPlayer->GetItemIntersectionRadius();
 	int pAutoItemCollectY = objPlayer->GetAutoItemCollectY();
 
-	std::list<ref_count_ptr<StgItemObject>::unsync>::iterator itr = listObj_.begin();
+	std::list<std::shared_ptr<StgItemObject>::unsync>::iterator itr = listObj_.begin();
 	for (; itr != listObj_.end();) {
-		ref_count_ptr<StgItemObject>::unsync obj = (*itr);
+		std::shared_ptr<StgItemObject>::unsync obj = (*itr);
 		if (obj->IsDeleted()) {
 			// obj->Clear();
 			itr = listObj_.erase(itr);
@@ -123,9 +123,9 @@ void StgItemManager::Render(int targetPriority)
 	DxCamera2D* camera = graphics->GetCamera2D().GetPointer();
 	D3DXMATRIX matCamera = camera->GetMatrix();
 
-	std::list<ref_count_ptr<StgItemObject>::unsync>::iterator itr = listObj_.begin();
+	std::list<std::shared_ptr<StgItemObject>::unsync>::iterator itr = listObj_.begin();
 	for (; itr != listObj_.end(); itr++) {
-		ref_count_ptr<StgItemObject>::unsync obj = (*itr);
+		std::shared_ptr<StgItemObject>::unsync obj = (*itr);
 		if (obj->IsDeleted())
 			continue;
 		if (obj->GetRenderPriorityI() != targetPriority)
@@ -137,7 +137,7 @@ void StgItemManager::Render(int targetPriority)
 	int countBlendType = StgItemDataList::RENDER_TYPE_COUNT;
 	int blendMode[] = { DirectGraphics::MODE_BLEND_ADD_ARGB, DirectGraphics::MODE_BLEND_ADD_RGB, DirectGraphics::MODE_BLEND_ALPHA };
 	int typeRender[] = { StgShotDataList::RENDER_ADD_ARGB, StgShotDataList::RENDER_ADD_RGB, StgShotDataList::RENDER_ALPHA };
-	ref_count_ptr<SpriteList2D>::unsync listSprite[] = { listSpriteDigit_, listSpriteItem_ };
+	std::shared_ptr<SpriteList2D>::unsync listSprite[] = { listSpriteDigit_, listSpriteItem_ };
 	for (int iBlend = 0; iBlend < countBlendType; iBlend++) {
 		graphics->SetBlendMode(blendMode[iBlend]);
 		if (blendMode[iBlend] == DirectGraphics::MODE_BLEND_ADD_ARGB) {
@@ -148,7 +148,7 @@ void StgItemManager::Render(int targetPriority)
 			listSpriteItem_->ClearVertexCount();
 		}
 
-		std::vector<ref_count_ptr<StgItemRenderer>::unsync>* listRenderer = listItemData_->GetRendererList(typeRender[iBlend]);
+		std::vector<std::shared_ptr<StgItemRenderer>::unsync>* listRenderer = listItemData_->GetRendererList(typeRender[iBlend]);
 		int iRender = 0;
 		for (iRender = 0; iRender < listRenderer->size(); iRender++)
 			(listRenderer->at(iRender))->Render();
@@ -160,12 +160,12 @@ void StgItemManager::Render(int targetPriority)
 std::vector<bool> StgItemManager::GetValidRenderPriorityList()
 {
 	std::vector<bool> res;
-	ref_count_ptr<StgStageScriptObjectManager> objectManager = stageController_->GetMainObjectManager();
+	std::shared_ptr<StgStageScriptObjectManager> objectManager = stageController_->GetMainObjectManager();
 	res.resize(objectManager->GetRenderBucketCapacity());
 
-	std::list<ref_count_ptr<StgItemObject>::unsync>::iterator itr = listObj_.begin();
+	std::list<std::shared_ptr<StgItemObject>::unsync>::iterator itr = listObj_.begin();
 	for (; itr != listObj_.end(); itr++) {
-		ref_count_ptr<StgItemObject>::unsync obj = (*itr);
+		std::shared_ptr<StgItemObject>::unsync obj = (*itr);
 		if (obj->IsDeleted())
 			continue;
 
@@ -180,9 +180,9 @@ bool StgItemManager::LoadItemData(std::wstring path, bool bReload)
 {
 	return listItemData_->AddItemDataList(path, bReload);
 }
-ref_count_ptr<StgItemObject>::unsync StgItemManager::CreateItem(int type)
+std::shared_ptr<StgItemObject>::unsync StgItemManager::CreateItem(int type)
 {
-	ref_count_ptr<StgItemObject>::unsync res;
+	std::shared_ptr<StgItemObject>::unsync res;
 	switch (type) {
 	case StgItemObject::ITEM_1UP:
 	case StgItemObject::ITEM_1UP_S:
@@ -239,7 +239,7 @@ bool StgItemDataList::AddItemDataList(std::wstring path, bool bReload)
 	if (!bReload && listReadPath_.find(path) != listReadPath_.end())
 		return true;
 
-	ref_count_ptr<FileReader> reader = FileManager::GetBase()->GetFileReader(path);
+	std::shared_ptr<FileReader> reader = FileManager::GetBase()->GetFileReader(path);
 	if (reader == NULL)
 		throw gstd::wexception(ErrorUtility::GetFileNotFoundErrorMessage(path).c_str());
 	if (!reader->Open())
@@ -249,7 +249,7 @@ bool StgItemDataList::AddItemDataList(std::wstring path, bool bReload)
 	bool res = false;
 	Scanner scanner(source);
 	try {
-		std::vector<ref_count_ptr<StgItemData>::unsync> listData;
+		std::vector<std::shared_ptr<StgItemData>::unsync> listData;
 		std::wstring pathImage = L"";
 		RECT rcDelay = { -1, -1, -1, -1 };
 		while (scanner.HasNext()) {
@@ -277,14 +277,14 @@ bool StgItemDataList::AddItemDataList(std::wstring path, bool bReload)
 		std::wstring dir = PathProperty::GetFileDirectory(path);
 		pathImage = StringUtility::Replace(pathImage, L"./", dir);
 
-		ref_count_ptr<Texture> texture = new Texture();
+		std::shared_ptr<Texture> texture = new Texture();
 		bool bTexture = texture->CreateFromFile(pathImage);
 		if (!bTexture)
 			throw gstd::wexception(L"画像ファイルが見つかりませんでした。");
 
 		int textureIndex = -1;
 		for (int iTexture = 0; iTexture < listTexture_.size(); iTexture++) {
-			ref_count_ptr<Texture> tSearch = listTexture_[iTexture];
+			std::shared_ptr<Texture> tSearch = listTexture_[iTexture];
 			if (tSearch->GetName() == texture->GetName()) {
 				textureIndex = iTexture;
 				break;
@@ -294,7 +294,7 @@ bool StgItemDataList::AddItemDataList(std::wstring path, bool bReload)
 			textureIndex = listTexture_.size();
 			listTexture_.push_back(texture);
 			for (int iRender = 0; iRender < listRenderer_.size(); iRender++) {
-				ref_count_ptr<StgItemRenderer>::unsync render = new StgItemRenderer();
+				std::shared_ptr<StgItemRenderer>::unsync render = new StgItemRenderer();
 				render->SetTexture(texture);
 				listRenderer_[iRender].push_back(render);
 			}
@@ -303,7 +303,7 @@ bool StgItemDataList::AddItemDataList(std::wstring path, bool bReload)
 		if (listData_.size() < listData.size())
 			listData_.resize(listData.size());
 		for (int iData = 0; iData < listData.size(); iData++) {
-			ref_count_ptr<StgItemData>::unsync data = listData[iData];
+			std::shared_ptr<StgItemData>::unsync data = listData[iData];
 			if (data == NULL)
 				continue;
 			data->indexTexture_ = textureIndex;
@@ -325,14 +325,14 @@ bool StgItemDataList::AddItemDataList(std::wstring path, bool bReload)
 
 	return res;
 }
-void StgItemDataList::_ScanItem(std::vector<ref_count_ptr<StgItemData>::unsync>& listData, Scanner& scanner)
+void StgItemDataList::_ScanItem(std::vector<std::shared_ptr<StgItemData>::unsync>& listData, Scanner& scanner)
 {
 	Token& tok = scanner.Next();
 	if (tok.GetType() == Token::TK_NEWLINE)
 		tok = scanner.Next();
 	scanner.CheckType(tok, Token::TK_OPENC);
 
-	ref_count_ptr<StgItemData>::unsync data = new StgItemData(this);
+	std::shared_ptr<StgItemData>::unsync data = new StgItemData(this);
 	int id = -1;
 	int typeItem = -1;
 
@@ -392,7 +392,7 @@ void StgItemDataList::_ScanItem(std::vector<ref_count_ptr<StgItemData>::unsync>&
 		listData[id] = data;
 	}
 }
-void StgItemDataList::_ScanAnimation(ref_count_ptr<StgItemData>::unsync itemData, Scanner& scanner)
+void StgItemDataList::_ScanAnimation(std::shared_ptr<StgItemData>::unsync itemData, Scanner& scanner)
 {
 	Token& tok = scanner.Next();
 	if (tok.GetType() == Token::TK_NEWLINE)
@@ -485,9 +485,9 @@ RECT StgItemData::GetRect(int frame)
 
 	return res;
 }
-ref_count_ptr<Texture> StgItemData::GetTexture()
+std::shared_ptr<Texture> StgItemData::GetTexture()
 {
-	ref_count_ptr<Texture> res = listItemData_->GetTexture(indexTexture_);
+	std::shared_ptr<Texture> res = listItemData_->GetTexture(indexTexture_);
 	return res;
 }
 StgItemRenderer* StgItemData::GetRenderer()
@@ -524,7 +524,7 @@ void StgItemRenderer::Render()
 {
 	DirectGraphics* graphics = DirectGraphics::GetBase();
 	IDirect3DDevice9* device = graphics->GetDevice();
-	ref_count_ptr<Texture>& texture = texture_[0];
+	std::shared_ptr<Texture>& texture = texture_[0];
 	if (texture != NULL)
 		device->SetTexture(0, texture->GetD3DTexture());
 	else
@@ -574,10 +574,10 @@ StgItemObject::StgItemObject(StgStageController* stageController)
 }
 void StgItemObject::Work()
 {
-	bool bDefaultMovePattern = ref_count_ptr<StgMovePattern_Item>::unsync::DownCast(GetPattern()) != NULL;
+	bool bDefaultMovePattern = std::shared_ptr<StgMovePattern_Item>::unsync::DownCast(GetPattern()) != NULL;
 	if (!bDefaultMovePattern && IsMoveToPlayer()) {
 		double speed = 8;
-		ref_count_ptr<StgPlayerObject>::unsync objPlayer = stageController_->GetPlayerObject();
+		std::shared_ptr<StgPlayerObject>::unsync objPlayer = stageController_->GetPlayerObject();
 		double angle = atan2(objPlayer->GetY() - GetPositionY(), objPlayer->GetX() - GetPositionX());
 		double angDirection = Math::RadianToDegree(angle);
 		SetSpeed(speed);
@@ -716,9 +716,9 @@ void StgItemObject::_DeleteInAutoClip()
 }
 void StgItemObject::_CreateScoreItem()
 {
-	ref_count_ptr<StgStageScriptObjectManager> objectManager = stageController_->GetMainObjectManager();
+	std::shared_ptr<StgStageScriptObjectManager> objectManager = stageController_->GetMainObjectManager();
 	StgItemManager* itemManager = stageController_->GetItemManager();
-	ref_count_ptr<StgItemObject_Score>::unsync obj = new StgItemObject_Score(stageController_);
+	std::shared_ptr<StgItemObject_Score>::unsync obj = new StgItemObject_Score(stageController_);
 	obj->SetX(posX_);
 	obj->SetY(posY_);
 	obj->SetScore(score_);
@@ -728,7 +728,7 @@ void StgItemObject::_CreateScoreItem()
 void StgItemObject::_NotifyEventToPlayerScript(std::vector<long double>& listValue)
 {
 	//自機スクリプトへ通知
-	ref_count_ptr<StgPlayerObject>::unsync player = stageController_->GetPlayerObject();
+	std::shared_ptr<StgPlayerObject>::unsync player = stageController_->GetPlayerObject();
 	StgStagePlayerScript* scriptPlayer = player->GetPlayerScript();
 	std::vector<gstd::value> listScriptValue;
 	for (int iVal = 0; iVal < listValue.size(); iVal++) {
@@ -743,7 +743,7 @@ void StgItemObject::_NotifyEventToItemScript(std::vector<long double>& listValue
 	StgStageScriptManager* stageScriptManager = stageController_->GetScriptManagerP();
 	_int64 idItemScript = stageScriptManager->GetItemScriptID();
 	if (idItemScript != StgControlScriptManager::ID_INVALID) {
-		ref_count_ptr<ManagedScript> scriptItem = stageScriptManager->GetScript(idItemScript);
+		std::shared_ptr<ManagedScript> scriptItem = stageScriptManager->GetScript(idItemScript);
 		if (scriptItem != NULL) {
 			std::vector<gstd::value> listScriptValue;
 			for (int iVal = 0; iVal < listValue.size(); iVal++) {
@@ -792,7 +792,7 @@ StgItemObject_1UP::StgItemObject_1UP(StgStageController* stageController)
 	StgMovePattern_Item* move = (StgMovePattern_Item*)pattern_.GetPointer();
 	move->SetItemMoveType(StgMovePattern_Item::MOVE_TOPOSITION_A);
 }
-void StgItemObject_1UP::Intersect(ref_count_ptr<StgIntersectionTarget>::unsync ownTarget, ref_count_ptr<StgIntersectionTarget>::unsync otherTarget)
+void StgItemObject_1UP::Intersect(std::shared_ptr<StgIntersectionTarget>::unsync ownTarget, std::shared_ptr<StgIntersectionTarget>::unsync otherTarget)
 {
 	std::vector<long double> listValue;
 	listValue.push_back(typeItem_);
@@ -800,7 +800,7 @@ void StgItemObject_1UP::Intersect(ref_count_ptr<StgIntersectionTarget>::unsync o
 	_NotifyEventToPlayerScript(listValue);
 	_NotifyEventToItemScript(listValue);
 
-	ref_count_ptr<StgStageScriptObjectManager> objectManager = stageController_->GetMainObjectManager();
+	std::shared_ptr<StgStageScriptObjectManager> objectManager = stageController_->GetMainObjectManager();
 	objectManager->DeleteObject(GetObjectID());
 }
 
@@ -812,7 +812,7 @@ StgItemObject_Bomb::StgItemObject_Bomb(StgStageController* stageController)
 	StgMovePattern_Item* move = (StgMovePattern_Item*)pattern_.GetPointer();
 	move->SetItemMoveType(StgMovePattern_Item::MOVE_TOPOSITION_A);
 }
-void StgItemObject_Bomb::Intersect(ref_count_ptr<StgIntersectionTarget>::unsync ownTarget, ref_count_ptr<StgIntersectionTarget>::unsync otherTarget)
+void StgItemObject_Bomb::Intersect(std::shared_ptr<StgIntersectionTarget>::unsync ownTarget, std::shared_ptr<StgIntersectionTarget>::unsync otherTarget)
 {
 	std::vector<long double> listValue;
 	listValue.push_back(typeItem_);
@@ -820,7 +820,7 @@ void StgItemObject_Bomb::Intersect(ref_count_ptr<StgIntersectionTarget>::unsync 
 	_NotifyEventToPlayerScript(listValue);
 	_NotifyEventToItemScript(listValue);
 
-	ref_count_ptr<StgStageScriptObjectManager> objectManager = stageController_->GetMainObjectManager();
+	std::shared_ptr<StgStageScriptObjectManager> objectManager = stageController_->GetMainObjectManager();
 	objectManager->DeleteObject(GetObjectID());
 }
 
@@ -833,7 +833,7 @@ StgItemObject_Power::StgItemObject_Power(StgStageController* stageController)
 	move->SetItemMoveType(StgMovePattern_Item::MOVE_TOPOSITION_A);
 	score_ = 10;
 }
-void StgItemObject_Power::Intersect(ref_count_ptr<StgIntersectionTarget>::unsync ownTarget, ref_count_ptr<StgIntersectionTarget>::unsync otherTarget)
+void StgItemObject_Power::Intersect(std::shared_ptr<StgIntersectionTarget>::unsync ownTarget, std::shared_ptr<StgIntersectionTarget>::unsync otherTarget)
 {
 	if (bChangeItemScore_)
 		_CreateScoreItem();
@@ -845,7 +845,7 @@ void StgItemObject_Power::Intersect(ref_count_ptr<StgIntersectionTarget>::unsync
 	_NotifyEventToPlayerScript(listValue);
 	_NotifyEventToItemScript(listValue);
 
-	ref_count_ptr<StgStageScriptObjectManager> objectManager = stageController_->GetMainObjectManager();
+	std::shared_ptr<StgStageScriptObjectManager> objectManager = stageController_->GetMainObjectManager();
 	objectManager->DeleteObject(GetObjectID());
 }
 
@@ -857,7 +857,7 @@ StgItemObject_Point::StgItemObject_Point(StgStageController* stageController)
 	StgMovePattern_Item* move = (StgMovePattern_Item*)pattern_.GetPointer();
 	move->SetItemMoveType(StgMovePattern_Item::MOVE_TOPOSITION_A);
 }
-void StgItemObject_Point::Intersect(ref_count_ptr<StgIntersectionTarget>::unsync ownTarget, ref_count_ptr<StgIntersectionTarget>::unsync otherTarget)
+void StgItemObject_Point::Intersect(std::shared_ptr<StgIntersectionTarget>::unsync ownTarget, std::shared_ptr<StgIntersectionTarget>::unsync otherTarget)
 {
 	if (bChangeItemScore_)
 		_CreateScoreItem();
@@ -869,7 +869,7 @@ void StgItemObject_Point::Intersect(ref_count_ptr<StgIntersectionTarget>::unsync
 	_NotifyEventToPlayerScript(listValue);
 	_NotifyEventToItemScript(listValue);
 
-	ref_count_ptr<StgStageScriptObjectManager> objectManager = stageController_->GetMainObjectManager();
+	std::shared_ptr<StgStageScriptObjectManager> objectManager = stageController_->GetMainObjectManager();
 	objectManager->DeleteObject(GetObjectID());
 }
 
@@ -888,21 +888,21 @@ void StgItemObject_Bonus::Work()
 {
 	StgItemObject::Work();
 
-	ref_count_ptr<StgPlayerObject>::unsync objPlayer = stageController_->GetPlayerObject();
+	std::shared_ptr<StgPlayerObject>::unsync objPlayer = stageController_->GetPlayerObject();
 	if (objPlayer->GetState() != StgPlayerObject::STATE_NORMAL) {
 		_CreateScoreItem();
 		stageController_->GetStageInformation()->AddScore(score_);
 
-		ref_count_ptr<StgStageScriptObjectManager> objectManager = stageController_->GetMainObjectManager();
+		std::shared_ptr<StgStageScriptObjectManager> objectManager = stageController_->GetMainObjectManager();
 		objectManager->DeleteObject(GetObjectID());
 	}
 }
-void StgItemObject_Bonus::Intersect(ref_count_ptr<StgIntersectionTarget>::unsync ownTarget, ref_count_ptr<StgIntersectionTarget>::unsync otherTarget)
+void StgItemObject_Bonus::Intersect(std::shared_ptr<StgIntersectionTarget>::unsync ownTarget, std::shared_ptr<StgIntersectionTarget>::unsync otherTarget)
 {
 	_CreateScoreItem();
 	stageController_->GetStageInformation()->AddScore(score_);
 
-	ref_count_ptr<StgStageScriptObjectManager> objectManager = stageController_->GetMainObjectManager();
+	std::shared_ptr<StgStageScriptObjectManager> objectManager = stageController_->GetMainObjectManager();
 	objectManager->DeleteObject(GetObjectID());
 }
 
@@ -930,7 +930,7 @@ void StgItemObject_Score::Work()
 	}
 	frameDelete_++;
 }
-void StgItemObject_Score::Intersect(ref_count_ptr<StgIntersectionTarget>::unsync ownTarget, ref_count_ptr<StgIntersectionTarget>::unsync otherTarget)
+void StgItemObject_Score::Intersect(std::shared_ptr<StgIntersectionTarget>::unsync ownTarget, std::shared_ptr<StgIntersectionTarget>::unsync otherTarget)
 {
 }
 
@@ -980,7 +980,7 @@ void StgItemObject_User::_SetVertexUV(VERTEX_TLX& vertex, float u, float v)
 	if (itemData == NULL)
 		return;
 
-	ref_count_ptr<Texture> texture = itemData->GetTexture();
+	std::shared_ptr<Texture> texture = itemData->GetTexture();
 	int width = texture->GetWidth();
 	int height = texture->GetHeight();
 	vertex.texcoord.x = u / width;
@@ -1077,7 +1077,7 @@ void StgItemObject_User::RenderOnItemManager(D3DXMATRIX mat)
 	renderer->AddVertex(verts[2]);
 	renderer->AddVertex(verts[3]);
 }
-void StgItemObject_User::Intersect(ref_count_ptr<StgIntersectionTarget>::unsync ownTarget, ref_count_ptr<StgIntersectionTarget>::unsync otherTarget)
+void StgItemObject_User::Intersect(std::shared_ptr<StgIntersectionTarget>::unsync ownTarget, std::shared_ptr<StgIntersectionTarget>::unsync otherTarget)
 {
 	if (bChangeItemScore_)
 		_CreateScoreItem();
@@ -1088,7 +1088,7 @@ void StgItemObject_User::Intersect(ref_count_ptr<StgIntersectionTarget>::unsync 
 	listValue.push_back(idObject_);
 	_NotifyEventToItemScript(listValue);
 
-	ref_count_ptr<StgStageScriptObjectManager> objectManager = stageController_->GetMainObjectManager();
+	std::shared_ptr<StgStageScriptObjectManager> objectManager = stageController_->GetMainObjectManager();
 	objectManager->DeleteObject(GetObjectID());
 }
 
@@ -1113,7 +1113,7 @@ void StgMovePattern_Item::Move()
 	double py = target_->GetPositionY();
 	if (typeMove_ == MOVE_TOPLAYER || itemObject->IsMoveToPlayer()) {
 		speed_ = 8;
-		ref_count_ptr<StgPlayerObject>::unsync objPlayer = stageController->GetPlayerObject();
+		std::shared_ptr<StgPlayerObject>::unsync objPlayer = stageController->GetPlayerObject();
 		double angle = atan2(objPlayer->GetY() - py, objPlayer->GetX() - px);
 		angDirection_ = Math::RadianToDegree(angle);
 	} else if (typeMove_ == MOVE_TOPOSITION_A) {

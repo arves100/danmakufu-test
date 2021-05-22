@@ -15,7 +15,7 @@ std::vector<int> ReplayInformation::GetStageIndexList()
 {
 	std::vector<int> res;
 
-	std::map<int, ref_count_ptr<StageData>>::iterator itr = mapStageData_.begin();
+	std::map<int, std::shared_ptr<StageData>>::iterator itr = mapStageData_.begin();
 	for (; itr != mapStageData_.end(); itr++) {
 		int stage = itr->first;
 		res.push_back(stage);
@@ -81,7 +81,7 @@ bool ReplayInformation::SaveToFile(std::wstring scriptPath, int index)
 		int stage = listStage[iStage];
 		std::string key = StringUtility::Format("stage%d", stage);
 
-		ref_count_ptr<StageData> data = mapStageData_[stage];
+		std::shared_ptr<StageData> data = mapStageData_[stage];
 		gstd::RecordBuffer recStage;
 		data->WriteRecord(recStage);
 		rec.SetRecordAsRecordBuffer(key, recStage);
@@ -90,17 +90,17 @@ bool ReplayInformation::SaveToFile(std::wstring scriptPath, int index)
 	rec.WriteToFile(path, "REPLAY");
 	return true;
 }
-ref_count_ptr<ReplayInformation> ReplayInformation::CreateFromFile(std::wstring scriptPath, std::wstring fileName)
+std::shared_ptr<ReplayInformation> ReplayInformation::CreateFromFile(std::wstring scriptPath, std::wstring fileName)
 {
 	std::wstring dir = EPathProperty::GetReplaySaveDirectory(scriptPath);
 	// std::string scriptName = PathProperty::GetFileNameWithoutExtension(scriptPath);
 	// std::string path = dir + scriptName + StringUtility::Format("_replay%02d.dat", index);
 	std::wstring path = dir + fileName;
 
-	ref_count_ptr<ReplayInformation> res = CreateFromFile(path);
+	std::shared_ptr<ReplayInformation> res = CreateFromFile(path);
 	return res;
 }
-ref_count_ptr<ReplayInformation> ReplayInformation::CreateFromFile(std::wstring path)
+std::shared_ptr<ReplayInformation> ReplayInformation::CreateFromFile(std::wstring path)
 {
 	RecordBuffer rec;
 	if (!rec.ReadFromFile(path, "REPLAY"))
@@ -110,7 +110,7 @@ ref_count_ptr<ReplayInformation> ReplayInformation::CreateFromFile(std::wstring 
 	if (version != 1)
 		return NULL;
 
-	ref_count_ptr<ReplayInformation> res = new ReplayInformation();
+	std::shared_ptr<ReplayInformation> res = new ReplayInformation();
 	res->path_ = path;
 	res->playerScriptID_ = rec.GetRecordAsStringW("playerScriptID");
 	res->playerScriptFileName_ = rec.GetRecordAsStringW("playerScriptFileName");
@@ -136,7 +136,7 @@ ref_count_ptr<ReplayInformation> ReplayInformation::CreateFromFile(std::wstring 
 	for (int iStage = 0; iStage < listStage.size(); iStage++) {
 		int stage = listStage[iStage];
 		std::string key = StringUtility::Format("stage%d", stage);
-		ref_count_ptr<StageData> data = new StageData();
+		std::shared_ptr<StageData> data = new StageData();
 		gstd::RecordBuffer recStage;
 		rec.GetRecordAsRecordBuffer(key, recStage);
 		data->ReadRecord(recStage);
@@ -161,25 +161,25 @@ double ReplayInformation::StageData::GetFramePerSecondAvarage()
 std::set<std::string> ReplayInformation::StageData::GetCommonDataAreaList()
 {
 	std::set<std::string> res;
-	std::map<std::string, ref_count_ptr<RecordBuffer>>::iterator itrCommonData;
+	std::map<std::string, std::shared_ptr<RecordBuffer>>::iterator itrCommonData;
 	for (itrCommonData = mapCommonData_.begin(); itrCommonData != mapCommonData_.end(); itrCommonData++) {
 		std::string key = itrCommonData->first;
 		res.insert(key);
 	}
 	return res;
 }
-ref_count_ptr<ScriptCommonData> ReplayInformation::StageData::GetCommonData(std::string area)
+std::shared_ptr<ScriptCommonData> ReplayInformation::StageData::GetCommonData(std::string area)
 {
-	ref_count_ptr<ScriptCommonData> res = new ScriptCommonData();
+	std::shared_ptr<ScriptCommonData> res = new ScriptCommonData();
 	if (mapCommonData_.find(area) != mapCommonData_.end()) {
-		ref_count_ptr<RecordBuffer> record = mapCommonData_[area];
+		std::shared_ptr<RecordBuffer> record = mapCommonData_[area];
 		res->ReadRecord(*record);
 	}
 	return res;
 }
-void ReplayInformation::StageData::SetCommonData(std::string area, ref_count_ptr<ScriptCommonData> commonData)
+void ReplayInformation::StageData::SetCommonData(std::string area, std::shared_ptr<ScriptCommonData> commonData)
 {
-	ref_count_ptr<RecordBuffer> record = new RecordBuffer();
+	std::shared_ptr<RecordBuffer> record = new RecordBuffer();
 	if (commonData != NULL)
 		commonData->WriteRecord(*record);
 	mapCommonData_[area] = record;
@@ -210,7 +210,7 @@ void ReplayInformation::StageData::ReadRecord(gstd::RecordBuffer& record)
 	std::vector<std::string> listKeyCommonData = recComMap.GetKeyList();
 	for (int iCommonData = 0; iCommonData < listKeyCommonData.size(); iCommonData++) {
 		std::string key = listKeyCommonData[iCommonData];
-		ref_count_ptr<RecordBuffer> recComData = new RecordBuffer();
+		std::shared_ptr<RecordBuffer> recComData = new RecordBuffer();
 		recComMap.GetRecordAsRecordBuffer(key, *recComData);
 		mapCommonData_[key] = recComData;
 	}
@@ -243,10 +243,10 @@ void ReplayInformation::StageData::WriteRecord(gstd::RecordBuffer& record)
 
 	//共通データ
 	gstd::RecordBuffer recComMap;
-	std::map<std::string, ref_count_ptr<RecordBuffer>>::iterator itrCommonData;
+	std::map<std::string, std::shared_ptr<RecordBuffer>>::iterator itrCommonData;
 	for (itrCommonData = mapCommonData_.begin(); itrCommonData != mapCommonData_.end(); itrCommonData++) {
 		std::string key = itrCommonData->first;
-		ref_count_ptr<RecordBuffer> recComData = itrCommonData->second;
+		std::shared_ptr<RecordBuffer> recComData = itrCommonData->second;
 		recComMap.SetRecordAsRecordBuffer(key, *recComData);
 	}
 	record.SetRecordAsRecordBuffer("mapCommonData", recComMap);
@@ -288,7 +288,7 @@ void ReplayInformationManager::UpdateInformationList(std::wstring pathScript)
 		if (fileName.find(fileNameHead) == std::wstring::npos)
 			continue;
 
-		ref_count_ptr<ReplayInformation> info = ReplayInformation::CreateFromFile(pathScript, fileName);
+		std::shared_ptr<ReplayInformation> info = ReplayInformation::CreateFromFile(pathScript, fileName);
 		if (info == NULL)
 			continue;
 
@@ -310,14 +310,14 @@ void ReplayInformationManager::UpdateInformationList(std::wstring pathScript)
 std::vector<int> ReplayInformationManager::GetIndexList()
 {
 	std::vector<int> res;
-	std::map<int, ref_count_ptr<ReplayInformation>>::iterator itr;
+	std::map<int, std::shared_ptr<ReplayInformation>>::iterator itr;
 	for (itr = mapInfo_.begin(); itr != mapInfo_.end(); itr++) {
 		int key = itr->first;
 		res.push_back(key);
 	}
 	return res;
 }
-ref_count_ptr<ReplayInformation> ReplayInformationManager::GetInformation(int index)
+std::shared_ptr<ReplayInformation> ReplayInformationManager::GetInformation(int index)
 {
 	if (mapInfo_.find(index) == mapInfo_.end())
 		return NULL;

@@ -18,7 +18,7 @@ DirectInput::DirectInput()
 }
 DirectInput::~DirectInput()
 {
-	Logger::WriteTop(L"DirectInput：終了開始");
+	Logger::WriteTop(u8"DirectInput：終了開始");
 
 	for (auto& j : pJoypad_)
 		SDL_JoystickClose(j);
@@ -27,7 +27,7 @@ DirectInput::~DirectInput()
 		SDL_GameControllerClose(gc.ptr);
 
 	thisBase_ = NULL;
-	Logger::WriteTop(L"DirectInput：終了完了");
+	Logger::WriteTop(u8"DirectInput：終了完了");
 }
 
 bool DirectInput::Initialize()
@@ -35,17 +35,17 @@ bool DirectInput::Initialize()
 	_InitializeJoypad();
 
 	thisBase_ = this;
-	Logger::WriteTop(L"DirectInput：初期化完了");
+	Logger::WriteTop(u8"DirectInput：初期化完了");
 	return true;
 }
 
 bool DirectInput::_InitializeJoypad()
 {
-	Logger::WriteTop(L"DirectInput：ジョイパッド初期化");
+	Logger::WriteTop(u8"DirectInput：ジョイパッド初期化");
 	int count = SDL_NumJoysticks();
 
 	if (count == 0) {
-		Logger::WriteTop(L"DirectInput：ジョイパッドは見つかりませんでした");
+		Logger::WriteTop(u8"DirectInput：ジョイパッドは見つかりませんでした");
 		return false; // ジョイパッドが見付からない
 	}
 	
@@ -56,7 +56,7 @@ bool DirectInput::_InitializeJoypad()
 			SDL_GameController* gc = SDL_GameControllerOpen(i);
 			if (!gc)
 			{
-				Logger::WriteTop(L"DirectInput: Cannot open game controller " + StringUtility::ConvertMultiToWide(SDL_GetError()));
+				Logger::WriteTop(std::string("DirectInput: Cannot open game controller ") + SDL_GetError());
 				continue;
 			}
 
@@ -72,7 +72,7 @@ bool DirectInput::_InitializeJoypad()
 			SDL_Joystick* j = SDL_JoystickOpen(i);
 			if (!j)
 			{
-				Logger::WriteTop(L"DirectInput: Cannot open game controller " + StringUtility::ConvertMultiToWide(SDL_GetError()));
+				Logger::WriteTop(u8"DirectInput: Cannot open game controller " + StringUtility::ConvertMultiToWide(SDL_GetError()));
 				continue;
 			}
 
@@ -81,7 +81,7 @@ bool DirectInput::_InitializeJoypad()
 		}
 	}
 
-	Logger::WriteTop(L"DirectInput：ジョイパッド初期化完了");
+	Logger::WriteTop(u8"DirectInput：ジョイパッド初期化完了");
 
 	return true;
 }
@@ -223,18 +223,6 @@ void DirectInput::ResetPadState()
 /**********************************************************
 //VirtualKeyManager
 **********************************************************/
-//VirtualKey
-VirtualKey::VirtualKey(int keyboard, int padIndex, int padButton)
-{
-	keyboard_ = keyboard;
-	padIndex_ = padIndex;
-	padButton_ = padButton;
-	state_ = KEY_FREE;
-}
-VirtualKey::~VirtualKey()
-{
-}
-
 //VirtualKeyManager
 VirtualKeyManager::VirtualKeyManager()
 {
@@ -247,22 +235,47 @@ void VirtualKeyManager::Update()
 {
 	DirectInput::Update();
 
-	std::map<int, gstd::ref_count_ptr<VirtualKey>>::iterator itr = mapKey_.begin();
-	for (; itr != mapKey_.end(); itr++) {
+	auto itr = mapKey_.begin(), end = mapKey_.end();
+	for (; itr != end; itr++) {
 		int id = itr->first;
-		gstd::ref_count_ptr<VirtualKey> key = itr->second;
+		auto& vk = itr->second;
 
-		int state = _GetVirtualKeyState(id);
-		key->SetKeyState(state);
+		SDL_Scancode sc = SDL_GetScancodeFromKey(vk.button);
+
+		if (sc >= 0 && sc < SDL_NUM_SCANCODES)
+			vk.state = bufKey_[sc];
+	}
+
+	if (pGamecontroller_.size() > 0) // Do not iterate controller loop if there is no controller
+	{
+		auto itr2 = mapKeyG_.begin(), end2 = mapKeyG_.end();
+		for (; itr2 != end2; itr2++)
+		{
+			int id = itr->first;
+			auto& vk = itr2->second;
+
+			if (vk.padId > -1 && vk.padId < pGamecontroller_.size())
+			{
+				if (!vk.bAxis &&
+					vk.button >= 0 && vk.button < SDL_CONTROLLER_BUTTON_MAX)
+					vk.state = pGamecontroller_[vk.padId].button[vk.button];
+				else if (vk.bAxis &&
+					vk.button > CONTROLLER_AXIS_OFFSET)
+						vk.state = pGamecontroller_[vk.padId].axis[vk.button - CONTROLLER_AXIS_OFFSET];
+			}
+		}
 	}
 }
 void VirtualKeyManager::ClearKeyState()
 {
 	DirectInput::ResetInputState();
-	std::map<int, gstd::ref_count_ptr<VirtualKey>>::iterator itr = mapKey_.begin();
-	for (; itr != mapKey_.end(); itr++) {
-		gstd::ref_count_ptr<VirtualKey> key = itr->second;
-		key->SetKeyState(KEY_FREE);
+	auto itr = mapKey_.begin(), end = mapKey_.end();
+	for (; itr != end; itr++) {
+		itr->second.state = KEY_FREE;
+	}
+	auto itr2 = mapKeyG_.begin(), end2 = mapKeyG_.end();
+	for (; itr2 != end2; itr2++) {
+		itr->second.state = KEY_FREE;
 	}
 }
 
@@ -271,53 +284,28 @@ void VirtualKeyManager::EventUpdate(SDL_Event* evt)
 	DirectInput::EventUpdate(evt);
 }
 
-int VirtualKeyManager::_GetVirtualKeyState(int id)
-{
-	if (mapKey_.find(id) == mapKey_.end())
-		return KEY_FREE;
-
-	gstd::ref_count_ptr<VirtualKey> key = mapKey_[id];
-
-	int res = KEY_FREE;
-	SDL_Scancode sc = SDL_GetScancodeFromKey(key->keyboard_);
-
-	if (sc  >= 0 && sc < SDL_NUM_SCANCODES)
-		res = bufKey_[sc];
-	if (res == KEY_FREE) {
-		int indexPad = key->padIndex_;
-		if (indexPad >= 0 && indexPad < pGamecontroller_.size()) {
-			if (key->padButton_ >= 0 && key->padButton_ < SDL_CONTROLLER_BUTTON_MAX)
-				res = pGamecontroller_[indexPad].button[key->padButton_];
-			else if (key->padButton_ > CONTROLLER_AXIS_OFFSET)
-				res = pGamecontroller_[indexPad].axis[key->padButton_ - CONTROLLER_AXIS_OFFSET];
-		}
-	}
-	
-	return res;
-}
-
 int VirtualKeyManager::GetVirtualKeyState(int id)
 {
 	if (mapKey_.find(id) == mapKey_.end())
 		return KEY_FREE;
-	gstd::ref_count_ptr<VirtualKey> key = mapKey_[id];
-	return key->GetKeyState();
+
+	int state = mapKey_[id].state;
+
+	if (state == KEY_FREE)
+		state = mapKeyG_[id].state;
+
+	return state;
 }
 
-gstd::ref_count_ptr<VirtualKey> VirtualKeyManager::GetVirtualKey(int id)
-{
-	if (mapKey_.find(id) == mapKey_.end())
-		return NULL;
-	return mapKey_[id];
-}
 bool VirtualKeyManager::IsTargetKeyCode(int key)
 {
 	bool res = false;
-	std::map<int, gstd::ref_count_ptr<VirtualKey>>::iterator itr = mapKey_.begin();
-	for (; itr != mapKey_.end(); itr++) {
-		gstd::ref_count_ptr<VirtualKey> vKey = itr->second;
-		int keyCode = vKey->GetKeyCode();
-		if (key == keyCode) {
+	auto it = mapKey_.begin(), end = mapKey_.end();
+	for (; it != end; it++)
+	{
+		auto vk = it->second;
+		if (key == vk.button)
+		{
 			res = true;
 			break;
 		}
@@ -377,27 +365,15 @@ void KeyReplayManager::Update()
 				}
 			}
 
-			gstd::ref_count_ptr<VirtualKey> key = input_->GetVirtualKey(idKey);
 			int lastKeyState = mapLastKeyState_[idKey];
-			key->SetKeyState(lastKeyState);
+			input_->ForceSetKeyMap(idKey, lastKeyState);
 		}
 	}
 	frame_++;
 }
 bool KeyReplayManager::IsTargetKeyCode(int key)
 {
-	bool res = false;
-	std::list<int>::iterator itrTarget = listTarget_.begin();
-	for (; itrTarget != listTarget_.end(); itrTarget++) {
-		int idKey = *itrTarget;
-		gstd::ref_count_ptr<VirtualKey> vKey = input_->GetVirtualKey(idKey);
-		int keyCode = vKey->GetKeyCode();
-		if (key == keyCode) {
-			res = true;
-			break;
-		}
-	}
-	return res;
+	return input_->IsTargetKeyCode(key);
 }
 void KeyReplayManager::ReadRecord(gstd::RecordBuffer& record)
 {

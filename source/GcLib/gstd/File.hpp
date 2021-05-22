@@ -289,7 +289,7 @@ public:
 	std::vector<std::shared_ptr<ArchiveFileEntry>> GetEntryList(std::string name);
 	bool IsExists(std::string name);
 	static std::unique_ptr<ByteBuffer> CreateEntryBuffer(ArchiveFileEntry& entry);
-	//ref_count_ptr<ByteBuffer> GetBuffer(std::string name);
+	//std::shared_ptr<ByteBuffer> GetBuffer(std::string name);
 private:
 	std::unique_ptr<File> file_;
 	std::multimap<std::string, std::shared_ptr<ArchiveFileEntry>> mapEntry_;

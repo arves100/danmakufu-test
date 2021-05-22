@@ -102,8 +102,8 @@ public:
 	void EndScene(); //描画終了
 	void ClearRenderTarget();
 	void ClearRenderTarget(RECT rect);
-	void SetRenderTarget(gstd::ref_count_ptr<Texture> texture);
-	gstd::ref_count_ptr<Texture> GetRenderTarget() { return textureTarget_; }
+	void SetRenderTarget(std::shared_ptr<Texture> texture);
+	std::shared_ptr<Texture> GetRenderTarget() { return textureTarget_; }
 
 	//レンダリングステートラッパ
 	void SetLightingEnable(bool bEnable); //ライティング
@@ -132,8 +132,8 @@ public:
 	double GetScreenWidthRatio();
 	double GetScreenHeightRatio();
 	POINT GetMousePosition();
-	gstd::ref_count_ptr<DxCamera> GetCamera() { return camera_; }
-	gstd::ref_count_ptr<DxCamera2D> GetCamera2D() { return camera2D_; }
+	std::shared_ptr<DxCamera> GetCamera() { return camera_; }
+	std::shared_ptr<DxCamera2D> GetCamera2D() { return camera2D_; }
 
 	void SaveBackSurfaceToFile(std::wstring path);
 	bool IsPixelShaderSupported(int major, int minor);
@@ -151,9 +151,9 @@ protected:
 	int modeScreen_;
 	std::list<DirectGraphicsListener*> listListener_;
 
-	gstd::ref_count_ptr<DxCamera> camera_;
-	gstd::ref_count_ptr<DxCamera2D> camera2D_;
-	gstd::ref_count_ptr<Texture> textureTarget_;
+	std::shared_ptr<DxCamera> camera_;
+	std::shared_ptr<DxCamera2D> camera2D_;
+	std::shared_ptr<Texture> textureTarget_;
 
 	void _ReleaseDxResource();
 	void _RestoreDxResource();
@@ -274,7 +274,7 @@ public:
 	RECT GetClip() { return rcClip_; }
 	void SetClip(RECT rect) { rcClip_ = rect; }
 
-	void SetResetFocus(gstd::ref_count_ptr<D3DXVECTOR2> pos) { posReset_ = pos; }
+	void SetResetFocus(D3DXVECTOR2 pos) { posReset_ = pos; }
 	void Reset();
 	inline D3DXVECTOR2 GetLeftTopPosition();
 	inline static D3DXVECTOR2 GetLeftTopPosition(D3DXVECTOR2 focus, double ratio);
@@ -291,7 +291,7 @@ private:
 	double angleZ_;
 	RECT rcClip_; //視野
 
-	gstd::ref_count_ptr<D3DXVECTOR2> posReset_;
+	D3DXVECTOR2 posReset_;
 };
 
 } // namespace directx

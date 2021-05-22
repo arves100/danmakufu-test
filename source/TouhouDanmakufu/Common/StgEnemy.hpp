@@ -16,17 +16,17 @@ public:
 	void Work();
 	void RegistIntersectionTarget();
 
-	void AddEnemy(ref_count_ptr<StgEnemyObject>::unsync obj) { listObj_.push_back(obj); }
+	void AddEnemy(std::shared_ptr<StgEnemyObject>::unsync obj) { listObj_.push_back(obj); }
 	int GetEnemyCount() { return listObj_.size(); }
 
-	void SetBossSceneObject(ref_count_ptr<StgEnemyBossSceneObject>::unsync obj);
-	ref_count_ptr<StgEnemyBossSceneObject>::unsync GetBossSceneObject();
-	std::list<ref_count_ptr<StgEnemyObject>::unsync>& GetEnemyList() { return listObj_; }
+	void SetBossSceneObject(std::shared_ptr<StgEnemyBossSceneObject>::unsync obj);
+	std::shared_ptr<StgEnemyBossSceneObject>::unsync GetBossSceneObject();
+	std::list<std::shared_ptr<StgEnemyObject>::unsync>& GetEnemyList() { return listObj_; }
 
 private:
 	StgStageController* stageController_;
-	std::list<ref_count_ptr<StgEnemyObject>::unsync> listObj_;
-	ref_count_ptr<StgEnemyBossSceneObject>::unsync objBossScene_;
+	std::list<std::shared_ptr<StgEnemyObject>::unsync> listObj_;
+	std::shared_ptr<StgEnemyBossSceneObject>::unsync objBossScene_;
 };
 
 /**********************************************************
@@ -39,7 +39,7 @@ public:
 
 	virtual void Work();
 	virtual void Activate();
-	virtual void Intersect(ref_count_ptr<StgIntersectionTarget>::unsync ownTarget, ref_count_ptr<StgIntersectionTarget>::unsync otherTarget);
+	virtual void Intersect(std::shared_ptr<StgIntersectionTarget>::unsync ownTarget, std::shared_ptr<StgIntersectionTarget>::unsync otherTarget);
 	virtual void ClearEnemyObject() { ClearIntersectionRelativeTarget(); }
 	virtual void RegistIntersectionTarget();
 
@@ -54,7 +54,7 @@ public:
 		DxScriptRenderObject::SetY(y);
 	}
 
-	ref_count_ptr<StgEnemyObject>::unsync GetOwnObject();
+	std::shared_ptr<StgEnemyObject>::unsync GetOwnObject();
 	double GetLife() { return life_; }
 	void SetLife(double life) { life_ = life; }
 	void AddLife(double inc)
@@ -106,8 +106,8 @@ public:
 	virtual void Render() {} //何もしない
 	virtual void SetRenderState() {} //何もしない
 
-	void AddData(int step, ref_count_ptr<StgEnemyBossSceneData>::unsync data);
-	ref_count_ptr<StgEnemyBossSceneData>::unsync GetActiveData() { return activeData_; }
+	void AddData(int step, std::shared_ptr<StgEnemyBossSceneData>::unsync data);
+	std::shared_ptr<StgEnemyBossSceneData>::unsync GetActiveData() { return activeData_; }
 	void LoadAllScriptInThread();
 
 	int GetRemainStepCount();
@@ -130,8 +130,8 @@ private:
 
 	int dataStep_;
 	int dataIndex_;
-	ref_count_ptr<StgEnemyBossSceneData>::unsync activeData_;
-	std::vector<std::vector<ref_count_ptr<StgEnemyBossSceneData>::unsync>> listData_;
+	std::shared_ptr<StgEnemyBossSceneData>::unsync activeData_;
+	std::vector<std::vector<std::shared_ptr<StgEnemyBossSceneData>::unsync>> listData_;
 };
 
 class StgEnemyBossSceneData {
@@ -144,8 +144,8 @@ public:
 	void SetScriptID(_int64 id) { isScript_ = id; }
 	std::vector<double>& GetLifeList() { return listLife_; }
 	void SetLifeList(std::vector<double>& list) { listLife_ = list; }
-	std::vector<ref_count_ptr<StgEnemyBossObject>::unsync>& GetEnemyObjectList() { return listEnemyObject_; }
-	void SetEnemyObjectList(std::vector<ref_count_ptr<StgEnemyBossObject>::unsync>& list) { listEnemyObject_ = list; }
+	std::vector<std::shared_ptr<StgEnemyBossObject>::unsync>& GetEnemyObjectList() { return listEnemyObject_; }
+	void SetEnemyObjectList(std::vector<std::shared_ptr<StgEnemyBossObject>::unsync>& list) { listEnemyObject_ = list; }
 	int GetEnemyBossIdInCreate();
 	bool IsReadyNext() { return bReadyNext_; }
 	void SetReadyNext() { bReadyNext_ = true; }
@@ -177,7 +177,7 @@ private:
 	std::wstring path_;
 	_int64 isScript_;
 	std::vector<double> listLife_;
-	std::vector<ref_count_ptr<StgEnemyBossObject>::unsync> listEnemyObject_;
+	std::vector<std::shared_ptr<StgEnemyBossObject>::unsync> listEnemyObject_;
 	int countCreate_; //ボス生成数。listEnemyObject_を超えて生成しようとしたらエラー。
 	bool bReadyNext_;
 

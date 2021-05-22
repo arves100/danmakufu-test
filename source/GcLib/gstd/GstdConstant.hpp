@@ -64,7 +64,7 @@
 #include <psapi.h>
 
 // Visual C++ memory leak detection
-#if defined(_DEBUG)
+#if defined(_DEBUG) && defined(_MSC_VER)
 	#define _CRTDBG_MAP_ALLOC
 	#include <crtdbg.h>
 	#define new ::new (_NORMAL_BLOCK, __FILE__, __LINE__)

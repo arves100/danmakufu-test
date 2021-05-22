@@ -662,7 +662,7 @@ std::unique_ptr<ByteBuffer> ArchiveFile::CreateEntryBuffer(ArchiveFileEntry& ent
 	return res;
 }
 /*
-ref_count_ptr<ByteBuffer> ArchiveFile::GetBuffer(std::string name)
+std::shared_ptr<ByteBuffer> ArchiveFile::GetBuffer(std::string name)
 {
 	if (!IsExists(name))
 		return nullptr;
@@ -670,8 +670,8 @@ ref_count_ptr<ByteBuffer> ArchiveFile::GetBuffer(std::string name)
 	if (!file_->Open())
 		return nullptr;
 
-	ref_count_ptr<ByteBuffer> res = new ByteBuffer();
-	ref_count_ptr<ArchiveFileEntry> entry = mapEntry_[name];
+	std::shared_ptr<ByteBuffer> res = new ByteBuffer();
+	std::shared_ptr<ArchiveFileEntry> entry = mapEntry_[name];
 	int offset = entry->GetOffset();
 	int size = entry->GetDataSize();
 

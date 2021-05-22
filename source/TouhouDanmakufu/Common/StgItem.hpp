@@ -18,7 +18,7 @@ public:
 	void Work();
 	void Render(int targetPriority);
 
-	void AddItem(ref_count_ptr<StgItemObject>::unsync obj) { listObj_.push_back(obj); }
+	void AddItem(std::shared_ptr<StgItemObject>::unsync obj) { listObj_.push_back(obj); }
 	int GetItemCount() { return listObj_.size(); }
 
 	SpriteList2D* GetItemRenderer() { return listSpriteItem_.GetPointer(); }
@@ -28,7 +28,7 @@ public:
 	StgItemDataList* GetItemDataList() { return listItemData_.GetPointer(); }
 	bool LoadItemData(std::wstring path, bool bReload = false);
 
-	ref_count_ptr<StgItemObject>::unsync CreateItem(int type);
+	std::shared_ptr<StgItemObject>::unsync CreateItem(int type);
 
 	void CollectItemsAll();
 	void CollectItemsByType(int type);
@@ -40,11 +40,11 @@ public:
 
 private:
 	StgStageController* stageController_;
-	ref_count_ptr<SpriteList2D>::unsync listSpriteItem_;
-	ref_count_ptr<SpriteList2D>::unsync listSpriteDigit_;
-	ref_count_ptr<StgItemDataList>::unsync listItemData_;
+	std::shared_ptr<SpriteList2D>::unsync listSpriteItem_;
+	std::shared_ptr<SpriteList2D>::unsync listSpriteDigit_;
+	std::shared_ptr<StgItemDataList>::unsync listItemData_;
 
-	std::list<ref_count_ptr<StgItemObject>::unsync> listObj_;
+	std::list<std::shared_ptr<StgItemObject>::unsync> listObj_;
 	std::set<int> listItemTypeToPlayer_;
 	std::list<DxCircle> listCircleToPlayer_;
 	bool bAllItemToPlayer_;
@@ -69,23 +69,23 @@ public:
 	virtual ~StgItemDataList();
 
 	int GetTextureCount() { return listTexture_.size(); }
-	ref_count_ptr<Texture> GetTexture(int index) { return listTexture_[index]; }
-	ref_count_ptr<StgItemRenderer>::unsync GetRenderer(int index, int typeRender) { return listRenderer_[typeRender][index]; }
-	std::vector<ref_count_ptr<StgItemRenderer>::unsync>* GetRendererList(int typeRender) { return &listRenderer_[typeRender]; }
+	std::shared_ptr<Texture> GetTexture(int index) { return listTexture_[index]; }
+	std::shared_ptr<StgItemRenderer>::unsync GetRenderer(int index, int typeRender) { return listRenderer_[typeRender][index]; }
+	std::vector<std::shared_ptr<StgItemRenderer>::unsync>* GetRendererList(int typeRender) { return &listRenderer_[typeRender]; }
 
-	ref_count_ptr<StgItemData>::unsync GetData(int id) { return (id >= 0 && id < listData_.size()) ? listData_[id] : NULL; }
+	std::shared_ptr<StgItemData>::unsync GetData(int id) { return (id >= 0 && id < listData_.size()) ? listData_[id] : NULL; }
 
 	bool AddItemDataList(std::wstring path, bool bReload);
 
 private:
-	void _ScanItem(std::vector<ref_count_ptr<StgItemData>::unsync>& listData, Scanner& scanner);
-	void _ScanAnimation(ref_count_ptr<StgItemData>::unsync itemData, Scanner& scanner);
+	void _ScanItem(std::vector<std::shared_ptr<StgItemData>::unsync>& listData, Scanner& scanner);
+	void _ScanAnimation(std::shared_ptr<StgItemData>::unsync itemData, Scanner& scanner);
 	std::vector<std::wstring> _GetArgumentList(Scanner& scanner);
 
 	std::set<std::wstring> listReadPath_;
-	std::vector<ref_count_ptr<Texture>> listTexture_;
-	std::vector<std::vector<ref_count_ptr<StgItemRenderer>::unsync>> listRenderer_;
-	std::vector<ref_count_ptr<StgItemData>::unsync> listData_;
+	std::vector<std::shared_ptr<Texture>> listTexture_;
+	std::vector<std::vector<std::shared_ptr<StgItemRenderer>::unsync>> listRenderer_;
+	std::vector<std::shared_ptr<StgItemData>::unsync> listData_;
 
 };
 
@@ -109,7 +109,7 @@ public:
 	RECT GetOut() { return rcOut_; }
 	int GetAlpha() { return alpha_; }
 
-	ref_count_ptr<Texture> GetTexture();
+	std::shared_ptr<Texture> GetTexture();
 	StgItemRenderer* GetRenderer();
 	StgItemRenderer* GetRenderer(int type);
 
@@ -171,7 +171,7 @@ public:
 	virtual void SetRenderState() {}
 	virtual void Activate() {}
 
-	virtual void Intersect(ref_count_ptr<StgIntersectionTarget>::unsync ownTarget, ref_count_ptr<StgIntersectionTarget>::unsync otherTarget) = 0;
+	virtual void Intersect(std::shared_ptr<StgIntersectionTarget>::unsync ownTarget, std::shared_ptr<StgIntersectionTarget>::unsync otherTarget) = 0;
 
 	virtual void SetX(double x)
 	{
@@ -221,39 +221,39 @@ protected:
 class StgItemObject_1UP : public StgItemObject {
 public:
 	StgItemObject_1UP(StgStageController* stageController);
-	virtual void Intersect(ref_count_ptr<StgIntersectionTarget>::unsync ownTarget, ref_count_ptr<StgIntersectionTarget>::unsync otherTarget);
+	virtual void Intersect(std::shared_ptr<StgIntersectionTarget>::unsync ownTarget, std::shared_ptr<StgIntersectionTarget>::unsync otherTarget);
 };
 
 class StgItemObject_Bomb : public StgItemObject {
 public:
 	StgItemObject_Bomb(StgStageController* stageController);
-	virtual void Intersect(ref_count_ptr<StgIntersectionTarget>::unsync ownTarget, ref_count_ptr<StgIntersectionTarget>::unsync otherTarget);
+	virtual void Intersect(std::shared_ptr<StgIntersectionTarget>::unsync ownTarget, std::shared_ptr<StgIntersectionTarget>::unsync otherTarget);
 };
 
 class StgItemObject_Power : public StgItemObject {
 public:
 	StgItemObject_Power(StgStageController* stageController);
-	virtual void Intersect(ref_count_ptr<StgIntersectionTarget>::unsync ownTarget, ref_count_ptr<StgIntersectionTarget>::unsync otherTarget);
+	virtual void Intersect(std::shared_ptr<StgIntersectionTarget>::unsync ownTarget, std::shared_ptr<StgIntersectionTarget>::unsync otherTarget);
 };
 
 class StgItemObject_Point : public StgItemObject {
 public:
 	StgItemObject_Point(StgStageController* stageController);
-	virtual void Intersect(ref_count_ptr<StgIntersectionTarget>::unsync ownTarget, ref_count_ptr<StgIntersectionTarget>::unsync otherTarget);
+	virtual void Intersect(std::shared_ptr<StgIntersectionTarget>::unsync ownTarget, std::shared_ptr<StgIntersectionTarget>::unsync otherTarget);
 };
 
 class StgItemObject_Bonus : public StgItemObject {
 public:
 	StgItemObject_Bonus(StgStageController* stageController);
 	virtual void Work();
-	virtual void Intersect(ref_count_ptr<StgIntersectionTarget>::unsync ownTarget, ref_count_ptr<StgIntersectionTarget>::unsync otherTarget);
+	virtual void Intersect(std::shared_ptr<StgIntersectionTarget>::unsync ownTarget, std::shared_ptr<StgIntersectionTarget>::unsync otherTarget);
 };
 
 class StgItemObject_Score : public StgItemObject {
 public:
 	StgItemObject_Score(StgStageController* stageController);
 	virtual void Work();
-	virtual void Intersect(ref_count_ptr<StgIntersectionTarget>::unsync ownTarget, ref_count_ptr<StgIntersectionTarget>::unsync otherTarget);
+	virtual void Intersect(std::shared_ptr<StgIntersectionTarget>::unsync ownTarget, std::shared_ptr<StgIntersectionTarget>::unsync otherTarget);
 
 private:
 	int frameDelete_;
@@ -264,7 +264,7 @@ public:
 	StgItemObject_User(StgStageController* stageController);
 	virtual void Work();
 	virtual void RenderOnItemManager(D3DXMATRIX mat);
-	virtual void Intersect(ref_count_ptr<StgIntersectionTarget>::unsync ownTarget, ref_count_ptr<StgIntersectionTarget>::unsync otherTarget);
+	virtual void Intersect(std::shared_ptr<StgIntersectionTarget>::unsync ownTarget, std::shared_ptr<StgIntersectionTarget>::unsync otherTarget);
 
 	void SetImageID(int id);
 

@@ -23,13 +23,12 @@ RenderBlock::~RenderBlock()
 }
 void RenderBlock::Render()
 {
-	RenderObject* obj = (RenderObject*)obj_.GetPointer();
-	obj->SetPosition(position_);
-	obj->SetAngle(angle_);
-	obj->SetScale(scale_);
+	obj_->SetPosition(position_);
+	obj_->SetAngle(angle_);
+	obj_->SetScale(scale_);
 	if (func_ != NULL)
 		func_->CallRenderStateFunction();
-	obj->Render();
+	obj_->Render();
 }
 
 /**********************************************************
@@ -48,7 +47,7 @@ void RenderManager::Render()
 	//不透明
 	graph->SetZBufferEnable(true);
 	graph->SetZWriteEnalbe(true);
-	std::list<gstd::ref_count_ptr<RenderBlock>>::iterator itrOpaque;
+	std::list<std::shared_ptr<RenderBlock>>::iterator itrOpaque;
 	for (itrOpaque = listBlockOpaque_.begin(); itrOpaque != listBlockOpaque_.end(); itrOpaque++) {
 		(*itrOpaque)->Render();
 	}
@@ -56,7 +55,7 @@ void RenderManager::Render()
 	//半透明
 	graph->SetZBufferEnable(true);
 	graph->SetZWriteEnalbe(false);
-	std::list<gstd::ref_count_ptr<RenderBlock>>::iterator itrTrans;
+	std::list<std::shared_ptr<RenderBlock>>::iterator itrTrans;
 	for (itrTrans = listBlockTranslucent_.begin(); itrTrans != listBlockTranslucent_.end(); itrTrans++) {
 		(*itrTrans)->CalculateZValue();
 	}
@@ -68,7 +67,7 @@ void RenderManager::Render()
 	listBlockOpaque_.clear();
 	listBlockTranslucent_.clear();
 }
-void RenderManager::AddBlock(gstd::ref_count_ptr<RenderBlock> block)
+void RenderManager::AddBlock(std::shared_ptr<RenderBlock> block)
 {
 	if (block == NULL)
 		return;
@@ -78,11 +77,11 @@ void RenderManager::AddBlock(gstd::ref_count_ptr<RenderBlock> block)
 		listBlockOpaque_.push_back(block);
 	}
 }
-void RenderManager::AddBlock(gstd::ref_count_ptr<RenderBlocks> blocks)
+void RenderManager::AddBlock(std::shared_ptr<RenderBlocks> blocks)
 {
-	std::list<gstd::ref_count_ptr<RenderBlock>>& listBlock = blocks->GetList();
+	std::list<std::shared_ptr<RenderBlock>>& listBlock = blocks->GetList();
 	int size = listBlock.size();
-	std::list<gstd::ref_count_ptr<RenderBlock>>::iterator itr;
+	std::list<std::shared_ptr<RenderBlock>>::iterator itr;
 	for (itr = listBlock.begin(); itr != listBlock.end(); itr++) {
 		AddBlock(*itr);
 	}
@@ -99,10 +98,10 @@ RenderStateFunction::~RenderStateFunction()
 }
 void RenderStateFunction::CallRenderStateFunction()
 {
-	std::map<RenderStateFunction::FUNC_TYPE, gstd::ref_count_ptr<gstd::ByteBuffer>>::iterator itr;
+	std::map<RenderStateFunction::FUNC_TYPE, std::shared_ptr<gstd::ByteBuffer>>::iterator itr;
 	for (itr = mapFuncRenderState_.begin(); itr != mapFuncRenderState_.end(); itr++) {
 		RenderStateFunction::FUNC_TYPE type = (*itr).first;
-		gstd::ByteBuffer* args = (*itr).second.GetPointer();
+		auto args = (*itr).second;
 		args->Seek(0);
 		if (type == RenderStateFunction::FUNC_LIGHTING) {
 			bool bEnable = args->ReadBoolean();
@@ -116,7 +115,7 @@ void RenderStateFunction::CallRenderStateFunction()
 void RenderStateFunction::SetLightingEnable(bool bEnable)
 {
 	int sizeArgs = sizeof(bEnable);
-	gstd::ByteBuffer* args = new gstd::ByteBuffer();
+	auto args = std::make_shared<gstd::ByteBuffer>();
 	args->SetSize(sizeArgs);
 	args->WriteBoolean(bEnable);
 	mapFuncRenderState_[RenderStateFunction::FUNC_LIGHTING] = args;
@@ -124,7 +123,7 @@ void RenderStateFunction::SetLightingEnable(bool bEnable)
 void RenderStateFunction::SetCullingMode(DWORD mode)
 {
 	int sizeArgs = sizeof(mode);
-	gstd::ByteBuffer* args = new gstd::ByteBuffer();
+	auto args = std::make_shared<gstd::ByteBuffer>();
 	args->SetSize(sizeArgs);
 	args->WriteInteger(mode);
 	mapFuncRenderState_[RenderStateFunction::FUNC_CULLING] = args;
@@ -132,7 +131,7 @@ void RenderStateFunction::SetCullingMode(DWORD mode)
 void RenderStateFunction::SetZBufferEnable(bool bEnable)
 {
 	int sizeArgs = sizeof(bEnable);
-	gstd::ByteBuffer* args = new gstd::ByteBuffer();
+	auto args = std::make_shared<gstd::ByteBuffer>();
 	args->SetSize(sizeArgs);
 	args->WriteBoolean(bEnable);
 	mapFuncRenderState_[RenderStateFunction::FUNC_ZBUFFER_ENABLE] = args;
@@ -140,7 +139,7 @@ void RenderStateFunction::SetZBufferEnable(bool bEnable)
 void RenderStateFunction::SetZWriteEnalbe(bool bEnable)
 {
 	int sizeArgs = sizeof(bEnable);
-	gstd::ByteBuffer* args = new gstd::ByteBuffer();
+	auto args = std::make_shared<gstd::ByteBuffer>();
 	args->SetSize(sizeArgs);
 	args->WriteBoolean(bEnable);
 	mapFuncRenderState_[RenderStateFunction::FUNC_ZBUFFER_WRITE_ENABLE] = args;
@@ -148,7 +147,7 @@ void RenderStateFunction::SetZWriteEnalbe(bool bEnable)
 void RenderStateFunction::SetBlendMode(DWORD mode, int stage)
 {
 	int sizeArgs = sizeof(mode) + sizeof(stage);
-	gstd::ByteBuffer* args = new gstd::ByteBuffer();
+	auto args = std::make_shared<gstd::ByteBuffer>();
 	args->SetSize(sizeArgs);
 	args->WriteInteger(mode);
 	args->WriteInteger(stage);
@@ -157,7 +156,7 @@ void RenderStateFunction::SetBlendMode(DWORD mode, int stage)
 void RenderStateFunction::SetTextureFilter(DWORD mode, int stage)
 {
 	int sizeArgs = sizeof(mode) + sizeof(stage);
-	gstd::ByteBuffer* args = new gstd::ByteBuffer();
+	auto args = std::make_shared<gstd::ByteBuffer>();
 	args->SetSize(sizeArgs);
 	args->WriteInteger(mode);
 	args->WriteInteger(stage);
@@ -266,7 +265,7 @@ D3DXMATRIX RenderObject::_CreateWorldTransformMaxtrix()
 		float width = viewPort.Width;
 		float height = viewPort.Height;
 
-		DxCamera2D* camera2D = graphics->GetCamera2D().GetPointer();
+		auto camera2D = graphics->GetCamera2D();
 		if (camera2D->IsEnable()) {
 			D3DXMATRIX matCamera = camera2D->GetMatrix();
 			mat = mat * matCamera;
@@ -334,10 +333,10 @@ void RenderObject::SetTexture(Texture* texture, int stage)
 	else {
 		if (stage >= texture_.size())
 			return;
-		texture_[stage] = new Texture(texture);
+		texture_[stage] = std::make_shared<Texture>(texture);
 	}
 }
-void RenderObject::SetTexture(ref_count_ptr<Texture> texture, int stage)
+void RenderObject::SetTexture(std::shared_ptr<Texture> texture, int stage)
 {
 	if (texture == NULL)
 		texture_[stage] = NULL;
@@ -403,9 +402,9 @@ void RenderObjectTLX::_CreateVertexDeclaration()
 void RenderObjectTLX::Render()
 {
 	DirectGraphics* graphics = DirectGraphics::GetBase();
-	DxCamera2D* camera = graphics->GetCamera2D().GetPointer();
+	auto camera = graphics->GetCamera2D();
 	IDirect3DDevice9* device = graphics->GetDevice();
-	ref_count_ptr<Texture>& texture = texture_[0];
+	std::shared_ptr<Texture>& texture = texture_[0];
 	if (texture != NULL)
 		device->SetTexture(0, texture->GetD3DTexture());
 	else
@@ -599,7 +598,7 @@ void RenderObjectLX::_CreateVertexDeclaration()
 void RenderObjectLX::Render()
 {
 	IDirect3DDevice9* device = DirectGraphics::GetBase()->GetDevice();
-	ref_count_ptr<Texture>& texture = texture_[0];
+	std::shared_ptr<Texture>& texture = texture_[0];
 	if (texture != NULL)
 		device->SetTexture(0, texture->GetD3DTexture());
 	else
@@ -736,7 +735,7 @@ void RenderObjectNX::_CreateVertexDeclaration()
 void RenderObjectNX::Render()
 {
 	IDirect3DDevice9* device = DirectGraphics::GetBase()->GetDevice();
-	ref_count_ptr<Texture>& texture = texture_[0];
+	std::shared_ptr<Texture>& texture = texture_[0];
 	if (texture != NULL)
 		device->SetTexture(0, texture->GetD3DTexture());
 	else
@@ -886,7 +885,7 @@ void RenderObjectBNX::InitializeVertexBuffer()
 void RenderObjectBNX::Render()
 {
 	IDirect3DDevice9* device = DirectGraphics::GetBase()->GetDevice();
-	ref_count_ptr<Texture>& texture = texture_[0];
+	std::shared_ptr<Texture>& texture = texture_[0];
 	if (texture != NULL)
 		device->SetTexture(0, texture->GetD3DTexture());
 	else
@@ -931,7 +930,7 @@ void RenderObjectBNX::Render()
 		device->SetRenderState(D3DRS_VERTEXBLEND, D3DVBF_DISABLE);
 	} else {
 		ShaderManager* manager = ShaderManager::GetBase();
-		ref_count_ptr<Shader> shader = manager->GetDefaultSkinnedMeshShader();
+		std::shared_ptr<Shader> shader = manager->GetDefaultSkinnedMeshShader();
 		if (shader != NULL) {
 			shader->SetTechnique("BasicTec");
 
@@ -940,7 +939,8 @@ void RenderObjectBNX::Render()
 			D3DXMATRIX matProj;
 			device->GetTransform(D3DTS_PROJECTION, &matProj);
 
-			shader->SetMatrix("mViewProj", matView * matProj);
+			auto mVP = matView * matProj;
+			shader->SetMatrix("mViewProj", mVP);
 
 			D3DXMATRIX matWorld = _CreateWorldTransformMaxtrix();
 			D3DLIGHT9 light;
@@ -958,8 +958,9 @@ void RenderObjectBNX::Render()
 			ambient = ColorAccess::SetColor(ambient, color_);
 
 			//ライト
-			shader->SetVector("lightDirection", D3DXVECTOR4(1.0f, 1.0f, 1.0f, 1.0f));
-			shader->SetVector("lightDiffuse", D3DXVECTOR4(1.0f, 1.0f, 1.0f, 1.0f));
+			auto v = D3DXVECTOR4(1.0f, 1.0f, 1.0f, 1.0f);
+			shader->SetVector("lightDirection", v);
+			shader->SetVector("lightDiffuse", v);
 			shader->SetVector("materialDiffuse", (D3DXVECTOR4&)diffuse);
 			shader->SetVector("materialAmbient", (D3DXVECTOR4&)ambient);
 
@@ -996,7 +997,7 @@ void RenderObjectBNX::Render()
 
 			shader->End();
 		} else {
-			Logger::WriteTop(StringUtility::Format(L"Shader error[%s]", "DEFAULT"));
+			Logger::WriteTop(StringUtility::Format(u8"Shader error[%s]", "DEFAULT"));
 		}
 
 		device->SetVertexDeclaration(NULL);
@@ -1128,7 +1129,7 @@ RenderObjectB2NXBlock::~RenderObjectB2NXBlock()
 }
 void RenderObjectB2NXBlock::Render()
 {
-	RenderObjectB2NX* obj = (RenderObjectB2NX*)obj_.GetPointer();
+	auto obj = std::dynamic_pointer_cast<RenderObjectB2NX>(obj_);
 	obj->SetMatrix(matrix_);
 	RenderBlock::Render();
 }
@@ -1255,7 +1256,7 @@ RenderObjectB4NXBlock::~RenderObjectB4NXBlock()
 }
 void RenderObjectB4NXBlock::Render()
 {
-	RenderObjectB4NX* obj = (RenderObjectB4NX*)obj_.GetPointer();
+	auto obj = std::dynamic_pointer_cast<RenderObjectB4NX>(obj_);
 	obj->SetMatrix(matrix_);
 	RenderBlock::Render();
 }
@@ -1291,7 +1292,7 @@ void Sprite2D::Copy(Sprite2D* src)
 }
 void Sprite2D::SetSourceRect(RECT_D& rcSrc)
 {
-	ref_count_ptr<Texture>& texture = texture_[0];
+	std::shared_ptr<Texture>& texture = texture_[0];
 	if (texture == NULL)
 		return;
 	int width = texture->GetWidth();
@@ -1313,7 +1314,7 @@ void Sprite2D::SetDestinationRect(RECT_D& rcDest)
 }
 void Sprite2D::SetDestinationCenter()
 {
-	ref_count_ptr<Texture>& texture = texture_[0];
+	std::shared_ptr<Texture>& texture = texture_[0];
 	if (texture == NULL || GetVertexCount() < 4)
 		return;
 	int width = texture->GetWidth();
@@ -1363,9 +1364,9 @@ SpriteList2D::SpriteList2D()
 void SpriteList2D::Render()
 {
 	DirectGraphics* graphics = DirectGraphics::GetBase();
-	DxCamera2D* camera = graphics->GetCamera2D().GetPointer();
+	auto camera = graphics->GetCamera2D();
 	IDirect3DDevice9* device = graphics->GetDevice();
-	ref_count_ptr<Texture>& texture = texture_[0];
+	std::shared_ptr<Texture>& texture = texture_[0];
 	if (texture != NULL)
 		device->SetTexture(0, texture->GetD3DTexture());
 	else
@@ -1470,7 +1471,7 @@ void SpriteList2D::AddVertex()
 	if (bCloseVertexList_)
 		return;
 
-	ref_count_ptr<Texture>& texture = texture_[0];
+	std::shared_ptr<Texture>& texture = texture_[0];
 	if (texture == NULL)
 		return;
 
@@ -1531,7 +1532,7 @@ void SpriteList2D::AddVertex()
 }
 void SpriteList2D::SetDestinationCenter()
 {
-	ref_count_ptr<Texture>& texture = texture_[0];
+	std::shared_ptr<Texture>& texture = texture_[0];
 	if (texture == NULL)
 		return;
 	int width = texture->GetWidth();
@@ -1625,7 +1626,7 @@ D3DXMATRIX Sprite3D::_CreateWorldTransformMaxtrix()
 }
 void Sprite3D::SetSourceRect(RECT_D& rcSrc)
 {
-	ref_count_ptr<Texture>& texture = texture_[0];
+	std::shared_ptr<Texture>& texture = texture_[0];
 	if (texture == NULL)
 		return;
 	int width = texture->GetWidth();
@@ -1711,7 +1712,7 @@ void TrajectoryObject3D::Render()
 	SetVertexCount(size);
 
 	int width = 1;
-	gstd::ref_count_ptr<Texture> texture = texture_[0];
+	std::shared_ptr<Texture> texture = texture_[0];
 	if (texture != NULL) {
 		width = texture->GetWidth();
 	}
@@ -1813,11 +1814,11 @@ DxMesh::~DxMesh()
 {
 	Release();
 }
-gstd::ref_count_ptr<DxMeshData> DxMesh::_GetFromManager(std::wstring name)
+std::shared_ptr<DxMeshData> DxMesh::_GetFromManager(std::string name)
 {
 	return DxMeshManager::GetBase()->_GetMeshData(name);
 }
-void DxMesh::_AddManager(std::wstring name, gstd::ref_count_ptr<DxMeshData> data)
+void DxMesh::_AddManager(std::string name, std::shared_ptr<DxMeshData> data)
 {
 	DxMeshManager::GetBase()->_AddMeshData(name, data);
 }
@@ -1828,7 +1829,7 @@ void DxMesh::Release()
 		Lock lock(manager->GetLock());
 		if (data_ != NULL) {
 			if (manager->IsDataExists(data_->GetName())) {
-				int countRef = data_.GetReferenceCount();
+				int countRef = data_.use_count();
 				//自身とDxMeshManager内の数だけになったら削除
 				if (countRef == 2) {
 					manager->_ReleaseMeshData(data_->GetName());
@@ -1838,21 +1839,21 @@ void DxMesh::Release()
 		}
 	}
 }
-bool DxMesh::CreateFromFile(std::wstring path)
+bool DxMesh::CreateFromFile(std::string path)
 {
 	try {
 		path = PathProperty::GetUnique(path);
-		ref_count_ptr<FileReader> reader = FileManager::GetBase()->GetFileReader(path);
+		std::shared_ptr<FileReader> reader = FileManager::GetBase()->GetFileReader(path);
 		if (reader == NULL)
-			throw gstd::wexception(L"ファイルが見つかりません");
+			throw std::exception(u8"ファイルが見つかりません");
 		return CreateFromFileReader(reader);
-	} catch (gstd::wexception& e) {
-		std::wstring str = StringUtility::Format(L"DxMesh：メッシュ読み込み失敗[%s]\n\t%s", path.c_str(), e.what());
+	} catch (std::exception& e) {
+		std::string str = StringUtility::Format(u8"DxMesh：メッシュ読み込み失敗[%s]\n\t%s", path.c_str(), e.what());
 		Logger::WriteTop(str);
 	}
 	return false;
 }
-bool DxMesh::CreateFromFileInLoadThread(std::wstring path, int type)
+bool DxMesh::CreateFromFileInLoadThread(std::string path, int type)
 {
 	bool res = false;
 	{
@@ -1860,7 +1861,7 @@ bool DxMesh::CreateFromFileInLoadThread(std::wstring path, int type)
 		if (data_ != NULL)
 			Release();
 		DxMeshManager* manager = DxMeshManager::GetBase();
-		ref_count_ptr<DxMesh> mesh = manager->CreateFromFileInLoadThread(path, type);
+		std::shared_ptr<DxMesh> mesh = manager->CreateFromFileInLoadThread(path, type);
 		if (mesh != NULL) {
 			data_ = mesh->data_;
 		}
@@ -1912,7 +1913,7 @@ void DxMeshManager::Clear()
 	}
 }
 
-void DxMeshManager::_AddMeshData(std::wstring name, gstd::ref_count_ptr<DxMeshData> data)
+void DxMeshManager::_AddMeshData(std::string name, std::shared_ptr<DxMeshData> data)
 {
 	{
 		Lock lock(lock_);
@@ -1921,9 +1922,9 @@ void DxMeshManager::_AddMeshData(std::wstring name, gstd::ref_count_ptr<DxMeshDa
 		}
 	}
 }
-gstd::ref_count_ptr<DxMeshData> DxMeshManager::_GetMeshData(std::wstring name)
+std::shared_ptr<DxMeshData> DxMeshManager::_GetMeshData(std::string name)
 {
-	gstd::ref_count_ptr<DxMeshData> res = NULL;
+	std::shared_ptr<DxMeshData> res = NULL;
 	{
 		Lock lock(lock_);
 		if (IsDataExists(name)) {
@@ -1932,17 +1933,17 @@ gstd::ref_count_ptr<DxMeshData> DxMeshManager::_GetMeshData(std::wstring name)
 	}
 	return res;
 }
-void DxMeshManager::_ReleaseMeshData(std::wstring name)
+void DxMeshManager::_ReleaseMeshData(std::string name)
 {
 	{
 		Lock lock(lock_);
 		if (IsDataExists(name)) {
 			mapMeshData_.erase(name);
-			Logger::WriteTop(StringUtility::Format(L"DxMeshManager：メッシュを解放しました[%s]", name.c_str()));
+			Logger::WriteTop(StringUtility::Format(u8"DxMeshManager：メッシュを解放しました[%s]", name.c_str()));
 		}
 	}
 }
-void DxMeshManager::Add(std::wstring name, gstd::ref_count_ptr<DxMesh> mesh)
+void DxMeshManager::Add(std::string name, std::shared_ptr<DxMesh> mesh)
 {
 	{
 		Lock lock(lock_);
@@ -1952,14 +1953,14 @@ void DxMeshManager::Add(std::wstring name, gstd::ref_count_ptr<DxMesh> mesh)
 		}
 	}
 }
-void DxMeshManager::Release(std::wstring name)
+void DxMeshManager::Release(std::string name)
 {
 	{
 		Lock lock(lock_);
 		mapMesh_.erase(name);
 	}
 }
-bool DxMeshManager::IsDataExists(std::wstring name)
+bool DxMeshManager::IsDataExists(std::string name)
 {
 	bool res = false;
 	{
@@ -1968,9 +1969,9 @@ bool DxMeshManager::IsDataExists(std::wstring name)
 	}
 	return res;
 }
-gstd::ref_count_ptr<DxMesh> DxMeshManager::CreateFromFileInLoadThread(std::wstring path, int type)
+std::shared_ptr<DxMesh> DxMeshManager::CreateFromFileInLoadThread(std::string path, int type)
 {
-	gstd::ref_count_ptr<DxMesh> res;
+	std::shared_ptr<DxMesh> res;
 	{
 		Lock lock(lock_);
 		bool bExist = mapMesh_.find(path) != mapMesh_.end();
@@ -1978,22 +1979,26 @@ gstd::ref_count_ptr<DxMesh> DxMeshManager::CreateFromFileInLoadThread(std::wstri
 			res = mapMesh_[path];
 		} else {
 			if (type == MESH_ELFREINA)
-				res = new ElfreinaMesh();
+			{
+				mapMesh_[path] = std::make_unique<ElfreinaMesh>();
+			}
 			else if (type == MESH_METASEQUOIA)
-				res = new MetasequoiaMesh();
+				mapMesh_[path] = std::make_unique<MetasequoiaMesh>();
+
+			res = mapMesh_[path];
 			if (!IsDataExists(path)) {
-				ref_count_ptr<DxMeshData> data = NULL;
+				std::shared_ptr<DxMeshData> data;
 				if (type == MESH_ELFREINA)
-					data = new ElfreinaMeshData();
+					mapMeshData_[path] = std::make_shared<ElfreinaMeshData>();
 				else if (type == MESH_METASEQUOIA)
-					data = new MetasequoiaMeshData();
-				mapMeshData_[path] = data;
+					mapMeshData_[path] = std::make_shared<MetasequoiaMeshData>();
+				data = mapMeshData_[path];
 				data->manager_ = this;
 				data->name_ = path;
 				data->bLoad_ = false;
 
-				ref_count_ptr<FileManager::LoadObject> source = res;
-				ref_count_ptr<FileManager::LoadThreadEvent> event = new FileManager::LoadThreadEvent(this, path, res);
+				std::shared_ptr<FileManager::LoadObject> source = res;
+				auto event = std::make_unique<FileManager::LoadThreadEvent>(this, path, res);
 				FileManager::GetBase()->AddLoadThreadEvent(event);
 			}
 
@@ -2002,28 +2007,28 @@ gstd::ref_count_ptr<DxMesh> DxMeshManager::CreateFromFileInLoadThread(std::wstri
 	}
 	return res;
 }
-void DxMeshManager::CallFromLoadThread(ref_count_ptr<FileManager::LoadThreadEvent> event)
+void DxMeshManager::CallFromLoadThread(std::unique_ptr<gstd::FileManager::LoadThreadEvent>& event)
 {
-	std::wstring path = event->GetPath();
+	std::string path = event->GetPath();
 	{
 		Lock lock(lock_);
-		ref_count_ptr<DxMesh> mesh = ref_count_ptr<DxMesh>::DownCast(event->GetSource());
+		std::shared_ptr<DxMesh> mesh = std::dynamic_pointer_cast<DxMesh>(event->GetSource());
 		if (mesh == NULL)
 			return;
 
-		ref_count_ptr<DxMeshData> data = mesh->data_;
+		std::shared_ptr<DxMeshData> data = mesh->data_;
 		if (data->bLoad_)
 			return;
 
 		bool res = false;
-		ref_count_ptr<FileReader> reader = FileManager::GetBase()->GetFileReader(path);
+		std::shared_ptr<FileReader> reader = FileManager::GetBase()->GetFileReader(path);
 		if (reader != NULL && reader->Open()) {
 			res = data->CreateFromFileReader(reader);
 		}
 		if (res) {
-			Logger::WriteTop(StringUtility::Format(L"メッシュを読み込みました[%s]", path.c_str()));
+			Logger::WriteTop(StringUtility::Format(u8"メッシュを読み込みました[%s]", path.c_str()));
 		} else {
-			Logger::WriteTop(StringUtility::Format(L"メッシュを読み込み失敗[%s]", path.c_str()));
+			Logger::WriteTop(StringUtility::Format(u8"メッシュを読み込み失敗[%s]", path.c_str()));
 		}
 		data->bLoad_ = true;
 	}

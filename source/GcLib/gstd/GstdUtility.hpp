@@ -614,9 +614,9 @@ class ObjectPool {
 public:
 	ObjectPool() {}
 	virtual ~ObjectPool() {}
-	virtual gstd::ref_count_ptr<T, SYNC> GetPoolObject(int type)
+	virtual gstd::shared_ptr<T, SYNC> GetPoolObject(int type)
 	{
-		gstd::ref_count_ptr<T, SYNC> res = NULL;
+		gstd::shared_ptr<T, SYNC> res = NULL;
 		if (listCachePool_[type].size() > 0) {
 			res = listCachePool_[type].back();
 			listCachePool_[type].pop_back();
@@ -646,26 +646,26 @@ public:
 	}
 
 protected:
-	std::vector<std::list<gstd::ref_count_ptr<T, SYNC>>> listUsedPool_;
-	std::vector<std::vector<gstd::ref_count_ptr<T, SYNC>>> listCachePool_;
+	std::vector<std::list<gstd::shared_ptr<T, SYNC>>> listUsedPool_;
+	std::vector<std::vector<gstd::shared_ptr<T, SYNC>>> listCachePool_;
 
 	virtual void _CreatePool(int countType)
 	{
 		listUsedPool_.resize(countType);
 		listCachePool_.resize(countType);
 	}
-	virtual gstd::ref_count_ptr<T, SYNC> _CreatePoolObject(int type) = 0;
-	virtual void _ResetPoolObject(gstd::ref_count_ptr<T, SYNC>& obj) {}
+	virtual gstd::shared_ptr<T, SYNC> _CreatePoolObject(int type) = 0;
+	virtual void _ResetPoolObject(gstd::shared_ptr<T, SYNC>& obj) {}
 	virtual void _ArrangePool()
 	{
 		int countType = listUsedPool_.size();
 		for (int iType = 0; iType < countType; iType++) {
-			std::list<gstd::ref_count_ptr<T, SYNC>>* listUsed = &listUsedPool_[iType];
-			std::vector<gstd::ref_count_ptr<T, SYNC>>* listCache = &listCachePool_[iType];
+			std::list<gstd::shared_ptr<T, SYNC>>* listUsed = &listUsedPool_[iType];
+			std::vector<gstd::shared_ptr<T, SYNC>>* listCache = &listCachePool_[iType];
 
-			std::list<gstd::ref_count_ptr<T, SYNC>>::iterator itr = listUsed->begin();
+			std::list<gstd::shared_ptr<T, SYNC>>::iterator itr = listUsed->begin();
 			for (; itr != listUsed->end();) {
-				gstd::ref_count_ptr<T, SYNC> obj = (*itr);
+				gstd::shared_ptr<T, SYNC> obj = (*itr);
 				if (obj.GetReferenceCount() == 2) {
 					itr = listUsed->erase(itr);
 					_ResetPoolObject(obj);

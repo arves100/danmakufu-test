@@ -10,9 +10,9 @@ StgEnemyManager::StgEnemyManager(StgStageController* stageController)
 }
 StgEnemyManager::~StgEnemyManager()
 {
-	std::list<ref_count_ptr<StgEnemyObject>::unsync>::iterator itr = listObj_.begin();
+	std::list<std::shared_ptr<StgEnemyObject>::unsync>::iterator itr = listObj_.begin();
 	for (; itr != listObj_.end(); itr++) {
-		ref_count_ptr<StgEnemyObject>::unsync obj = (*itr);
+		std::shared_ptr<StgEnemyObject>::unsync obj = (*itr);
 		if (obj != NULL) {
 			obj->ClearEnemyObject();
 		}
@@ -20,9 +20,9 @@ StgEnemyManager::~StgEnemyManager()
 }
 void StgEnemyManager::Work()
 {
-	std::list<ref_count_ptr<StgEnemyObject>::unsync>::iterator itr = listObj_.begin();
+	std::list<std::shared_ptr<StgEnemyObject>::unsync>::iterator itr = listObj_.begin();
 	for (; itr != listObj_.end();) {
-		ref_count_ptr<StgEnemyObject>::unsync obj = (*itr);
+		std::shared_ptr<StgEnemyObject>::unsync obj = (*itr);
 		if (obj->IsDeleted()) {
 			obj->ClearEnemyObject();
 			itr = listObj_.erase(itr);
@@ -32,25 +32,25 @@ void StgEnemyManager::Work()
 }
 void StgEnemyManager::RegistIntersectionTarget()
 {
-	std::list<ref_count_ptr<StgEnemyObject>::unsync>::iterator itr = listObj_.begin();
+	std::list<std::shared_ptr<StgEnemyObject>::unsync>::iterator itr = listObj_.begin();
 	for (; itr != listObj_.end(); itr++) {
-		ref_count_ptr<StgEnemyObject>::unsync obj = (*itr);
+		std::shared_ptr<StgEnemyObject>::unsync obj = (*itr);
 		if (!obj->IsDeleted()) {
 			obj->ClearIntersectedIdList();
 			obj->RegistIntersectionTarget();
 		}
 	}
 }
-void StgEnemyManager::SetBossSceneObject(ref_count_ptr<StgEnemyBossSceneObject>::unsync obj)
+void StgEnemyManager::SetBossSceneObject(std::shared_ptr<StgEnemyBossSceneObject>::unsync obj)
 {
 	if (objBossScene_ != NULL && !objBossScene_->IsDeleted())
 		throw gstd::wexception(L"すでにEnemyBossSceneオブジェクトが存在します");
 
 	objBossScene_ = obj;
 }
-ref_count_ptr<StgEnemyBossSceneObject>::unsync StgEnemyManager::GetBossSceneObject()
+std::shared_ptr<StgEnemyBossSceneObject>::unsync StgEnemyManager::GetBossSceneObject()
 {
-	ref_count_ptr<StgEnemyBossSceneObject>::unsync res = NULL;
+	std::shared_ptr<StgEnemyBossSceneObject>::unsync res = NULL;
 	if (objBossScene_ != NULL && !objBossScene_->IsDeleted())
 		res = objBossScene_;
 	return res;
@@ -98,7 +98,7 @@ void StgEnemyObject::_AddRelativeIntersection()
 void StgEnemyObject::Activate()
 {
 }
-void StgEnemyObject::Intersect(ref_count_ptr<StgIntersectionTarget>::unsync ownTarget, ref_count_ptr<StgIntersectionTarget>::unsync otherTarget)
+void StgEnemyObject::Intersect(std::shared_ptr<StgIntersectionTarget>::unsync ownTarget, std::shared_ptr<StgIntersectionTarget>::unsync otherTarget)
 {
 	double damage = 0;
 	if (otherTarget->GetTargetType() == StgIntersectionTarget::TYPE_PLAYER_SHOT) {
@@ -124,9 +124,9 @@ void StgEnemyObject::RegistIntersectionTarget()
 {
 	_AddRelativeIntersection();
 }
-ref_count_ptr<StgEnemyObject>::unsync StgEnemyObject::GetOwnObject()
+std::shared_ptr<StgEnemyObject>::unsync StgEnemyObject::GetOwnObject()
 {
-	return ref_count_ptr<StgEnemyObject>::unsync::DownCast(stageController_->GetMainRenderObject(idObject_));
+	return std::shared_ptr<StgEnemyObject>::unsync::DownCast(stageController_->GetMainRenderObject(idObject_));
 }
 
 /**********************************************************
@@ -175,20 +175,20 @@ bool StgEnemyBossSceneObject::_NextStep()
 		}
 	}
 
-	ref_count_ptr<StgEnemyBossSceneData>::unsync oldActiveData = activeData_;
+	std::shared_ptr<StgEnemyBossSceneData>::unsync oldActiveData = activeData_;
 
 	//敵登録
-	ref_count_ptr<StgStageScriptObjectManager> objectManager = stageController_->GetMainObjectManager();
+	std::shared_ptr<StgStageScriptObjectManager> objectManager = stageController_->GetMainObjectManager();
 	activeData_ = listData_[dataStep_][dataIndex_];
-	std::vector<ref_count_ptr<StgEnemyBossObject>::unsync>& listEnemy = activeData_->GetEnemyObjectList();
+	std::vector<std::shared_ptr<StgEnemyBossObject>::unsync>& listEnemy = activeData_->GetEnemyObjectList();
 	std::vector<double>& listLife = activeData_->GetLifeList();
 	for (int iEnemy = 0; iEnemy < listEnemy.size(); iEnemy++) {
-		ref_count_ptr<StgEnemyBossObject>::unsync obj = listEnemy[iEnemy];
+		std::shared_ptr<StgEnemyBossObject>::unsync obj = listEnemy[iEnemy];
 		obj->SetLife(listLife[iEnemy]);
 		if (oldActiveData != NULL) {
-			std::vector<ref_count_ptr<StgEnemyBossObject>::unsync> listOldEnemyObject = oldActiveData->GetEnemyObjectList();
+			std::vector<std::shared_ptr<StgEnemyBossObject>::unsync> listOldEnemyObject = oldActiveData->GetEnemyObjectList();
 			if (iEnemy < listOldEnemyObject.size()) {
-				ref_count_ptr<StgEnemyBossObject>::unsync objOld = listOldEnemyObject[iEnemy];
+				std::shared_ptr<StgEnemyBossObject>::unsync objOld = listOldEnemyObject[iEnemy];
 				obj->SetPositionX(objOld->GetPositionX());
 				obj->SetPositionY(objOld->GetPositionY());
 			}
@@ -210,9 +210,9 @@ void StgEnemyBossSceneObject::Work()
 	if (activeData_->IsReadyNext()) {
 		//次ステップ遷移可能
 		bool bEnemyExists = false;
-		std::vector<ref_count_ptr<StgEnemyBossObject>::unsync> listEnemy = activeData_->GetEnemyObjectList();
+		std::vector<std::shared_ptr<StgEnemyBossObject>::unsync> listEnemy = activeData_->GetEnemyObjectList();
 		for (int iEnemy = 0; iEnemy < listEnemy.size(); iEnemy++) {
-			ref_count_ptr<StgEnemyBossObject>::unsync obj = listEnemy[iEnemy];
+			std::shared_ptr<StgEnemyBossObject>::unsync obj = listEnemy[iEnemy];
 			bEnemyExists |= (!obj->IsDeleted());
 		}
 
@@ -221,7 +221,7 @@ void StgEnemyBossSceneObject::Work()
 			if (!bNext) {
 				//終了
 				StgEnemyManager* enemyManager = stageController_->GetEnemyManager();
-				ref_count_ptr<StgStageScriptObjectManager> objectManager = stageController_->GetMainObjectManager();
+				std::shared_ptr<StgStageScriptObjectManager> objectManager = stageController_->GetMainObjectManager();
 				objectManager->DeleteObject(idObject_);
 				enemyManager->SetBossSceneObject(NULL);
 				return;
@@ -248,9 +248,9 @@ void StgEnemyBossSceneObject::Work()
 
 		if (bZeroTimer || bEndLastSpell) {
 			//タイマー0なら敵のライフを0にする
-			std::vector<ref_count_ptr<StgEnemyBossObject>::unsync>& listEnemy = activeData_->GetEnemyObjectList();
+			std::vector<std::shared_ptr<StgEnemyBossObject>::unsync>& listEnemy = activeData_->GetEnemyObjectList();
 			for (int iEnemy = 0; iEnemy < listEnemy.size(); iEnemy++) {
-				ref_count_ptr<StgEnemyBossObject>::unsync obj = listEnemy[iEnemy];
+				std::shared_ptr<StgEnemyBossObject>::unsync obj = listEnemy[iEnemy];
 				obj->SetLife(0);
 			}
 
@@ -263,9 +263,9 @@ void StgEnemyBossSceneObject::Work()
 
 		//次シーンへの遷移フラグ設定
 		bool bReadyNext = true;
-		std::vector<ref_count_ptr<StgEnemyBossObject>::unsync>& listEnemy = activeData_->GetEnemyObjectList();
+		std::vector<std::shared_ptr<StgEnemyBossObject>::unsync>& listEnemy = activeData_->GetEnemyObjectList();
 		for (int iEnemy = 0; iEnemy < listEnemy.size(); iEnemy++) {
-			ref_count_ptr<StgEnemyBossObject>::unsync obj = listEnemy[iEnemy];
+			std::shared_ptr<StgEnemyBossObject>::unsync obj = listEnemy[iEnemy];
 			if (obj->GetLife() > 0)
 				bReadyNext = false;
 		}
@@ -297,12 +297,12 @@ void StgEnemyBossSceneObject::Activate()
 		LoadAllScriptInThread();
 
 	StgStageScriptManager* scriptManager = stageController_->GetScriptManagerP();
-	ref_count_ptr<StgStageScriptObjectManager> objectManager = stageController_->GetMainObjectManager();
+	std::shared_ptr<StgStageScriptObjectManager> objectManager = stageController_->GetMainObjectManager();
 	for (int iStep = 0; iStep < listData_.size(); iStep++) {
 		for (int iData = 0; iData < listData_[iStep].size(); iData++) {
-			ref_count_ptr<StgEnemyBossSceneData>::unsync data = listData_[iStep][iData];
+			std::shared_ptr<StgEnemyBossSceneData>::unsync data = listData_[iStep][iData];
 			_int64 idScript = data->GetScriptID();
-			ref_count_ptr<ManagedScript> script = scriptManager->GetScript(idScript);
+			std::shared_ptr<ManagedScript> script = scriptManager->GetScript(idScript);
 			if (script == NULL)
 				throw gstd::wexception(StringUtility::Format(L"読み込まれていないスクリプト：%s", data->GetPath().c_str()).c_str());
 			if (!script->IsLoad()) {
@@ -366,9 +366,9 @@ void StgEnemyBossSceneObject::Activate()
 			}
 
 			//敵オブジェクト作成
-			std::vector<ref_count_ptr<StgEnemyBossObject>::unsync> listEnemyObject;
+			std::vector<std::shared_ptr<StgEnemyBossObject>::unsync> listEnemyObject;
 			for (int iEnemy = 0; iEnemy < listLife.size(); iEnemy++) {
-				ref_count_ptr<StgEnemyBossObject>::unsync obj = new StgEnemyBossObject(stageController_);
+				std::shared_ptr<StgEnemyBossObject>::unsync obj = new StgEnemyBossObject(stageController_);
 				int idEnemy = objectManager->AddObject(obj, false);
 				listEnemyObject.push_back(obj);
 			}
@@ -379,7 +379,7 @@ void StgEnemyBossSceneObject::Activate()
 	//登録
 	_NextStep();
 }
-void StgEnemyBossSceneObject::AddData(int step, ref_count_ptr<StgEnemyBossSceneData>::unsync data)
+void StgEnemyBossSceneObject::AddData(int step, std::shared_ptr<StgEnemyBossSceneData>::unsync data)
 {
 	if (listData_.size() <= step)
 		listData_.resize(step + 1);
@@ -390,7 +390,7 @@ void StgEnemyBossSceneObject::LoadAllScriptInThread()
 	StgStageScriptManager* scriptManager = stageController_->GetScriptManagerP();
 	for (int iStep = 0; iStep < listData_.size(); iStep++) {
 		for (int iData = 0; iData < listData_[iStep].size(); iData++) {
-			ref_count_ptr<StgEnemyBossSceneData>::unsync data = listData_[iStep][iData];
+			std::shared_ptr<StgEnemyBossSceneData>::unsync data = listData_[iStep][iData];
 			std::wstring path = data->GetPath();
 
 			_int64 idScript = scriptManager->LoadScriptInThread(path, StgStageScript::TYPE_SYSTEM);
@@ -418,7 +418,7 @@ double StgEnemyBossSceneObject::GetActiveStepTotalMaxLife()
 
 	double res = 0;
 	for (int iData = 0; iData < listData_[dataStep_].size(); iData++) {
-		ref_count_ptr<StgEnemyBossSceneData>::unsync data = listData_[dataStep_][iData];
+		std::shared_ptr<StgEnemyBossSceneData>::unsync data = listData_[dataStep_][iData];
 		std::vector<double>& listLife = data->GetLifeList();
 		for (int iLife = 0; iLife < listLife.size(); iLife++)
 			res += listLife[iLife];
@@ -444,11 +444,11 @@ double StgEnemyBossSceneObject::GetActiveStepLife(int index)
 		return 0;
 
 	double res = 0;
-	ref_count_ptr<StgEnemyBossSceneData>::unsync data = listData_[dataStep_][index];
+	std::shared_ptr<StgEnemyBossSceneData>::unsync data = listData_[dataStep_][index];
 	if (index == dataIndex_) {
-		std::vector<ref_count_ptr<StgEnemyBossObject>::unsync>& listEnemyObject = data->GetEnemyObjectList();
+		std::vector<std::shared_ptr<StgEnemyBossObject>::unsync>& listEnemyObject = data->GetEnemyObjectList();
 		for (int iEnemy = 0; iEnemy < listEnemyObject.size(); iEnemy++) {
-			ref_count_ptr<StgEnemyBossObject>::unsync obj = listEnemyObject[iEnemy];
+			std::shared_ptr<StgEnemyBossObject>::unsync obj = listEnemyObject[iEnemy];
 			res += obj->GetLife();
 		}
 	} else {
@@ -465,7 +465,7 @@ std::vector<double> StgEnemyBossSceneObject::GetActiveStepLifeRateList()
 	double total = GetActiveStepTotalMaxLife();
 	double rate = 0;
 	for (int iData = 0; iData < count; iData++) {
-		ref_count_ptr<StgEnemyBossSceneData>::unsync data = listData_[dataStep_][iData];
+		std::shared_ptr<StgEnemyBossSceneData>::unsync data = listData_[dataStep_][iData];
 
 		double life = 0;
 		std::vector<double>& listLife = data->GetLifeList();
@@ -511,7 +511,7 @@ int StgEnemyBossSceneData::GetEnemyBossIdInCreate()
 		throw gstd::wexception(log.c_str());
 	}
 
-	ref_count_ptr<StgEnemyBossObject>::unsync obj = listEnemyObject_[countCreate_];
+	std::shared_ptr<StgEnemyBossObject>::unsync obj = listEnemyObject_[countCreate_];
 	countCreate_++;
 
 	return obj->GetObjectID();

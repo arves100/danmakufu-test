@@ -30,8 +30,8 @@ public:
 public:
 	DxFont();
 	virtual ~DxFont();
-	void SetLogFont(LOGFONT& font) { info_ = font; }
-	LOGFONT GetLogFont() { return info_; }
+	void SetLogFont(LOGFONTW& font) { info_ = font; }
+	LOGFONTW& GetLogFont() { return info_; }
 	void SetTopColor(D3DCOLOR color) { colorTop_ = color; }
 	D3DCOLOR GetTopColor() { return colorTop_; }
 	void SetBottomColor(D3DCOLOR color) { colorBottom_ = color; }
@@ -44,7 +44,7 @@ public:
 	D3DCOLOR GetBorderColor() { return colorBorder_; }
 
 protected:
-	LOGFONT info_; //フォント種別
+	LOGFONTW info_; //フォント種別
 	D3DCOLOR colorTop_;
 	D3DCOLOR colorBottom_;
 	int typeBorder_; //縁取り
@@ -61,13 +61,13 @@ public:
 	DxChar();
 	virtual ~DxChar();
 	bool Create(int code, gstd::Font& winFont, DxFont& dxFont);
-	gstd::ref_count_ptr<Texture> GetTexture() { return texture_; }
+	std::shared_ptr<Texture> GetTexture() { return texture_; }
 	int GetWidth() { return width_; }
 	int GetHeight() { return height_; }
 	LOGFONT GetInfo() { return font_.GetLogFont(); }
 
 private:
-	gstd::ref_count_ptr<Texture> texture_;
+	std::shared_ptr<Texture> texture_;
 	int code_;
 	DxFont font_;
 
@@ -127,13 +127,13 @@ public:
 	void Clear();
 	int GetCacheCount() { return mapCache_.size(); }
 
-	gstd::ref_count_ptr<DxChar> GetChar(DxCharCacheKey& key);
-	void AddChar(DxCharCacheKey& key, gstd::ref_count_ptr<DxChar> value);
+	std::shared_ptr<DxChar> GetChar(DxCharCacheKey& key);
+	void AddChar(DxCharCacheKey& key, std::shared_ptr<DxChar> value);
 
 private:
 	int sizeMax_;
 	int countPri_;
-	std::map<DxCharCacheKey, gstd::ref_count_ptr<DxChar>> mapCache_;
+	std::map<DxCharCacheKey, std::shared_ptr<DxChar>> mapCache_;
 	std::map<int, DxCharCacheKey> mapPriKey_;
 	std::map<DxCharCacheKey, int> mapKeyPri_;
 
@@ -183,7 +183,7 @@ public:
 
 public:
 	DxTextToken() { type_ = TK_UNKNOWN; }
-	DxTextToken(Type type, std::wstring element)
+	DxTextToken(Type type, std::string element)
 	{
 		type_ = type;
 		element_ = element;
@@ -191,60 +191,60 @@ public:
 
 	virtual ~DxTextToken() {}
 	Type GetType() { return type_; }
-	std::wstring& GetElement() { return element_; }
+	std::string& GetElement() { return element_; }
 
 	int GetInteger();
 	double GetReal();
 	bool GetBoolean();
-	std::wstring GetString();
-	std::wstring& GetIdentifier();
+	std::string GetString();
+	std::string& GetIdentifier();
 
 protected:
 	Type type_;
-	std::wstring element_;
+	std::string element_;
 };
 
 class DxTextScanner {
 public:
 	const static int TOKEN_TAG_START;
 	const static int TOKEN_TAG_END;
-	const static std::wstring TAG_START;
-	const static std::wstring TAG_END;
-	const static std::wstring TAG_NEW_LINE;
-	const static std::wstring TAG_RUBY;
-	const static std::wstring TAG_FONT;
+	const static std::string TAG_START;
+	const static std::string TAG_END;
+	const static std::string TAG_NEW_LINE;
+	const static std::string TAG_RUBY;
+	const static std::string TAG_FONT;
 
 public:
-	DxTextScanner(wchar_t* str, int charCount);
-	DxTextScanner(std::wstring str);
-	DxTextScanner(std::vector<wchar_t>& buf);
+	DxTextScanner(char* str, int charCount);
+	DxTextScanner(std::string str);
+	DxTextScanner(std::vector<char>& buf);
 	virtual ~DxTextScanner();
 
 	DxTextToken& GetToken(); //現在のトークンを取得
 	DxTextToken& Next();
 	bool HasNext();
 	void CheckType(DxTextToken& tok, int type);
-	void CheckIdentifer(DxTextToken& tok, std::wstring id);
+	void CheckIdentifer(DxTextToken& tok, std::string id);
 	int GetCurrentLine();
 	int SearchCurrentLine();
 
-	std::vector<wchar_t>::iterator GetCurrentPointer();
-	void SetCurrentPointer(std::vector<wchar_t>::iterator pos);
+	std::vector<char>::iterator GetCurrentPointer();
+	void SetCurrentPointer(std::vector<char>::iterator pos);
 	void SetPointerBegin() { pointer_ = buffer_.begin(); }
 	int GetCurrentPosition();
 	void SetTagScanEnable(bool bEnable) { bTagScan_ = bEnable; }
 
 protected:
 	int line_;
-	std::vector<wchar_t> buffer_;
-	std::vector<wchar_t>::iterator pointer_; //今の位置
+	std::vector<char> buffer_;
+	std::vector<char>::iterator pointer_; //今の位置
 	DxTextToken token_; //現在のトークン
 	boolean bTagScan_;
 
 	wchar_t _NextChar(); //ポインタを進めて次の文字を調べる
 	virtual void _SkipComment(); //コメントをとばす
 	virtual void _SkipSpace(); //空白をとばす
-	virtual void _RaiseError(std::wstring str); //例外を投げます
+	virtual void _RaiseError(std::string str); //例外を投げます
 	bool _IsTextStartSign();
 	bool _IsTextScan();
 };
@@ -290,19 +290,19 @@ public:
 	int GetLeftMargin() { return leftMargin_; }
 	void SetLeftMargin(int left) { leftMargin_ = left; }
 
-	std::wstring& GetText() { return text_; }
-	void SetText(std::wstring text) { text_ = text; }
-	std::wstring& GetRuby() { return ruby_; }
-	void SetRuby(std::wstring ruby) { ruby_ = ruby; }
+	std::string& GetText() { return text_; }
+	void SetText(std::string text) { text_ = text; }
+	std::string& GetRuby() { return ruby_; }
+	void SetRuby(std::string ruby) { ruby_ = ruby; }
 
-	gstd::ref_count_ptr<DxText> GetRenderText() { return dxText_; }
-	void SetRenderText(gstd::ref_count_ptr<DxText> text) { dxText_ = text; }
+	std::shared_ptr<DxText> GetRenderText() { return dxText_; }
+	void SetRenderText(std::shared_ptr<DxText> text) { dxText_ = text; }
 
 private:
 	int leftMargin_;
-	std::wstring text_;
-	std::wstring ruby_;
-	gstd::ref_count_ptr<DxText> dxText_;
+	std::string text_;
+	std::string ruby_;
+	std::shared_ptr<DxText> dxText_;
 };
 class DxTextTag_Font : public DxTextTag {
 private:
@@ -332,14 +332,14 @@ public:
 	std::vector<int>& GetTextCodes() { return code_; }
 	int GetTextCodeCount() { return code_.size(); }
 	int GetTagCount() { return tag_.size(); }
-	gstd::ref_count_ptr<DxTextTag> GetTag(int index) { return tag_[index]; }
+	std::shared_ptr<DxTextTag> GetTag(int index) { return tag_[index]; }
 
 protected:
 	int width_;
 	int height_;
 	int sidePitch_;
 	std::vector<int> code_;
-	std::vector<gstd::ref_count_ptr<DxTextTag>> tag_;
+	std::vector<std::shared_ptr<DxTextTag>> tag_;
 };
 class DxTextInfo {
 	friend DxTextRenderer;
@@ -364,8 +364,8 @@ public:
 	void SetAutoIndent(bool bEnable) { bAutoIndent_ = bEnable; }
 
 	int GetLineCount() { return textLine_.size(); }
-	void AddTextLine(gstd::ref_count_ptr<DxTextLine> text) { textLine_.push_back(text), lineValidEnd_++; }
-	gstd::ref_count_ptr<DxTextLine> GetTextLine(int pos) { return textLine_[pos]; }
+	void AddTextLine(std::shared_ptr<DxTextLine> text) { textLine_.push_back(text), lineValidEnd_++; }
+	std::shared_ptr<DxTextLine> GetTextLine(int pos) { return textLine_[pos]; }
 
 protected:
 	int totalWidth_;
@@ -373,14 +373,14 @@ protected:
 	int lineValidStart_;
 	int lineValidEnd_;
 	bool bAutoIndent_;
-	std::vector<gstd::ref_count_ptr<DxTextLine>> textLine_;
+	std::vector<std::shared_ptr<DxTextLine>> textLine_;
 };
 
 class DxTextRenderObject {
 private:
 	struct ObjectData {
 		POINT bias;
-		gstd::ref_count_ptr<Sprite2D> sprite;
+		std::shared_ptr<Sprite2D> sprite;
 	};
 
 public:
@@ -388,8 +388,8 @@ public:
 	virtual ~DxTextRenderObject() {}
 
 	void Render();
-	void AddRenderObject(gstd::ref_count_ptr<Sprite2D> obj);
-	void AddRenderObject(gstd::ref_count_ptr<DxTextRenderObject> obj, POINT bias);
+	void AddRenderObject(std::shared_ptr<Sprite2D> obj);
+	void AddRenderObject(std::shared_ptr<DxTextRenderObject> obj, POINT bias);
 
 	POINT GetPosition() { return position_; }
 	void SetPosition(POINT pos)
@@ -410,8 +410,8 @@ public:
 	void SetAutoCenter(bool bAuto) { bAutoCenter_ = bAuto; }
 	void SetPermitCamera(bool bPermit) { bPermitCamera_ = bPermit; }
 
-	gstd::ref_count_ptr<Shader> GetShader() { return shader_; }
-	void SetShader(gstd::ref_count_ptr<Shader> shader) { shader_ = shader; }
+	std::shared_ptr<Shader> GetShader() { return shader_; }
+	void SetShader(std::shared_ptr<Shader> shader) { shader_ = shader; }
 
 protected:
 	POINT position_; //移動先座標
@@ -422,7 +422,7 @@ protected:
 	D3DXVECTOR2 center_; //座標変換の中心
 	bool bAutoCenter_;
 	bool bPermitCamera_;
-	gstd::ref_count_ptr<Shader> shader_;
+	std::shared_ptr<Shader> shader_;
 };
 
 class DxTextRenderer {
@@ -448,16 +448,16 @@ public:
 	void ClearCache() { cache_.Clear(); }
 	void SetFont(LOGFONT& logFont) { winFont_.CreateFontIndirect(logFont); }
 	void SetVertexColor(D3DCOLOR color) { colorVertex_ = color; }
-	gstd::ref_count_ptr<DxTextInfo> GetTextInfo(DxText* dxText);
+	std::shared_ptr<DxTextInfo> GetTextInfo(std::shared_ptr<DxText> dxText);
 
-	gstd::ref_count_ptr<DxTextRenderObject> CreateRenderObject(DxText* dxText, gstd::ref_count_ptr<DxTextInfo> textInfo);
+	std::shared_ptr<DxTextRenderObject> CreateRenderObject(std::shared_ptr<DxText> dxText, std::shared_ptr<DxTextInfo> textInfo);
 
-	void Render(DxText* dxText);
-	void Render(DxText* dxText, gstd::ref_count_ptr<DxTextInfo> textInfo);
+	void Render(std::shared_ptr<DxText> dxText);
+	void Render(std::shared_ptr<DxText> dxText, std::shared_ptr<DxTextInfo> textInfo);
 
 	int GetCacheCount() { return cache_.GetCacheCount(); }
 
-	bool AddFontFromFile(std::wstring path);
+	bool AddFontFromFile(std::string path);
 
 protected:
 	DxCharCache cache_;
@@ -465,10 +465,11 @@ protected:
 	D3DCOLOR colorVertex_;
 	gstd::CriticalSection lock_;
 
-	SIZE _GetTextSize(HDC hDC, wchar_t* pText);
-	gstd::ref_count_ptr<DxTextLine> _GetTextInfoSub(std::wstring text, DxText* dxText, DxTextInfo* textInfo, gstd::ref_count_ptr<DxTextLine> textLine, HDC& hDC, int& totalWidth, int& totalHeight);
-	void _CreateRenderObject(gstd::ref_count_ptr<DxTextRenderObject> objRender, POINT pos, DxFont& dxFont, gstd::ref_count_ptr<DxTextLine> textLine);
-	std::wstring _ReplaceRenderText(std::wstring& text);
+	SIZE _GetTextSize(HDC hDC, const wchar_t* pText, int size = 1);
+	SIZE _GetTextSize(HDC hDC, const char* pText, int size = 1);
+	std::shared_ptr<DxTextLine> _GetTextInfoSub(std::string text, std::shared_ptr<DxText> dxText, std::shared_ptr<DxTextInfo> textInfo, std::shared_ptr<DxTextLine> textLine, HDC& hDC, int& totalWidth, int& totalHeight);
+	void _CreateRenderObject(std::shared_ptr<DxTextRenderObject> objRender, POINT pos, DxFont& dxFont, std::shared_ptr<DxTextLine> textLine);
+	std::string _ReplaceRenderText(std::string& text);
 };
 
 /**********************************************************
@@ -491,13 +492,13 @@ public:
 	virtual ~DxText();
 	void Copy(const DxText& src);
 	virtual void Render();
-	void Render(gstd::ref_count_ptr<DxTextInfo> textInfo);
+	void Render(std::shared_ptr<DxTextInfo> textInfo);
 
-	gstd::ref_count_ptr<DxTextInfo> GetTextInfo();
-	gstd::ref_count_ptr<DxTextRenderObject> CreateRenderObject();
-	gstd::ref_count_ptr<DxTextRenderObject> CreateRenderObject(gstd::ref_count_ptr<DxTextInfo> textInfo);
+	std::shared_ptr<DxTextInfo> GetTextInfo();
+	std::shared_ptr<DxTextRenderObject> CreateRenderObject();
+	std::shared_ptr<DxTextRenderObject> CreateRenderObject(std::shared_ptr<DxTextInfo> textInfo);
 
-	DxFont GetFont() { return dxFont_; }
+	DxFont& GetFont() { return dxFont_; }
 	void SetFont(DxFont font) { dxFont_ = font; }
 	void SetFont(LOGFONT logFont) { dxFont_.SetLogFont(logFont); }
 
@@ -563,11 +564,11 @@ public:
 	bool IsSyntacticAnalysis() { return bSyntacticAnalysis_; }
 	void SetSyntacticAnalysis(bool bEnable) { bSyntacticAnalysis_ = bEnable; }
 
-	std::wstring& GetText() { return text_; }
-	void SetText(std::wstring text) { text_ = text; }
+	std::string& GetText() { return text_; }
+	void SetText(std::string text) { text_ = text; }
 
-	gstd::ref_count_ptr<Shader> GetShader() { return shader_; }
-	void SetShader(gstd::ref_count_ptr<Shader> shader) { shader_ = shader; }
+	std::shared_ptr<Shader> GetShader() { return shader_; }
+	void SetShader(std::shared_ptr<Shader> shader) { shader_ = shader; }
 
 protected:
 	DxFont dxFont_;
@@ -583,8 +584,8 @@ protected:
 	bool bPermitCamera_;
 	bool bSyntacticAnalysis_;
 
-	gstd::ref_count_ptr<Shader> shader_;
-	std::wstring text_;
+	std::shared_ptr<Shader> shader_;
+	std::string text_;
 };
 
 /**********************************************************
