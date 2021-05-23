@@ -9,8 +9,6 @@
 #include <vector>
 #include <windows.h>
 
-#ifdef _MSC_VER
-#define for if (0); else for
 namespace std {
 using ::atof;
 using ::ceill;
@@ -27,8 +25,6 @@ using ::powl;
 using ::swprintf;
 using ::wcstombs;
 }
-
-#endif
 
 using namespace gstd;
 
@@ -461,7 +457,7 @@ void scanner::skip()
 void scanner::AddLog(wchar_t* data)
 {
 	wchar_t* pStart = (wchar_t*)current;
-	wchar_t* pEnd = (wchar_t*)(current + min(16, endPoint - current));
+	wchar_t* pEnd = (wchar_t*)(current + _MIN(16, endPoint - current));
 	std::wstring wstr = std::wstring(pStart, pEnd);
 	// Logger::WriteTop(StringUtility::Format(L"%s current=%d, endPoint=%d, val=%d, ch=%s", data, pStart, endPoint, (wchar_t)*current, wstr.c_str()));
 }
@@ -1376,7 +1372,8 @@ function const operations[] = {
 
 /* parser */
 
-class gstd::parser {
+namespace gstd {
+class parser {
 public:
 	struct symbol {
 		int level;
@@ -2374,6 +2371,8 @@ void parser::parse_block(script_engine::block* block, std::vector<std::string> c
 	lex->advance();
 }
 
+} /* namespace gstd */
+
 /* script_type_manager */
 
 script_type_manager::script_type_manager()
@@ -2419,7 +2418,7 @@ script_engine::script_engine(script_type_manager* a_type_manager, std::vector<ch
 
 	if (false) {
 		wchar_t* pStart = (wchar_t*)&source[0];
-		wchar_t* pEnd = (wchar_t*)(&source[0] + min(source.size(), 64));
+		wchar_t* pEnd = (wchar_t*)(&source[0] + _MIN(source.size(), 64));
 		std::wstring str = std::wstring(pStart, pEnd);
 		// Logger::WriteTop(str);
 	}
@@ -2800,10 +2799,7 @@ void script_machine::advance()
 					}
 					++(current->ip);
 				}
-			next:
-#ifdef _MSC_VER
-				;
-#endif
+			next: ;
 			}
 		} break;
 

@@ -59,7 +59,7 @@ void TaskManager::_ArrangeTask()
 					itrFunc = listFunc.erase(itrFunc);
 				else {
 					int delay = (*itrFunc)->GetDelay();
-					delay = max(0, delay - 1);
+					delay = _MAX(0, delay - 1);
 					(*itrFunc)->SetDelay(delay);
 					itrFunc++;
 				}

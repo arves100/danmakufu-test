@@ -39,7 +39,7 @@ void ByteBuffer::_Resize(int size)
 	ZeroMemory(data_, size);
 
 	//元のデータをコピー
-	int sizeCopy = min(size, oldSize);
+	int sizeCopy = _MIN(size, oldSize);
 	if (oldData != NULL) {
 		memcpy(data_, oldData, sizeCopy);
 		//古いデータを削除
@@ -94,7 +94,7 @@ DWORD ByteBuffer::Write(LPVOID buf, DWORD size)
 
 	memcpy(&data_[offset_], buf, size);
 	offset_ += size;
-	size_ = max(size_, offset_);
+	size_ = _MAX(size_, offset_);
 	return size;
 }
 DWORD ByteBuffer::Read(LPVOID buf, DWORD size)

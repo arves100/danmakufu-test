@@ -274,7 +274,7 @@ std::string StringUtility::ReplaceAll(std::string& source, std::string pattern, 
 }
 std::string StringUtility::Slice(std::string const& s, int length)
 {
-	length = min(s.size() - 1, length);
+	length = _MIN(s.size() - 1, length);
 	return s.substr(0, length);
 }
 std::string StringUtility::Trim(const std::string& str)
@@ -428,7 +428,7 @@ std::wstring StringUtility::ReplaceAll(std::wstring& source, std::wstring patter
 }
 std::wstring StringUtility::Slice(std::wstring const& s, int length)
 {
-	length = min(s.size() - 1, length);
+	length = _MIN(s.size() - 1, length);
 	return s.substr(0, length);
 }
 std::wstring StringUtility::Trim(const std::wstring& str)
@@ -540,11 +540,11 @@ std::wstring ErrorUtility::GetParseErrorMessage(std::wstring path, int line, std
 //Math
 void Math::InitializeFPU()
 {
-	__asm
-	{
-		finit
-	}
-	;
+#ifdef _MSC_VER
+	__asm { finit };
+#else
+	__asm__("finit");
+#endif
 }
 
 //================================================================
@@ -572,14 +572,14 @@ Scanner::Scanner(char* str, int size)
 	buf.resize(size);
 	memcpy(&buf[0], str, size);
 	buf.push_back('\0');
-	this->Scanner::Scanner(buf);
+	Scanner::Scanner(buf);
 }
 Scanner::Scanner(std::string str)
 {
 	std::vector<char> buf;
 	buf.resize(str.size() + 1);
 	memcpy(&buf[0], str.c_str(), str.size() + 1);
-	this->Scanner::Scanner(buf);
+	Scanner::Scanner(buf);
 }
 Scanner::Scanner(std::wstring wstr)
 {
@@ -588,7 +588,7 @@ Scanner::Scanner(std::wstring wstr)
 	buf.resize(textSize + 4);
 	memcpy(&buf[0], &Encoding::BOM_UTF16LE[0], 2);
 	memcpy(&buf[2], wstr.c_str(), textSize + 2);
-	this->Scanner::Scanner(buf);
+	Scanner::Scanner(buf);
 }
 Scanner::Scanner(std::vector<char>& buf)
 {

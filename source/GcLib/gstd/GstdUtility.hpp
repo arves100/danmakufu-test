@@ -696,7 +696,11 @@ protected:
 			std::list<gstd::ref_count_ptr<T, SYNC>>* listUsed = &listUsedPool_[iType];
 			std::vector<gstd::ref_count_ptr<T, SYNC>>* listCache = &listCachePool_[iType];
 
+#ifdef __GNUC__
+			typename std::list<gstd::ref_count_ptr<T, SYNC>>::iterator itr = listUsed->begin();
+#else
 			std::list<gstd::ref_count_ptr<T, SYNC>>::iterator itr = listUsed->begin();
+#endif
 			for (; itr != listUsed->end();) {
 				gstd::ref_count_ptr<T, SYNC> obj = (*itr);
 				if (obj.GetReferenceCount() == 2) {

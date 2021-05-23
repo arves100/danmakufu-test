@@ -99,9 +99,9 @@ void CriticalSection::Leave()
 		if (countLock_ != 0)
 			return;
 		if (countLock_ < 0)
-			throw std::exception("CriticalSection：Lockしていません");
+			throw gstd::wexception(L"CriticalSection：Lockしていません");
 	} else {
-		throw std::exception("CriticalSection：LockしていないのにUnlockしようとしました");
+		throw gstd::wexception(L"CriticalSection：LockしていないのにUnlockしようとしました");
 	}
 	idThread_ = NULL;
 	::LeaveCriticalSection(&cs_);

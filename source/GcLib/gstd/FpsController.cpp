@@ -63,7 +63,7 @@ int FpsController::GetControlObjectFps()
 		ref_count_weak_ptr<FpsControlObject> obj = (*itr);
 		if (obj.IsExists()) {
 			int fps = obj->GetFps();
-			res = min(res, fps);
+			res = _MIN(res, fps);
 			itr++;
 		} else
 			itr = listFpsControlObject_.erase(itr);
@@ -91,7 +91,7 @@ void StaticFpsController::Wait()
 	int time = _GetTime();
 
 	double tFps = fps_;
-	tFps = min(tFps, GetControlObjectFps());
+	tFps = _MIN(tFps, GetControlObjectFps());
 	if (bFastMode_)
 		tFps = FPS_FAST_MODE;
 
@@ -198,7 +198,7 @@ void AutoSkipFpsController::Wait()
 	int time = _GetTime();
 
 	double tFps = fps_;
-	tFps = min(tFps, GetControlObjectFps());
+	tFps = _MIN(tFps, GetControlObjectFps());
 	if (bFastMode_)
 		tFps = FPS_FAST_MODE;
 

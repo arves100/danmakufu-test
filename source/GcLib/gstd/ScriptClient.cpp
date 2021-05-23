@@ -230,7 +230,7 @@ std::wstring ScriptClientBase::_GetErrorLineSource(int line)
 		count++;
 	}
 
-	int size = max(count - 1, 0);
+	int size = _MAX(count - 1, 0);
 	std::wstring res;
 	if (encoding == Encoding::UTF16LE) {
 		wchar_t* wbufS = (wchar_t*)sbuf;
@@ -1459,7 +1459,7 @@ gstd::value ScriptCommonData::_ReadRecord(gstd::ByteBuffer& buffer)
 		int arrayLength = buffer.ReadInteger();
 		value v;
 		for (int iArray = 0; iArray < arrayLength; iArray++) {
-			value& arrayValue = _ReadRecord(buffer);
+			value arrayValue = _ReadRecord(buffer);
 			v.append(scriptTypeManager->get_array_type(arrayValue.get_type()),
 				arrayValue);
 		}

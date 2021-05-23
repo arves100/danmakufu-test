@@ -56,6 +56,13 @@
 #define new ::new (_NORMAL_BLOCK, __FILE__, __LINE__)
 #endif
 
+#ifdef __GNUC__
+	#define _int64 long long
+#endif
+
+#define _MAX(a,b) ((a > b) ? (a) : (b))
+#define _MIN(a,b) ((a < b) ? (a) : (b))
+
 #include <SDL.h>
 
 #endif
