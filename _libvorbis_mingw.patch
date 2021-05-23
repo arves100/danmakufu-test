@@ -1,0 +1,61 @@
+diff --git a/ports/libvorbis/0003-fix-mingw.patch b/ports/libvorbis/0003-fix-mingw.patch
+new file mode 100644
+index 0000000..34a2b4b
+--- /dev/null
++++ b/ports/libvorbis/0003-fix-mingw.patch
+@@ -0,0 +1,43 @@
++commit d842e180e05c4a9611c5c55552b47758c83648a1
++Author: Ozkan Sezer <sezeroz@gmail.com>
++Date:   Mon Nov 30 11:55:50 2020 +0300
++
++    win32/*.def: remove LIBRARY directives
++    
++    they aren't needed and caused import lib generation failures with cmake.
++
++diff --git a/win32/vorbis.def b/win32/vorbis.def
++index 884f8f0..37c0d47 100644
++--- a/win32/vorbis.def
+++++ b/win32/vorbis.def
++@@ -1,6 +1,6 @@
++ ; vorbis.def
++ ; 
++-LIBRARY
+++
++ EXPORTS
++ _floor_P
++ _mapping_P
++diff --git a/win32/vorbisenc.def b/win32/vorbisenc.def
++index 79af064..40a3e39 100644
++--- a/win32/vorbisenc.def
+++++ b/win32/vorbisenc.def
++@@ -1,6 +1,5 @@
++ ; vorbisenc.def
++ ;
++-LIBRARY
++ 
++ EXPORTS
++ vorbis_encode_init
++diff --git a/win32/vorbisfile.def b/win32/vorbisfile.def
++index 4dc5549..a8a8446 100644
++--- a/win32/vorbisfile.def
+++++ b/win32/vorbisfile.def
++@@ -1,6 +1,6 @@
++ ; vorbisfile.def
++ ;
++-LIBRARY
+++
++ EXPORTS
++ ov_clear
++ ov_open
+diff --git a/ports/libvorbis/portfile.cmake b/ports/libvorbis/portfile.cmake
+index a015e0e..c016400 100644
+--- a/ports/libvorbis/portfile.cmake
++++ b/ports/libvorbis/portfile.cmake
+@@ -7,6 +7,7 @@ vcpkg_from_github(
+     PATCHES
+         0001-Dont-export-vorbisenc-functions.patch
+         0002-Fixup-pkgconfig-libs.patch
++		0003-fix-mingw.patch
+ )
+ 
+ vcpkg_configure_cmake(
