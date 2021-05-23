@@ -49,16 +49,20 @@ EventScriptScanner::EventScriptScanner(char* str, int size)
 	}
 
 	buf.push_back('\0');
-	EventScriptScanner((std::vector<char>&)buf);
+	Init((std::vector<char>&)buf);
 }
 EventScriptScanner::EventScriptScanner(std::string str)
 {
 	std::vector<char> buf;
 	buf.resize(str.size() + 1);
 	memcpy(&buf[0], str.c_str(), str.size() + 1);
-	EventScriptScanner((std::vector<char>&)buf);
+	Init((std::vector<char>&)buf);
 }
 EventScriptScanner::EventScriptScanner(std::vector<char>& buf)
+{
+	Init(buf);
+}
+void EventScriptScanner::Init(std::vector<char>& buf)
 {
 	buffer_ = buf;
 	pointer_ = buffer_.begin();

@@ -136,6 +136,9 @@ public:
 	int GetCurrentPosition();
 	void SetTagScanEnable(bool bEnable) { bTagScan_ = bEnable; }
 
+private:
+	void Init(std::vector<char>& buf);
+
 protected:
 	int line_;
 	std::vector<char> buffer_;
