@@ -159,7 +159,7 @@ bool DxChar::Create(int code, Font& winFont, DxFont& dxFont)
 							}
 
 							if (tAlpha > 0)
-								minAlphaEnableDist = min(minAlphaEnableDist, dist);
+								minAlphaEnableDist = _MIN(minAlphaEnableDist, dist);
 
 							int tCount = tAlpha /= dist;
 							tCount *= 2;
@@ -341,16 +341,21 @@ DxTextScanner::DxTextScanner(wchar_t* str, int charCount)
 	}
 
 	buf.push_back(L'\0');
-	this->DxTextScanner::DxTextScanner(buf);
+	Init(buf);
 }
 DxTextScanner::DxTextScanner(std::wstring str)
 {
 	std::vector<wchar_t> buf;
 	buf.resize(str.size() + 1);
 	memcpy(&buf[0], str.c_str(), (str.size() + 1) * sizeof(wchar_t));
-	this->DxTextScanner::DxTextScanner(buf);
+	Init(buf);
 }
 DxTextScanner::DxTextScanner(std::vector<wchar_t>& buf)
+{
+	Init(buf);
+}
+
+void DxTextScanner::Init(std::vector<wchar_t>& buf)
 {
 	buffer_ = buf;
 	pointer_ = buffer_.begin();
@@ -358,6 +363,7 @@ DxTextScanner::DxTextScanner(std::vector<wchar_t>& buf)
 	line_ = 1;
 	bTagScan_ = false;
 }
+
 DxTextScanner::~DxTextScanner()
 {
 }
@@ -676,7 +682,8 @@ DxTextToken& DxTextScanner::Next()
 
 		if (type == DxTextToken::TK_STRING) {
 			//\を除去
-			std::wstring str = StringUtility::ReplaceAll(std::wstring(posStart, pointer_), L"\\\"", L"\"");
+			std::wstring src = std::wstring(posStart, pointer_);
+			std::wstring str = StringUtility::ReplaceAll(src, L"\\\"", L"\"");
 			token_ = DxTextToken(type, str);
 		} else {
 			token_ = DxTextToken(type, std::wstring(posStart, pointer_));
@@ -830,10 +837,10 @@ void DxTextRenderObject::Render()
 			ObjectData obj = *itr;
 			gstd::ref_count_ptr<Sprite2D> sprite = obj.sprite;
 			RECT_D rcDest = sprite->GetDestinationRect();
-			rect.left = min(rect.left, rcDest.left);
-			rect.top = min(rect.top, rcDest.top);
-			rect.right = max(rect.right, rcDest.right);
-			rect.bottom = max(rect.bottom, rcDest.bottom);
+			rect.left = _MIN(rect.left, rcDest.left);
+			rect.top = _MIN(rect.top, rcDest.top);
+			rect.right = _MAX(rect.right, rcDest.right);
+			rect.bottom = _MAX(rect.bottom, rcDest.bottom);
 		}
 		center.x = (rect.right + rect.left) / 2;
 		center.y = (rect.bottom + rect.top) / 2;
@@ -963,7 +970,7 @@ ref_count_ptr<DxTextLine> DxTextRenderer::_GetTextInfoSub(std::wstring text, DxT
 		int lh = size.cy;
 		if (textLine->width_ + lw + sizeNext.cx >= widthMax) {
 			//改行
-			totalWidth = max(totalWidth, textLine->width_);
+			totalWidth = _MAX(totalWidth, textLine->width_);
 			totalHeight += textLine->height_ + linePitch;
 			textInfo->AddTextLine(textLine);
 			textLine = new DxTextLine();
@@ -975,7 +982,7 @@ ref_count_ptr<DxTextLine> DxTextRenderer::_GetTextInfoSub(std::wstring text, DxT
 			break;
 		}
 		textLine->width_ += lw;
-		textLine->height_ = max(textLine->height_, lh);
+		textLine->height_ = _MAX(textLine->height_, lh);
 		textLine->code_.push_back(code);
 
 		pText += charCount;
@@ -1011,7 +1018,7 @@ gstd::ref_count_ptr<DxTextInfo> DxTextRenderer::GetTextInfo(DxText* dxText)
 			if (!scan.HasNext()) {
 				//残りを加える
 				if (textLine->code_.size() > 0) {
-					totalWidth = max(totalWidth, textLine->width_);
+					totalWidth = _MAX(totalWidth, textLine->width_);
 					totalHeight += textLine->height_;
 					res->AddTextLine(textLine);
 				}
@@ -1041,7 +1048,7 @@ gstd::ref_count_ptr<DxTextInfo> DxTextRenderer::GetTextInfo(DxText* dxText)
 					}
 
 					if (textLine != NULL) {
-						totalWidth = max(totalWidth, textLine->width_);
+						totalWidth = _MAX(totalWidth, textLine->width_);
 						totalHeight += textLine->height_ + linePitch;
 						res->AddTextLine(textLine);
 					}
@@ -1079,7 +1086,7 @@ gstd::ref_count_ptr<DxTextInfo> DxTextRenderer::GetTextInfo(DxText* dxText)
 					std::wstring sRuby = tag->GetRuby();
 					int rubyCount = StringUtility::CountAsciiSizeCharacter(sRuby);
 					if (rubyCount > 0) {
-						int rubyPitch = max(sizeText.cx / rubyCount - rubyWidth, 0);
+						int rubyPitch = _MAX(sizeText.cx / rubyCount - rubyWidth, 0);
 						int rubyMarginLeft = rubyPitch / 2;
 						tag->SetLeftMargin(rubyMarginLeft);
 

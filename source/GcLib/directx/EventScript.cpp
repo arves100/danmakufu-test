@@ -21,11 +21,11 @@ void EventScriptSource::AddCode(gstd::ref_count_ptr<EventScriptCode> code)
 {
 	code_.push_back(code);
 }
-gstd::ref_count_ptr<EventScriptBlock_Main> EventScriptSource::GetEventBlock(std::string name)
+gstd::ref_count_ptr<EventScriptBlock_Main>* EventScriptSource::GetEventBlock(std::string name)
 {
 	if (event_.find(name) == event_.end())
-		return NULL;
-	return event_[name];
+		return nullptr;
+	return &event_[name];
 }
 
 /**********************************************************
@@ -49,14 +49,14 @@ EventScriptScanner::EventScriptScanner(char* str, int size)
 	}
 
 	buf.push_back('\0');
-	this->EventScriptScanner::EventScriptScanner(buf);
+	EventScriptScanner((std::vector<char>&)buf);
 }
 EventScriptScanner::EventScriptScanner(std::string str)
 {
 	std::vector<char> buf;
 	buf.resize(str.size() + 1);
 	memcpy(&buf[0], str.c_str(), str.size() + 1);
-	this->EventScriptScanner::EventScriptScanner(buf);
+	EventScriptScanner((std::vector<char>&)buf);
 }
 EventScriptScanner::EventScriptScanner(std::vector<char>& buf)
 {
@@ -383,7 +383,8 @@ EventScriptToken& EventScriptScanner::Next()
 
 		if (type == EventScriptToken::TK_STRING) {
 			//\を除去
-			std::string str = StringUtility::ReplaceAll(std::string(posStart, pointer_), "\\\"", "\"");
+			std::string src = std::string(posStart, pointer_);
+			std::string str = StringUtility::ReplaceAll(src, "\\\"", "\"");
 			token_ = EventScriptToken(type, str);
 		} else {
 			token_ = EventScriptToken(type, std::string(posStart, pointer_));
@@ -949,7 +950,7 @@ gstd::ref_count_ptr<EventScriptSource> EventScriptCompiler::Compile()
 	ref_count_ptr<FileReader> reader = fileManager->GetFileReader(path_);
 	if (reader == NULL || !reader->Open()) {
 		Logger::WriteTop(ErrorUtility::GetFileNotFoundErrorMessage(path_));
-		return false;
+		return NULL;
 	}
 
 	int size = reader->GetFileSize();
@@ -1378,7 +1379,8 @@ void EventScriptCodeExecuter_Image::_Initialize()
 	std::string path = _GetElementString(code_->GetPath());
 	std::wstring wPath = StringUtility::ConvertMultiToWide(path);
 	int idObj = _GetElementInteger(code_->GetObjectIdentifier());
-	nowSprite_ = ref_count_ptr<DxScriptSpriteObject2D>::unsync::DownCast(objManager_->GetObject(idObj));
+	ref_count_ptr<DxScriptObjectBase, false> src = objManager_->GetObject(idObj);
+	nowSprite_ = ref_count_ptr<DxScriptSpriteObject2D>::unsync::DownCast(src);
 	if (nowSprite_ == NULL && path.size() > 0) {
 		nowSprite_ = new DxScriptSpriteObject2D();
 		nowSprite_->SetRenderPriority(priority_);
@@ -1641,7 +1643,7 @@ void EventTextWindow::Render()
 			break;
 		lineStart--;
 	}
-	textInfo->SetValidStartLine(max(lineStart, 1));
+	textInfo->SetValidStartLine(_MAX(lineStart, 1));
 	textInfo->SetValidEndLine(lineEnd);
 	dxText_->Render(textInfo);
 }
@@ -1671,7 +1673,7 @@ void EventNameWindow::Work()
 	DxWindow::Work();
 	int alpha = GetAlpha();
 	if (text_->GetText().size() == 0) {
-		alpha = max(0, alpha - 8);
+		alpha = _MAX(0, alpha - 8);
 	} else
 		alpha = 255;
 	SetAlpha(alpha);
@@ -1733,12 +1735,12 @@ void EventLogWindow::Work()
 	bool bChange = false;
 	int mouseZ = input->GetMouseMoveZ();
 	if (mouseZ > 0)
-		pos_ = min(count - 1, pos_ + 1);
+		pos_ = _MIN(count - 1, pos_ + 1);
 	else if (mouseZ < 0) {
 		if (pos_ == posMin_ || count == 0)
 			bChange = true;
 		else
-			pos_ = max(posMin_, pos_ - 1);
+			pos_ = _MAX(posMin_, pos_ - 1);
 	}
 
 	if (input->GetMouseState(MOUSE_KEY_RIGHT) == KEY_PULL)
@@ -1827,7 +1829,7 @@ void EventLogWindow::ResetPosition()
 		posMin_++;
 	}
 
-	posMin_ = min(posMin_ - 1, countInfo - 1);
+	posMin_ = _MIN(posMin_ - 1, countInfo - 1);
 	pos_ = posMin_;
 }
 /**********************************************************
@@ -2129,10 +2131,11 @@ void EventFrame::ReadRecord(gstd::RecordBuffer& record, EventEngine* engine)
 	if (record.IsExists("BlockIndex")) {
 		//if
 		int pos = record.GetRecordAsInteger("BlockIndex");
-		block_ = ref_count_ptr<EventScriptBlock>::DownCast(sourceActive_->GetCode(pos));
+		auto src = sourceActive_->GetCode(pos);
+		block_ = ref_count_ptr<EventScriptBlock>::DownCast(src);
 	} else if (record.IsExists("BlockName")) {
 		std::string name = record.GetRecordAsStringA("BlockName");
-		block_ = sourceActive_->GetEventBlock(name);
+		block_ = *sourceActive_->GetEventBlock(name);
 	} else
 		throw gstd::wexception(L"ブロックがない?");
 
@@ -2702,14 +2705,14 @@ void EventEngine::_RunCode()
 				ref_count_ptr<EventFrame> frameJump = new EventFrame();
 				if (path.size() == 0) {
 					//自スクリプト
-					block = frameActive->GetActiveSource()->GetEventBlock(name);
+					block = *frameActive->GetActiveSource()->GetEventBlock(name);
 					frameJump->SetActiveSource(frameActive->GetActiveSource());
 				} else {
 					//別ファイルスクリプト
 					std::wstring wPath = StringUtility::ConvertMultiToWide(path);
 					gstd::ref_count_ptr<EventScriptSource> source = _GetSource(wPath);
 					frameJump->SetActiveSource(source);
-					block = source->GetEventBlock(name);
+					block = *source->GetEventBlock(name);
 				}
 
 				if (block != NULL) {
@@ -2838,7 +2841,7 @@ gstd::ref_count_ptr<EventScriptSource> EventEngine::_GetSource(std::wstring path
 			throw gstd::wexception(L"コンパイル失敗");
 		}
 
-		ref_count_ptr<EventScriptBlock> block = res->GetEventBlock(EventScriptBlock::BLOCK_GLOBAL);
+		ref_count_ptr<EventScriptBlock> block = *res->GetEventBlock(EventScriptBlock::BLOCK_GLOBAL);
 		if (block != NULL) {
 			frameGlobal_->SetActiveSource(res);
 			frameGlobal_->SetBlock(block);
@@ -2894,7 +2897,7 @@ void EventEngine::SetSource(std::wstring path)
 	ref_count_ptr<EventFrame> frame = new EventFrame();
 	frame->SetActiveSource(source);
 
-	ref_count_ptr<EventScriptBlock> block = source->GetEventBlock("main");
+	ref_count_ptr<EventScriptBlock> block = *source->GetEventBlock("main");
 	frame->SetBlock(block);
 
 	frame_.push_back(frame);

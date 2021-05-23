@@ -354,7 +354,7 @@ bool KeyPanel::StartUp()
 		comboPadIndex_.AddString(strPad);
 
 		int textCount = StringUtility::CountAsciiSizeCharacter(strPad);
-		//padDeviceTextWidth = max(padDeviceTextWidth, textCount * 10);
+		//padDeviceTextWidth = _MAX(padDeviceTextWidth, textCount * 10);
 	}
 	if(padCount == 0)
 	{
@@ -366,8 +366,8 @@ bool KeyPanel::StartUp()
 
 	DnhConfiguration* config = DnhConfiguration::GetInstance();
 	int padIndex = config->GetPadIndex();
-	padIndex = min(padIndex, padCount-1);
-	padIndex = max(padIndex, 0);
+	padIndex = _MIN(padIndex, padCount-1);
+	padIndex = _MAX(padIndex, 0);
 	comboPadIndex_.SetSelectedIndex(padIndex);
 
 	return true;

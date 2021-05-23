@@ -21,7 +21,7 @@ public:
 	StgSystemController* GetSystemController() { return systemController_; }
 	ref_count_ptr<StgPackageInformation> GetPackageInformation() { return infoPackage_; }
 
-	ref_count_ptr<StgPackageScriptManager> GetScriptManager() { return scriptManager_; }
+	ref_count_ptr<StgPackageScriptManager>& GetScriptManager() { return scriptManager_; }
 	ref_count_ptr<DxScriptObjectManager> GetMainObjectManager() { return scriptManager_->GetObjectManager(); }
 
 private:

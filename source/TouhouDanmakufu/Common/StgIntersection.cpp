@@ -112,7 +112,8 @@ void StgIntersectionManager::AddTarget(ref_count_ptr<StgIntersectionTarget>::uns
 
 		ref_count_ptr<StgIntersectionTarget_Circle>::unsync circle = ref_count_ptr<StgIntersectionTarget_Circle>::unsync::DownCast(target);
 		if (circle != NULL) {
-			ref_count_weak_ptr<StgEnemyObject>::unsync objEnemy = ref_count_weak_ptr<StgEnemyObject>::unsync::DownCast(target->GetObject());
+			auto src = target->GetObject();
+			ref_count_weak_ptr<StgEnemyObject>::unsync objEnemy = ref_count_weak_ptr<StgEnemyObject>::unsync::DownCast(src);
 			if (objEnemy != NULL) {
 				int idObject = objEnemy->GetObjectID();
 				POINT pos = { (int)circle->GetCircle().GetX(), (int)circle->GetCircle().GetY() };
@@ -144,7 +145,8 @@ void StgIntersectionManager::AddEnemyTargetToShot(ref_count_ptr<StgIntersectionT
 
 		ref_count_ptr<StgIntersectionTarget_Circle>::unsync circle = ref_count_ptr<StgIntersectionTarget_Circle>::unsync::DownCast(target);
 		if (circle != NULL) {
-			ref_count_weak_ptr<StgEnemyObject>::unsync objEnemy = ref_count_weak_ptr<StgEnemyObject>::unsync::DownCast(target->GetObject());
+			auto src = target->GetObject();
+			ref_count_weak_ptr<StgEnemyObject>::unsync objEnemy = ref_count_weak_ptr<StgEnemyObject>::unsync::DownCast(src);
 			if (objEnemy != NULL) {
 				int idObject = objEnemy->GetObjectID();
 				POINT pos = { (int)circle->GetCircle().GetX(), (int)circle->GetCircle().GetY() };
@@ -293,7 +295,8 @@ void StgIntersectionManager::CheckDeletedObject(std::string funcName)
 		std::list<gstd::ref_count_ptr<StgIntersectionTarget, false>>::iterator itr = listUsed->begin();
 		for (; itr != listUsed->end(); itr++) {
 			gstd::ref_count_ptr<StgIntersectionTarget, false> target = (*itr);
-			ref_count_weak_ptr<DxScriptObjectBase>::unsync dxObj = ref_count_weak_ptr<DxScriptObjectBase>::unsync::DownCast(target->GetObject());
+			auto src = target->GetObject();
+			ref_count_weak_ptr<DxScriptObjectBase>::unsync dxObj = ref_count_weak_ptr<DxScriptObjectBase>::unsync::DownCast(src);
 			if (dxObj != NULL && dxObj->IsDeleted()) {
 				ELogger::WriteTop(StringUtility::Format(L"%s(deleted):%s", funcName.c_str(), target->GetInfoAsString().c_str()));
 			}
@@ -504,8 +507,8 @@ unsigned short StgIntersectionSpace::_Get2DMortonNumber(unsigned short x, unsign
 unsigned int StgIntersectionSpace::_GetPointElem(float pos_x, float pos_y)
 {
 	// 座標→線形4分木要素番号変換関数
-	float val1 = max(pos_x - spaceLeft_, 0);
-	float val2 = max(pos_y - spaceTop_, 0);
+	float val1 = _MAX(pos_x - spaceLeft_, 0);
+	float val2 = _MAX(pos_y - spaceTop_, 0);
 	return _Get2DMortonNumber(
 		(unsigned short)(val1 / unitWidth_), (unsigned short)(val2 / unitHeight_));
 }

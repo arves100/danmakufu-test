@@ -625,8 +625,8 @@ void DxScriptTextObject::SetAlpha(int alpha)
 	int g = ColorAccess::GetColorG(color);
 	int b = ColorAccess::GetColorB(color);
 
-	alpha = max(alpha, 0);
-	alpha = min(alpha, 255);
+	alpha = _MAX(alpha, 0);
+	alpha = _MIN(alpha, 255);
 
 	SetVertexColor(D3DCOLOR_ARGB(alpha, r, g, b));
 }
@@ -634,12 +634,12 @@ void DxScriptTextObject::SetColor(int r, int g, int b)
 {
 	D3DCOLOR color = text_.GetVertexColor();
 	int a = ColorAccess::GetColorA(color);
-	r = max(r, 0);
-	r = min(r, 255);
-	g = max(g, 0);
-	g = min(g, 255);
-	b = max(b, 0);
-	b = min(b, 255);
+	r = _MAX(r, 0);
+	r = _MIN(r, 255);
+	g = _MAX(g, 0);
+	g = _MIN(g, 255);
+	b = _MAX(b, 0);
+	b = _MIN(b, 255);
 
 	SetVertexColor(D3DCOLOR_ARGB(a, r, g, b));
 }

@@ -28,7 +28,7 @@ public:
 
 	ref_count_ptr<StgStageScriptObjectManager> GetMainObjectManager() { return objectManagerMain_; }
 	StgStageScriptManager* GetScriptManagerP() { return scriptManager_.GetPointer(); }
-	ref_count_ptr<StgStageScriptManager> GetScriptManagerR() { return scriptManager_; }
+	ref_count_ptr<StgStageScriptManager>& GetScriptManagerR() { return scriptManager_; }
 	StgEnemyManager* GetEnemyManager() { return enemyManager_.GetPointer(); }
 	StgShotManager* GetShotManager() { return shotManager_.GetPointer(); }
 	StgItemManager* GetItemManager() { return itemManager_.GetPointer(); }

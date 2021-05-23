@@ -292,7 +292,7 @@ public:
 		}
 	}
 	int GetSize() { return matrix_.size(); }
-	void SetMatrix(int index, D3DXMATRIX& mat) { matrix_[index] = mat; }
+	void SetMatrix(int index, D3DXMATRIX mat) { matrix_[index] = mat; }
 	D3DXMATRIX& GetMatrix(int index) { return matrix_[index]; }
 
 private:

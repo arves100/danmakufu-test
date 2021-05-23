@@ -333,7 +333,7 @@ gstd::ref_count_ptr<Shader> ShaderManager::CreateFromText(std::string source)
 }
 gstd::ref_count_ptr<Shader> ShaderManager::CreateFromFileInLoadThread(std::wstring path)
 {
-	return false;
+	return NULL;
 }
 void ShaderManager::CallFromLoadThread(gstd::ref_count_ptr<gstd::FileManager::LoadThreadEvent> event)
 {
@@ -396,7 +396,7 @@ ShaderParameter::ShaderParameter()
 ShaderParameter::~ShaderParameter()
 {
 }
-void ShaderParameter::SetMatrix(D3DXMATRIX& matrix)
+void ShaderParameter::SetMatrix(D3DXMATRIX matrix)
 {
 	type_ = TYPE_MATRIX;
 	int size = sizeof(D3DXMATRIX);
@@ -431,7 +431,7 @@ std::vector<D3DXMATRIX> ShaderParameter::GetMatrixArray()
 
 	return res;
 }
-void ShaderParameter::SetVector(D3DXVECTOR4& vector)
+void ShaderParameter::SetVector(D3DXVECTOR4 vector)
 {
 	type_ = TYPE_VECTOR;
 	int size = sizeof(D3DXVECTOR4);
@@ -732,7 +732,7 @@ bool Shader::SetTechnique(std::string name)
 	technique_ = name;
 	return true;
 }
-bool Shader::SetMatrix(std::string name, D3DXMATRIX& matrix)
+bool Shader::SetMatrix(std::string name, D3DXMATRIX matrix)
 {
 	// ID3DXEffect* effect = GetEffect();
 	// if (effect == NULL)
@@ -756,7 +756,7 @@ bool Shader::SetMatrixArray(std::string name, std::vector<D3DXMATRIX>& matrix)
 
 	return true;
 }
-bool Shader::SetVector(std::string name, D3DXVECTOR4& vector)
+bool Shader::SetVector(std::string name, D3DXVECTOR4 vector)
 {
 	// ID3DXEffect* effect = GetEffect();
 	// if (effect == NULL)

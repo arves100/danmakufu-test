@@ -118,7 +118,7 @@ void StgEnemyObject::Intersect(ref_count_ptr<StgIntersectionTarget>::unsync ownT
 			damage = damage * rateDamageSpell_ / 100;
 		}
 	}
-	life_ = max(life_ - damage, 0);
+	life_ = _MAX(life_ - damage, 0);
 }
 void StgEnemyObject::RegistIntersectionTarget()
 {
@@ -126,7 +126,8 @@ void StgEnemyObject::RegistIntersectionTarget()
 }
 ref_count_ptr<StgEnemyObject>::unsync StgEnemyObject::GetOwnObject()
 {
-	return ref_count_ptr<StgEnemyObject>::unsync::DownCast(stageController_->GetMainRenderObject(idObject_));
+	auto src = stageController_->GetMainRenderObject(idObject_);
+	return ref_count_ptr<StgEnemyObject>::unsync::DownCast(src);
 }
 
 /**********************************************************
@@ -402,7 +403,7 @@ void StgEnemyBossSceneObject::LoadAllScriptInThread()
 int StgEnemyBossSceneObject::GetRemainStepCount()
 {
 	int res = listData_.size() - dataStep_ - 1;
-	res = max(res, 0);
+	res = _MAX(res, 0);
 	return res;
 }
 int StgEnemyBossSceneObject::GetActiveStepLifeCount()

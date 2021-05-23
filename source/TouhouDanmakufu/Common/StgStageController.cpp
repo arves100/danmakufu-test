@@ -167,12 +167,14 @@ void StgStageController::Initialize(ref_count_ptr<StgStageStartData> startData)
 	if (pathPlayerScript.size() > 0) {
 		ELogger::WriteTop(StringUtility::Format(L"自機スクリプト[%s]", pathPlayerScript.c_str()));
 		int idPlayer = objectManager->CreatePlayerObject();
-		objPlayer = ref_count_ptr<StgPlayerObject>::unsync::DownCast(GetMainRenderObject(idPlayer));
+		auto src = GetMainRenderObject(idPlayer);
+		objPlayer = ref_count_ptr<StgPlayerObject>::unsync::DownCast(src);
 
 		_int64 idScript = scriptManager_->LoadScript(pathPlayerScript, StgStageScript::TYPE_PLAYER);
 		_SetupReplayTargetCommonDataArea(idScript);
 
-		ref_count_ptr<StgStagePlayerScript> script = ref_count_ptr<StgStagePlayerScript>::DownCast(scriptManager_->GetScript(idScript));
+		auto src2 = scriptManager_->GetScript(idScript);
+		ref_count_ptr<StgStagePlayerScript> script = ref_count_ptr<StgStagePlayerScript>::DownCast(src2);
 		objPlayer->SetScript(script.GetPointer());
 		scriptManager_->SetPlayerScriptID(idScript);
 		scriptManager_->StartScript(idScript);
@@ -271,7 +273,8 @@ void StgStageController::CloseScene()
 }
 void StgStageController::_SetupReplayTargetCommonDataArea(_int64 idScript)
 {
-	ref_count_ptr<StgStageScript> script = ref_count_ptr<StgStageScript>::DownCast(scriptManager_->GetScript(idScript));
+	auto src = scriptManager_->GetScript(idScript);
+	ref_count_ptr<StgStageScript> script = ref_count_ptr<StgStageScript>::DownCast(src);
 	if (script == NULL)
 		return;
 
@@ -426,7 +429,8 @@ ref_count_ptr<StgPlayerObject>::unsync StgStageController::GetPlayerObject()
 	int idPlayer = objectManagerMain_->GetPlayerObjectID();
 	if (idPlayer == DxScript::ID_INVALID)
 		return NULL;
-	return ref_count_ptr<StgPlayerObject>::unsync::DownCast(GetMainRenderObject(idPlayer));
+	auto src = GetMainRenderObject(idPlayer);
+	return ref_count_ptr<StgPlayerObject>::unsync::DownCast(src);
 }
 
 /**********************************************************
@@ -485,11 +489,11 @@ int PseudoSlowInformation::GetFps()
 	int target = TARGET_ALL;
 	if (mapDataPlayer_.find(target) != mapDataPlayer_.end()) {
 		ref_count_ptr<SlowData> data = mapDataPlayer_[target];
-		fps = min(fps, data->GetFps());
+		fps = _MIN(fps, data->GetFps());
 	}
 	if (mapDataEnemy_.find(target) != mapDataEnemy_.end()) {
 		ref_count_ptr<SlowData> data = mapDataEnemy_[target];
-		fps = min(fps, data->GetFps());
+		fps = _MIN(fps, data->GetFps());
 	}
 	return fps;
 }
@@ -504,11 +508,11 @@ void PseudoSlowInformation::Next()
 	int target = TARGET_ALL;
 	if (mapDataPlayer_.find(target) != mapDataPlayer_.end()) {
 		ref_count_ptr<SlowData> data = mapDataPlayer_[target];
-		fps = min(fps, data->GetFps());
+		fps = _MIN(fps, data->GetFps());
 	}
 	if (mapDataEnemy_.find(target) != mapDataEnemy_.end()) {
 		ref_count_ptr<SlowData> data = mapDataEnemy_[target];
-		fps = min(fps, data->GetFps());
+		fps = _MIN(fps, data->GetFps());
 	}
 
 	bool bValid = false;
@@ -526,8 +530,8 @@ void PseudoSlowInformation::Next()
 }
 void PseudoSlowInformation::AddSlow(int fps, int owner, int target)
 {
-	fps = max(1, fps);
-	fps = min(STANDARD_FPS, fps);
+	fps = _MAX(1, fps);
+	fps = _MIN(STANDARD_FPS, fps);
 	ref_count_ptr<SlowData> data = new SlowData();
 	data->SetFps(fps);
 	switch (owner) {

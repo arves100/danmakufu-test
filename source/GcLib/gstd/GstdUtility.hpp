@@ -380,7 +380,7 @@ public:
 	static T* GetInstance()
 	{
 		if (_This() == NULL) {
-			throw std::exception("Singleton::GetInstance 未初期化");
+			throw gstd::wexception(L"Singleton::GetInstance 未初期化");
 		}
 		return _This();
 	}
@@ -509,6 +509,9 @@ public:
 	std::wstring GetString(int start, int end);
 
 	bool CompareMemory(int start, int end, const char* data);
+
+private:
+	void Init(std::vector<char>& buf);
 
 protected:
 	int typeEncoding_;

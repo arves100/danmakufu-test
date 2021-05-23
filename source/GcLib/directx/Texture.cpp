@@ -546,7 +546,8 @@ void TextureManager::CallFromLoadThread(ref_count_ptr<FileManager::LoadThreadEve
 	std::wstring path = event->GetPath();
 	{
 		Lock lock(lock_);
-		ref_count_ptr<Texture> texture = ref_count_ptr<Texture>::DownCast(event->GetSource());
+		auto src = event->GetSource();
+		ref_count_ptr<Texture> texture = ref_count_ptr<Texture>::DownCast(src);
 		if (texture == NULL)
 			return;
 

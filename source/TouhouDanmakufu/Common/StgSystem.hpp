@@ -111,8 +111,8 @@ public:
 	void SetActiveReplayInformation(ref_count_ptr<ReplayInformation> info) { infoReplayActive_ = info; }
 
 	void SetInvaridRenderPriority(int priMin, int priMax);
-	int GetInvaridRenderPriorityMin() { return invalidPriMin_; }
-	int GetInvaridRenderPriorityMax() { return invalidPriMax_; }
+	int GetInvaridRenderPriority_MIN() { return invalidPriMin_; }
+	int GetInvaridRenderPriority_MAX() { return invalidPriMax_; }
 
 	void AddReplayTargetKey(int id) { listReplayTargetKey_.insert(id); }
 	std::set<int> GetReplayTargetKeyList() { return listReplayTargetKey_; }

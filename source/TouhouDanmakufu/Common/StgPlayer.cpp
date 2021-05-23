@@ -153,7 +153,7 @@ void StgPlayerObject::Work()
 		bVisible_ = false;
 	}
 
-	frameInvincibility_ = max(frameInvincibility_ - 1, 0);
+	frameInvincibility_ = _MAX(frameInvincibility_ - 1, 0);
 	listGrazedShot_.clear();
 	hitObjectID_ = DxScript::ID_INVALID;
 }
@@ -204,10 +204,10 @@ void StgPlayerObject::_Move()
 	double py = posY_ + sy;
 
 	//はみ出たときの処理
-	px = max(px, rcClip_.left);
-	px = min(px, rcClip_.right);
-	py = max(py, rcClip_.top);
-	py = min(py, rcClip_.bottom);
+	px = _MAX(px, rcClip_.left);
+	px = _MIN(px, rcClip_.right);
+	py = _MAX(py, rcClip_.top);
+	py = _MIN(py, rcClip_.bottom);
 
 	SetX(px);
 	SetY(py);
@@ -251,7 +251,7 @@ void StgPlayerObject::CallSpell()
 
 	if (state_ == STATE_HIT) {
 		state_ = STATE_NORMAL;
-		infoPlayer_->frameRebirth_ = max(infoPlayer_->frameRebirth_ - frameRebirthDiff_, 0);
+		infoPlayer_->frameRebirth_ = _MAX(infoPlayer_->frameRebirth_ - frameRebirthDiff_, 0);
 	}
 
 	StgEnemyManager* enemyManager = stageController_->GetEnemyManager();
@@ -278,7 +278,8 @@ void StgPlayerObject::Intersect(ref_count_ptr<StgIntersectionTarget>::unsync own
 				stageController_->GetStageInformation()->AddGraze(1);
 			}
 		} else {
-			ref_count_weak_ptr<StgShotObject>::unsync objShot = ref_count_weak_ptr<StgShotObject>::unsync::DownCast(otherTarget->GetObject());
+			auto src = otherTarget->GetObject();
+			ref_count_weak_ptr<StgShotObject>::unsync objShot = ref_count_weak_ptr<StgShotObject>::unsync::DownCast(src);
 			if (objShot != NULL)
 				hitObjectID_ = objShot->GetObjectID();
 		}
@@ -287,7 +288,8 @@ void StgPlayerObject::Intersect(ref_count_ptr<StgIntersectionTarget>::unsync own
 	case StgIntersectionTarget::TYPE_ENEMY: {
 		//敵
 		if (!own->IsGraze()) {
-			ref_count_weak_ptr<StgEnemyObject>::unsync objEnemy = ref_count_weak_ptr<StgEnemyObject>::unsync::DownCast(otherTarget->GetObject());
+			auto src = otherTarget->GetObject();
+			ref_count_weak_ptr<StgEnemyObject>::unsync objEnemy = ref_count_weak_ptr<StgEnemyObject>::unsync::DownCast(src);
 			if (objEnemy != NULL)
 				hitObjectID_ = objEnemy->GetObjectID();
 		}
@@ -296,7 +298,8 @@ void StgPlayerObject::Intersect(ref_count_ptr<StgIntersectionTarget>::unsync own
 }
 ref_count_ptr<StgPlayerObject>::unsync StgPlayerObject::GetOwnObject()
 {
-	return ref_count_ptr<StgPlayerObject>::unsync::DownCast(stageController_->GetMainRenderObject(idObject_));
+	auto src = stageController_->GetMainRenderObject(idObject_);
+	return ref_count_ptr<StgPlayerObject>::unsync::DownCast(src);
 }
 bool StgPlayerObject::IsPermitShot()
 {
@@ -356,5 +359,5 @@ void StgPlayerSpellObject::Intersect(ref_count_ptr<StgIntersectionTarget>::unsyn
 		break;
 	}
 	life_ -= damage;
-	life_ = max(life_, 0);
+	life_ = _MAX(life_, 0);
 }

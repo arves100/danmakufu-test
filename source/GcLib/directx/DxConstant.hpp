@@ -23,7 +23,6 @@
 #include <d3d9.h>
 #include <d3dx9.h>
 #include <dsound.h>
-#include <dxerr.h>
 #include <SDL.h>
 
 #include <vorbis/codec.h>

@@ -87,7 +87,7 @@ public:
 	int GetDownStateFrame() { return frameStateDown_; }
 	void SetDownStateFrame(int frame) { frameStateDown_ = frame; }
 	int GetRebirthFrame() { return infoPlayer_->GetRebirthFrame(); }
-	void SetRebirthFrameMax(int frame) { frameRebirthMax_ = frame; }
+	void SetRebirthFrame_MAX(int frame) { frameRebirthMax_ = frame; }
 	void SetRebirthFrame(int frame) { infoPlayer_->SetRebirthFrame(frame); }
 	void SetRebirthLossFrame(int frame) { frameRebirthDiff_ = frame; }
 	double GetItemIntersectionRadius() { return itemCircle_; }

@@ -207,7 +207,7 @@ struct RECT_D {
 	double bottom;
 };
 
-inline RECT_D GetRectD(RECT& rect)
+inline RECT_D GetRectD(RECT rect)
 {
 	RECT_D res = { (double)rect.left, (double)rect.top, (double)rect.right, (double)rect.bottom };
 	return res;

@@ -52,7 +52,7 @@ public:
 	virtual void CallFromLoadThread(gstd::ref_count_ptr<gstd::FileManager::LoadThreadEvent> event);
 
 	virtual gstd::ref_count_ptr<ManagedScript> Create(int type) = 0;
-	virtual void RequestEventAll(int type, std::vector<gstd::value>& listValue = std::vector<gstd::value>());
+	virtual void RequestEventAll(int type, std::vector<gstd::value> listValue = std::vector<gstd::value>());
 	gstd::value GetScriptResult(_int64 idScript);
 	void AddRelativeScriptManager(gstd::ref_count_weak_ptr<ScriptManager> manager) { listRelativeManager_.push_back(manager); }
 	static void AddRelativeScriptManagerMutual(gstd::ref_count_weak_ptr<ScriptManager> manager1, gstd::ref_count_weak_ptr<ScriptManager> manager2);
@@ -102,7 +102,7 @@ public:
 	bool IsAutoDeleteObject() { return bAutoDeleteObject_; }
 	void SetAutoDeleteObject(bool bEneble) { bAutoDeleteObject_ = bEneble; }
 
-	gstd::value RequestEvent(int type, std::vector<gstd::value>& listValue = std::vector<gstd::value>());
+	gstd::value RequestEvent(int type, std::vector<gstd::value> listValue = std::vector<gstd::value>());
 
 	//制御共通関数：共通データ
 	static gstd::value Func_SaveCommonDataAreaA1(gstd::script_machine* machine, int argc, gstd::value const* argv);

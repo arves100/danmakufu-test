@@ -2,6 +2,7 @@
 #define __GSTD_SMART_POINTER__
 
 #include "GstdConstant.hpp"
+#include <stdexcept>
 
 //下記を参考
 //http://marupeke296.com/CPP_SmartPointer.html
@@ -314,7 +315,7 @@ public:
 	ref_count_weak_ptr(T* src)
 	{
 		if (src != NULL)
-			throw std::exception("ref_count_weak_ptrコンストラクタに非NULLを代入しようとしました");
+			throw std::runtime_error(u8"ref_count_weak_ptrコンストラクタに非NULLを代入しようとしました");
 	}
 	// コピーコンストラクタ
 	ref_count_weak_ptr(const ref_count_weak_ptr<T, SYNC>& src)
@@ -356,7 +357,7 @@ public:
 	ref_count_weak_ptr<T, SYNC>& operator=(T* src)
 	{
 		if (src != NULL)
-			throw std::exception("ref_count_weak_ptr =に非NULLを代入しようとしました");
+			throw std::runtime_error(u8"ref_count_weak_ptr =に非NULLを代入しようとしました");
 		_Release();
 		info_.pPtr_ = src;
 		info_.countRef_ = NULL;

@@ -572,14 +572,14 @@ Scanner::Scanner(char* str, int size)
 	buf.resize(size);
 	memcpy(&buf[0], str, size);
 	buf.push_back('\0');
-	Scanner::Scanner(buf);
+	Init(buf);
 }
 Scanner::Scanner(std::string str)
 {
 	std::vector<char> buf;
 	buf.resize(str.size() + 1);
 	memcpy(&buf[0], str.c_str(), str.size() + 1);
-	Scanner::Scanner(buf);
+	Init(buf);
 }
 Scanner::Scanner(std::wstring wstr)
 {
@@ -588,9 +588,14 @@ Scanner::Scanner(std::wstring wstr)
 	buf.resize(textSize + 4);
 	memcpy(&buf[0], &Encoding::BOM_UTF16LE[0], 2);
 	memcpy(&buf[2], wstr.c_str(), textSize + 2);
-	Scanner::Scanner(buf);
+	Init(buf);
 }
 Scanner::Scanner(std::vector<char>& buf)
+{
+	Init(buf);
+}
+
+void Scanner::Init(std::vector<char>& buf)
 {
 	bPermitSignNumber_ = true;
 	buffer_ = buf;

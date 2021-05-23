@@ -274,8 +274,9 @@ void ScriptSelectScene::Render()
 			}
 		}
 
+		auto src = GetSelectedMenuItem();
 		ref_count_ptr<ScriptSelectSceneMenuItem> item =
-			ref_count_ptr<ScriptSelectSceneMenuItem>::DownCast(GetSelectedMenuItem());
+			ref_count_ptr<ScriptSelectSceneMenuItem>::DownCast(src);
 		if(bActive_ && item != NULL && item->GetType() != ScriptSelectSceneMenuItem::TYPE_DIR)
 		{
 			ref_count_ptr<ScriptInformation> info = item->GetScriptInformation();
@@ -754,8 +755,9 @@ void PlayTypeSelectScene::Work()
 	else if(input->GetVirtualKeyState(EDirectInput::KEY_CANCEL) == KEY_PUSH)
 	{
 		ETaskManager* taskManager = ETaskManager::GetInstance();
+		auto src = taskManager->GetTask(typeid(ScriptSelectScene));
 		ref_count_ptr<ScriptSelectScene> scriptSelectScene =
-			ref_count_ptr<ScriptSelectScene>::DownCast(taskManager->GetTask(typeid(ScriptSelectScene)));
+			ref_count_ptr<ScriptSelectScene>::DownCast(src);
 		scriptSelectScene->SetActive(true);
 
 		taskManager->RemoveTask(typeid(PlayTypeSelectScene));

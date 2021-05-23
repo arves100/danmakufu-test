@@ -107,11 +107,11 @@ public:
 	virtual ~ShaderParameter();
 
 	int GetType() { return type_; }
-	void SetMatrix(D3DXMATRIX& matrix);
+	void SetMatrix(D3DXMATRIX matrix);
 	D3DXMATRIX GetMatrix();
 	void SetMatrixArray(std::vector<D3DXMATRIX>& matrix);
 	std::vector<D3DXMATRIX> GetMatrixArray();
-	void SetVector(D3DXVECTOR4& vector);
+	void SetVector(D3DXVECTOR4 vector);
 	D3DXVECTOR4 GetVector();
 	void SetFloat(float value);
 	float GetFloat();
@@ -150,9 +150,9 @@ public:
 	bool IsLoad() { return data_ != NULL && data_->bLoad_; }
 
 	bool SetTechnique(std::string name);
-	bool SetMatrix(std::string name, D3DXMATRIX& matrix);
+	bool SetMatrix(std::string name, D3DXMATRIX matrix);
 	bool SetMatrixArray(std::string name, std::vector<D3DXMATRIX>& matrix);
-	bool SetVector(std::string name, D3DXVECTOR4& vector);
+	bool SetVector(std::string name, D3DXVECTOR4 vector);
 	bool SetFloat(std::string name, float value);
 	bool SetFloatArray(std::string name, std::vector<float>& values);
 	bool SetTexture(std::string name, gstd::ref_count_ptr<Texture> texture);

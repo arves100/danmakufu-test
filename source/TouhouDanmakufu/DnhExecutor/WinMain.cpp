@@ -3,7 +3,11 @@
 /**********************************************************
 WinMain
 **********************************************************/
-int main(int argc, char* argv[])
+#ifdef _WIN32
+int WINAPI wWinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPWSTR, _In_ int)
+#else
+int main(int, char**)
+#endif
 {
 	gstd::DebugUtility::DumpMemoryLeaksOnExit();
 	try {

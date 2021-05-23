@@ -517,7 +517,7 @@ StgItemRenderer::StgItemRenderer()
 int StgItemRenderer::GetVertexCount()
 {
 	int res = countRenderVertex_;
-	res = min(countRenderVertex_, vertex_.GetSize() / strideVertexStreamZero_);
+	res = _MIN(countRenderVertex_, vertex_.GetSize() / strideVertexStreamZero_);
 	return res;
 }
 void StgItemRenderer::Render()
@@ -574,7 +574,8 @@ StgItemObject::StgItemObject(StgStageController* stageController)
 }
 void StgItemObject::Work()
 {
-	bool bDefaultMovePattern = ref_count_ptr<StgMovePattern_Item>::unsync::DownCast(GetPattern()) != NULL;
+	auto src = GetPattern();
+	bool bDefaultMovePattern = ref_count_ptr<StgMovePattern_Item>::unsync::DownCast(src) != NULL;
 	if (!bDefaultMovePattern && IsMoveToPlayer()) {
 		double speed = 8;
 		ref_count_ptr<StgPlayerObject>::unsync objPlayer = stageController_->GetPlayerObject();

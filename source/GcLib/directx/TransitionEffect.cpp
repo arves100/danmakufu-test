@@ -21,7 +21,7 @@ void TransitionEffect_FadeOut::Work()
 	if (sprite_ == NULL)
 		return;
 	alpha_ -= diffAlpha_;
-	alpha_ = max(alpha_, 0);
+	alpha_ = _MAX(alpha_, 0);
 	sprite_->SetAlpha((int)alpha_);
 }
 void TransitionEffect_FadeOut::Render()

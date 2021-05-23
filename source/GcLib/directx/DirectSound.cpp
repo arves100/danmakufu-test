@@ -1119,7 +1119,7 @@ bool SoundStreamingPlayerOgg::_CreateBuffer(gstd::ref_count_ptr<gstd::FileReader
 	this->formatWave_ = wfh.WaveFmt;
 
 	//Bufferの作製
-	DWORD sizeBuffer = min(2 * formatWave_.nAvgBytesPerSec, sizeData);
+	DWORD sizeBuffer = _MIN(2 * formatWave_.nAvgBytesPerSec, sizeData);
 
 	DSBUFFERDESC desc;
 	ZeroMemory(&desc, sizeof(DSBUFFERDESC));
@@ -1416,7 +1416,7 @@ bool SoundStreamingPlayerMp3::_CreateBuffer(gstd::ref_count_ptr<gstd::FileReader
 
 	//Bufferの作製
 	DirectSoundManager* soundManager = DirectSoundManager::GetBase();
-	DWORD sizeBuffer = min(2 * formatWave_.nAvgBytesPerSec, waveDataSize_);
+	DWORD sizeBuffer = _MIN(2 * formatWave_.nAvgBytesPerSec, waveDataSize_);
 
 	DSBUFFERDESC desc;
 	ZeroMemory(&desc, sizeof(DSBUFFERDESC));
@@ -1501,7 +1501,7 @@ int SoundStreamingPlayerMp3::_ReadAcmStream(char* pBuffer, int size)
 	if (bufDecode_ != NULL) {
 		//前回デコード分を書き込み
 		int bufSize = bufDecode_->GetSize();
-		int copySize = min(size, bufSize);
+		int copySize = _MIN(size, bufSize);
 
 		memcpy(pBuffer, bufDecode_->GetPointer(), copySize);
 		sizeWrite += copySize;
@@ -1532,7 +1532,7 @@ int SoundStreamingPlayerMp3::_ReadAcmStream(char* pBuffer, int size)
 	}
 
 	int sizeDecode = acmStreamHeader_.cbDstLengthUsed;
-	int copySize = min(size, sizeDecode);
+	int copySize = _MIN(size, sizeDecode);
 	memcpy(pBuffer, acmStreamHeader_.pbDst, copySize);
 	if (sizeDecode > copySize) {
 		//今回余った分を、次回用にバッファリング

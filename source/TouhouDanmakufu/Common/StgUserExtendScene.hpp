@@ -12,7 +12,7 @@ class StgUserExtendScene {
 public:
 	StgUserExtendScene(StgSystemController* controller);
 	virtual ~StgUserExtendScene();
-	ref_count_ptr<StgUserExtendSceneScriptManager> GetScriptManager() { return scriptManager_; }
+	ref_count_ptr<StgUserExtendSceneScriptManager>& GetScriptManager() { return scriptManager_; }
 
 	virtual void Work();
 	virtual void Render();

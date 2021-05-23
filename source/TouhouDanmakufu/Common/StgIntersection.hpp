@@ -234,15 +234,15 @@ public:
 		double y = circle_.GetY();
 		double r = circle_.GetR();
 		RECT rect = { (int)(x - r), (int)(y - r), (int)(x + r), (int)(y + r) };
-		rect.left = max(rect.left, 0);
-		rect.left = min(rect.left, screenWidth);
-		rect.top = max(rect.top, 0);
-		rect.top = min(rect.top, screenHeight);
+		rect.left = _MAX(rect.left, 0);
+		rect.left = _MIN(rect.left, screenWidth);
+		rect.top = _MAX(rect.top, 0);
+		rect.top = _MIN(rect.top, screenHeight);
 
-		rect.right = max(rect.right, 0);
-		rect.right = min(rect.right, screenWidth);
-		rect.bottom = max(rect.bottom, 0);
-		rect.bottom = min(rect.bottom, screenHeight);
+		rect.right = _MAX(rect.right, 0);
+		rect.right = _MIN(rect.right, screenWidth);
+		rect.bottom = _MAX(rect.bottom, 0);
+		rect.bottom = _MIN(rect.bottom, screenHeight);
 		return rect;
 	}
 
@@ -287,15 +287,15 @@ public:
 		DirectGraphics* graphics = DirectGraphics::GetBase();
 		int screenWidth = graphics->GetScreenWidth();
 		int screenHeight = graphics->GetScreenWidth();
-		x1 = min(x1, screenWidth);
-		x1 = max(x1, 0);
-		x2 = min(x2, screenWidth);
-		x2 = max(x2, 0);
+		x1 = _MIN(x1, screenWidth);
+		x1 = _MAX(x1, 0);
+		x2 = _MIN(x2, screenWidth);
+		x2 = _MAX(x2, 0);
 
-		y1 = min(y1, screenHeight);
-		y1 = max(y1, 0);
-		y2 = min(y2, screenHeight);
-		y2 = max(y2, 0);
+		y1 = _MIN(y1, screenHeight);
+		y1 = _MAX(y1, 0);
+		y2 = _MIN(y2, screenHeight);
+		y2 = _MAX(y2, 0);
 
 		// RECT rect = {x1 - width, y1 - width, x2 + width, y2 + width};
 		RECT rect = { (int)x1, (int)y1, (int)x2, (int)y2 };

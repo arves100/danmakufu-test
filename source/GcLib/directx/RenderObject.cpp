@@ -946,15 +946,15 @@ void RenderObjectBNX::Render()
 			D3DLIGHT9 light;
 			device->GetLight(0, &light);
 			D3DCOLORVALUE diffuse = materialBNX_.Diffuse;
-			diffuse.r = min(diffuse.r + light.Diffuse.r, 1.0f);
-			diffuse.g = min(diffuse.g + light.Diffuse.g, 1.0f);
-			diffuse.b = min(diffuse.b + light.Diffuse.b, 1.0f);
+			diffuse.r = _MIN(diffuse.r + light.Diffuse.r, 1.0f);
+			diffuse.g = _MIN(diffuse.g + light.Diffuse.g, 1.0f);
+			diffuse.b = _MIN(diffuse.b + light.Diffuse.b, 1.0f);
 			diffuse = ColorAccess::SetColor(diffuse, color_);
 
 			D3DCOLORVALUE ambient = materialBNX_.Ambient;
-			ambient.r = min(ambient.r + light.Ambient.r, 1.0f);
-			ambient.g = min(ambient.g + light.Ambient.g, 1.0f);
-			ambient.b = min(ambient.b + light.Ambient.b, 1.0f);
+			ambient.r = _MIN(ambient.r + light.Ambient.r, 1.0f);
+			ambient.g = _MIN(ambient.g + light.Ambient.g, 1.0f);
+			ambient.b = _MIN(ambient.b + light.Ambient.b, 1.0f);
 			ambient = ColorAccess::SetColor(ambient, color_);
 
 			//ライト
@@ -1449,7 +1449,7 @@ void SpriteList2D::Render()
 int SpriteList2D::GetVertexCount()
 {
 	int res = countRenderVertex_;
-	res = min(countRenderVertex_, vertex_.GetSize() / strideVertexStreamZero_);
+	res = _MIN(countRenderVertex_, vertex_.GetSize() / strideVertexStreamZero_);
 	return res;
 }
 void SpriteList2D::_AddVertex(VERTEX_TLX& vertex)
@@ -1457,7 +1457,7 @@ void SpriteList2D::_AddVertex(VERTEX_TLX& vertex)
 	int count = vertex_.GetSize() / strideVertexStreamZero_;
 	if (countRenderVertex_ >= count) {
 		//リサイズ
-		int newCount = max(10, count * 1.5);
+		int newCount = _MAX(10, count * 1.5);
 		ByteBuffer buffer(vertex_);
 		SetVertexCount(newCount);
 		memcpy(vertex_.GetPointer(), buffer.GetPointer(), buffer.GetSize());
@@ -2007,7 +2007,8 @@ void DxMeshManager::CallFromLoadThread(ref_count_ptr<FileManager::LoadThreadEven
 	std::wstring path = event->GetPath();
 	{
 		Lock lock(lock_);
-		ref_count_ptr<DxMesh> mesh = ref_count_ptr<DxMesh>::DownCast(event->GetSource());
+		auto src = event->GetSource();
+		ref_count_ptr<DxMesh> mesh = ref_count_ptr<DxMesh>::DownCast(src);
 		if (mesh == NULL)
 			return;
 

@@ -35,7 +35,7 @@ static const std::string HLSL_DEFAULT_SKINED_MESH = "\
 		float3 CalcDiffuse(float3 normal)\r\n\
 		{\r\n\
 			float res;\r\n\
-			res = max(0.0f, dot(normal, lightDirection.xyz));   \r\n\
+			res = _MAX(0.0f, dot(normal, lightDirection.xyz));   \r\n\
 			return (res);\r\n\
 		}\r\n\
 		\r\n\

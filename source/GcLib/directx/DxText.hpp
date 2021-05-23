@@ -31,7 +31,7 @@ public:
 	DxFont();
 	virtual ~DxFont();
 	void SetLogFont(LOGFONT& font) { info_ = font; }
-	LOGFONT GetLogFont() { return info_; }
+	LOGFONT& GetLogFont() { return info_; }
 	void SetTopColor(D3DCOLOR color) { colorTop_ = color; }
 	D3DCOLOR GetTopColor() { return colorTop_; }
 	void SetBottomColor(D3DCOLOR color) { colorBottom_ = color; }
@@ -234,6 +234,8 @@ public:
 	int GetCurrentPosition();
 	void SetTagScanEnable(bool bEnable) { bTagScan_ = bEnable; }
 
+private:
+	void Init(std::vector<wchar_t>&);
 protected:
 	int line_;
 	std::vector<wchar_t> buffer_;
@@ -497,7 +499,7 @@ public:
 	gstd::ref_count_ptr<DxTextRenderObject> CreateRenderObject();
 	gstd::ref_count_ptr<DxTextRenderObject> CreateRenderObject(gstd::ref_count_ptr<DxTextInfo> textInfo);
 
-	DxFont GetFont() { return dxFont_; }
+	DxFont& GetFont() { return dxFont_; }
 	void SetFont(DxFont font) { dxFont_ = font; }
 	void SetFont(LOGFONT logFont) { dxFont_.SetLogFont(logFont); }
 

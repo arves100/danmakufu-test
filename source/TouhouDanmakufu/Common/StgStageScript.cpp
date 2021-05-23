@@ -85,7 +85,8 @@ StgStageScriptObjectManager::StgStageScriptObjectManager(StgStageController* sta
 StgStageScriptObjectManager::~StgStageScriptObjectManager()
 {
 	if (idObjPleyer_ != DxScript::ID_INVALID) {
-		ref_count_ptr<StgPlayerObject>::unsync obj = ref_count_ptr<StgPlayerObject>::unsync::DownCast(GetObject(idObjPleyer_));
+		auto src = GetObject(idObjPleyer_);
+		ref_count_ptr<StgPlayerObject>::unsync obj = ref_count_ptr<StgPlayerObject>::unsync::DownCast(src);
 		if (obj != NULL)
 			obj->Clear();
 	}
@@ -542,7 +543,8 @@ StgStageScript::StgStageScript(StgStageController* stageController)
 
 	scriptManager_ = stageController_->GetScriptManagerP();
 	StgStageScriptManager* scriptManager = (StgStageScriptManager*)scriptManager_;
-	SetObjectManager(scriptManager->GetObjectManager());
+	auto src = scriptManager->GetObjectManager();
+	SetObjectManager(src);
 }
 StgStageScript::~StgStageScript()
 {
@@ -652,8 +654,8 @@ gstd::value StgStageScript::Func_SetItemRenderPriorityI(gstd::script_machine* ma
 	StgStageController* stageController = script->stageController_;
 	ref_count_ptr<StgStageInformation> info = stageController->GetStageInformation();
 	int pri = (int)argv[0].as_real();
-	// pri = min(pri, info->GetStgFrameMaxPriority());
-	// pri = max(pri, info->GetStgFrameMinPriority());
+	// pri = _MIN(pri, info->GetStgFrameMaxPriority());
+	// pri = _MAX(pri, info->GetStgFrameMinPriority());
 	info->SetItemObjectPriority(pri);
 	return value();
 }
@@ -663,8 +665,8 @@ gstd::value StgStageScript::Func_SetShotRenderPriorityI(gstd::script_machine* ma
 	StgStageController* stageController = script->stageController_;
 	ref_count_ptr<StgStageInformation> info = stageController->GetStageInformation();
 	int pri = (int)argv[0].as_real();
-	// pri = min(pri, info->GetStgFrameMaxPriority());
-	// pri = max(pri, info->GetStgFrameMinPriority());
+	// pri = _MIN(pri, info->GetStgFrameMaxPriority());
+	// pri = _MAX(pri, info->GetStgFrameMinPriority());
 	info->SetShotObjectPriority(pri);
 	return value();
 }
@@ -871,7 +873,7 @@ gstd::value StgStageScript::Func_SetPlayerRebirthFrame(gstd::script_machine* mac
 
 	int frame = (int)argv[0].as_real();
 	obj->SetRebirthFrame(frame);
-	obj->SetRebirthFrameMax(frame);
+	obj->SetRebirthFrame_MAX(frame);
 
 	return value();
 }
@@ -1039,7 +1041,8 @@ gstd::value StgStageScript::Func_GetAngleToPlayer(gstd::script_machine* machine,
 	double py = objPlayer->GetPositionY();
 
 	int id = (int)argv[0].as_real();
-	ref_count_ptr<DxScriptRenderObject>::unsync objMove = ref_count_ptr<DxScriptRenderObject>::unsync::DownCast(script->GetObject(id));
+	auto src = script->GetObject(id);
+	ref_count_ptr<DxScriptRenderObject>::unsync objMove = ref_count_ptr<DxScriptRenderObject>::unsync::DownCast(src);
 	if (objMove == NULL)
 		return value(machine->get_engine()->get_real_type(), (long double)-1);
 	double tx = objMove->GetPosition().x;
@@ -1766,7 +1769,8 @@ gstd::value StgStageScript::Func_SetShotIntersectionCircle(gstd::script_machine*
 	DxCircle circle(px, py, radius);
 
 	//当たり判定
-	ref_count_ptr<StgIntersectionTarget_Circle>::unsync target = ref_count_ptr<StgIntersectionTarget_Circle>::unsync::DownCast(intersectionManager->GetPoolObject(StgIntersectionTarget::SHAPE_CIRCLE));
+	auto src = intersectionManager->GetPoolObject(StgIntersectionTarget::SHAPE_CIRCLE);
+	ref_count_ptr<StgIntersectionTarget_Circle>::unsync target = ref_count_ptr<StgIntersectionTarget_Circle>::unsync::DownCast(src);
 	target->SetTargetType(typeTarget);
 	target->SetCircle(circle);
 
@@ -1790,7 +1794,8 @@ gstd::value StgStageScript::Func_SetShotIntersectionLine(gstd::script_machine* m
 	DxWidthLine line(px1, py1, px2, py2, width);
 
 	//当たり判定
-	ref_count_ptr<StgIntersectionTarget_Line>::unsync target = ref_count_ptr<StgIntersectionTarget_Line>::unsync::DownCast(intersectionManager->GetPoolObject(StgIntersectionTarget::SHAPE_LINE));
+	auto src = intersectionManager->GetPoolObject(StgIntersectionTarget::SHAPE_LINE);
+	ref_count_ptr<StgIntersectionTarget_Line>::unsync target = ref_count_ptr<StgIntersectionTarget_Line>::unsync::DownCast(src);
 	target->SetTargetType(typeTarget);
 	target->SetLine(line);
 
@@ -2041,7 +2046,8 @@ gstd::value StgStageScript::Func_CreateItemU1(gstd::script_machine* machine, int
 	StgItemManager* itemManager = stageController->GetItemManager();
 
 	int type = StgItemObject::ITEM_USER;
-	ref_count_ptr<StgItemObject_User>::unsync obj = ref_count_ptr<StgItemObject_User>::unsync::DownCast(itemManager->CreateItem(type));
+	auto src = itemManager->CreateItem(type);
+	ref_count_ptr<StgItemObject_User>::unsync obj = ref_count_ptr<StgItemObject_User>::unsync::DownCast(src);
 	int id = script->AddObject(obj);
 	if (id != ID_INVALID) {
 		itemManager->AddItem(obj);
@@ -2067,7 +2073,8 @@ gstd::value StgStageScript::Func_CreateItemU2(gstd::script_machine* machine, int
 	StgItemManager* itemManager = stageController->GetItemManager();
 
 	int type = StgItemObject::ITEM_USER;
-	ref_count_ptr<StgItemObject_User>::unsync obj = ref_count_ptr<StgItemObject_User>::unsync::DownCast(itemManager->CreateItem(type));
+	auto src = itemManager->CreateItem(type);
+	ref_count_ptr<StgItemObject_User>::unsync obj = ref_count_ptr<StgItemObject_User>::unsync::DownCast(src);
 	int id = script->AddObject(obj);
 	if (id != ID_INVALID) {
 		itemManager->AddItem(obj);
@@ -2366,7 +2373,8 @@ gstd::value StgStageScript::Func_ObjMove_SetAcceleration(gstd::script_machine* m
 	StgMoveObject* obj = dynamic_cast<StgMoveObject*>(script->GetObjectPointer(id));
 	if (obj == NULL)
 		return value();
-	ref_count_ptr<StgMovePattern_Angle>::unsync pattern = ref_count_ptr<StgMovePattern_Angle>::unsync::DownCast(obj->GetPattern());
+	auto src = obj->GetPattern();
+	ref_count_ptr<StgMovePattern_Angle>::unsync pattern = ref_count_ptr<StgMovePattern_Angle>::unsync::DownCast(src);
 	if (pattern == NULL) {
 		pattern = new StgMovePattern_Angle(obj);
 		obj->SetPattern(pattern);
@@ -2383,7 +2391,8 @@ gstd::value StgStageScript::Func_ObjMove_SetAngularVelocity(gstd::script_machine
 	StgMoveObject* obj = dynamic_cast<StgMoveObject*>(script->GetObjectPointer(id));
 	if (obj == NULL)
 		return value();
-	ref_count_ptr<StgMovePattern_Angle>::unsync pattern = ref_count_ptr<StgMovePattern_Angle>::unsync::DownCast(obj->GetPattern());
+	auto src = obj->GetPattern();
+	ref_count_ptr<StgMovePattern_Angle>::unsync pattern = ref_count_ptr<StgMovePattern_Angle>::unsync::DownCast(src);
 	if (pattern == NULL) {
 		pattern = new StgMovePattern_Angle(obj);
 		obj->SetPattern(pattern);
@@ -2400,7 +2409,8 @@ gstd::value StgStageScript::Func_ObjMove_SetMaxSpeed(gstd::script_machine* machi
 	StgMoveObject* obj = dynamic_cast<StgMoveObject*>(script->GetObjectPointer(id));
 	if (obj == NULL)
 		return value();
-	ref_count_ptr<StgMovePattern_Angle>::unsync pattern = ref_count_ptr<StgMovePattern_Angle>::unsync::DownCast(obj->GetPattern());
+	auto src = obj->GetPattern();
+	ref_count_ptr<StgMovePattern_Angle>::unsync pattern = ref_count_ptr<StgMovePattern_Angle>::unsync::DownCast(src);
 	if (pattern == NULL) {
 		pattern = new StgMovePattern_Angle(obj);
 		obj->SetPattern(pattern);
@@ -2722,7 +2732,8 @@ gstd::value StgStageScript::Func_ObjEnemy_Regist(gstd::script_machine* machine, 
 
 	int id = (int)argv[0].as_real();
 
-	ref_count_ptr<StgEnemyObject>::unsync objEnemy = ref_count_ptr<StgEnemyObject>::unsync::DownCast(stageController->GetMainRenderObject(id));
+	auto src = stageController->GetMainRenderObject(id);
+	ref_count_ptr<StgEnemyObject>::unsync objEnemy = ref_count_ptr<StgEnemyObject>::unsync::DownCast(src);
 	if (objEnemy != NULL) {
 		StgEnemyManager* enemyManager = stageController->GetEnemyManager();
 		enemyManager->AddEnemy(objEnemy);
@@ -2811,7 +2822,8 @@ gstd::value StgStageScript::Func_ObjEnemy_AddIntersectionCircleA(gstd::script_ma
 	StgIntersectionManager* intersectionManager = stageController->GetIntersectionManager();
 
 	int id = (int)argv[0].as_real();
-	ref_count_ptr<StgEnemyObject>::unsync obj = ref_count_ptr<StgEnemyObject>::unsync::DownCast(script->GetObject(id));
+	auto src2 = script->GetObject(id);
+	ref_count_ptr<StgEnemyObject>::unsync obj = ref_count_ptr<StgEnemyObject>::unsync::DownCast(src2);
 	if (obj == NULL)
 		return value();
 
@@ -2823,7 +2835,8 @@ gstd::value StgStageScript::Func_ObjEnemy_AddIntersectionCircleA(gstd::script_ma
 
 	//当たり判定
 	ref_count_weak_ptr<StgEnemyObject>::unsync wObj = obj;
-	ref_count_ptr<StgIntersectionTarget_Circle>::unsync target = ref_count_ptr<StgIntersectionTarget_Circle>::unsync::DownCast(intersectionManager->GetPoolObject(StgIntersectionTarget::SHAPE_CIRCLE));
+	auto src = intersectionManager->GetPoolObject(StgIntersectionTarget::SHAPE_CIRCLE);
+	ref_count_ptr<StgIntersectionTarget_Circle>::unsync target = ref_count_ptr<StgIntersectionTarget_Circle>::unsync::DownCast(src);
 	target->SetTargetType(StgIntersectionTarget::TYPE_ENEMY);
 	target->SetObject(wObj);
 	target->SetCircle(circle);
@@ -2838,7 +2851,8 @@ gstd::value StgStageScript::Func_ObjEnemy_SetIntersectionCircleToShot(gstd::scri
 	StgIntersectionManager* intersectionManager = stageController->GetIntersectionManager();
 
 	int id = (int)argv[0].as_real();
-	ref_count_ptr<StgEnemyObject>::unsync obj = ref_count_ptr<StgEnemyObject>::unsync::DownCast(script->GetObject(id));
+	auto src2 = script->GetObject(id);
+	ref_count_ptr<StgEnemyObject>::unsync obj = ref_count_ptr<StgEnemyObject>::unsync::DownCast(src2);
 	if (obj == NULL)
 		return value();
 
@@ -2850,7 +2864,8 @@ gstd::value StgStageScript::Func_ObjEnemy_SetIntersectionCircleToShot(gstd::scri
 
 	//当たり判定
 	ref_count_weak_ptr<StgEnemyObject>::unsync wObj = obj;
-	ref_count_ptr<StgIntersectionTarget_Circle>::unsync target = ref_count_ptr<StgIntersectionTarget_Circle>::unsync::DownCast(intersectionManager->GetPoolObject(StgIntersectionTarget::SHAPE_CIRCLE));
+	auto src = intersectionManager->GetPoolObject(StgIntersectionTarget::SHAPE_CIRCLE);
+	ref_count_ptr<StgIntersectionTarget_Circle>::unsync target = ref_count_ptr<StgIntersectionTarget_Circle>::unsync::DownCast(src);
 	target->SetTargetType(StgIntersectionTarget::TYPE_ENEMY);
 	target->SetObject(wObj);
 	target->SetCircle(circle);
@@ -2865,7 +2880,8 @@ gstd::value StgStageScript::Func_ObjEnemy_SetIntersectionCircleToPlayer(gstd::sc
 	StgIntersectionManager* intersectionManager = stageController->GetIntersectionManager();
 
 	int id = (int)argv[0].as_real();
-	ref_count_ptr<StgEnemyObject>::unsync obj = ref_count_ptr<StgEnemyObject>::unsync::DownCast(script->GetObject(id));
+	auto src2 = script->GetObject(id);
+	ref_count_ptr<StgEnemyObject>::unsync obj = ref_count_ptr<StgEnemyObject>::unsync::DownCast(src2);
 	if (obj == NULL)
 		return value();
 
@@ -2877,7 +2893,8 @@ gstd::value StgStageScript::Func_ObjEnemy_SetIntersectionCircleToPlayer(gstd::sc
 
 	//当たり判定
 	ref_count_weak_ptr<StgEnemyObject>::unsync wObj = obj;
-	ref_count_ptr<StgIntersectionTarget_Circle>::unsync target = ref_count_ptr<StgIntersectionTarget_Circle>::unsync::DownCast(intersectionManager->GetPoolObject(StgIntersectionTarget::SHAPE_CIRCLE));
+	auto src = intersectionManager->GetPoolObject(StgIntersectionTarget::SHAPE_CIRCLE);
+	ref_count_ptr<StgIntersectionTarget_Circle>::unsync target = ref_count_ptr<StgIntersectionTarget_Circle>::unsync::DownCast(src);
 	target->SetTargetType(StgIntersectionTarget::TYPE_ENEMY);
 	target->SetObject(wObj);
 	target->SetCircle(circle);
@@ -2912,7 +2929,8 @@ gstd::value StgStageScript::Func_ObjEnemyBossScene_Regist(gstd::script_machine* 
 
 	StgEnemyManager* enemyManager = stageController->GetEnemyManager();
 
-	ref_count_ptr<StgEnemyBossSceneObject>::unsync objScene = ref_count_ptr<StgEnemyBossSceneObject>::unsync::DownCast(stageController->GetMainRenderObject(id));
+	auto src = stageController->GetMainRenderObject(id);
+	ref_count_ptr<StgEnemyBossSceneObject>::unsync objScene = ref_count_ptr<StgEnemyBossSceneObject>::unsync::DownCast(src);
 	if (objScene != NULL) {
 		enemyManager->SetBossSceneObject(objScene);
 		objScene->Activate();
@@ -2978,7 +2996,10 @@ gstd::value StgStageScript::Func_ObjEnemyBossScene_GetInfo(gstd::script_machine*
 		case INFO_CURRENT_LIFE_MAX:
 			return value(machine->get_engine()->get_real_type(), (long double)0);
 		case INFO_ACTIVE_STEP_LIFE_RATE_LIST:
-			return script->CreateRealArrayValue(std::vector<long double>());
+			{
+				auto src = std::vector<long double>();
+				return script->CreateRealArrayValue(src);
+			}
 		}
 		return value();
 	}
@@ -3158,7 +3179,8 @@ gstd::value StgStageScript::Func_ObjShot_Regist(gstd::script_machine* machine, i
 
 	int id = (int)argv[0].as_real();
 
-	ref_count_ptr<StgShotObject>::unsync objShot = ref_count_ptr<StgShotObject>::unsync::DownCast(stageController->GetMainRenderObject(id));
+	auto src = stageController->GetMainRenderObject(id);
+	ref_count_ptr<StgShotObject>::unsync objShot = ref_count_ptr<StgShotObject>::unsync::DownCast(src);
 	if (objShot != NULL) {
 		if (script->GetScriptType() == TYPE_PLAYER) {
 			ref_count_ptr<StgPlayerObject>::unsync objPlayer = stageController->GetPlayerObject();
@@ -3371,7 +3393,8 @@ gstd::value StgStageScript::Func_ObjShot_SetIntersectionCircleA1(gstd::script_ma
 	StgStageScript* script = (StgStageScript*)machine->data;
 	StgStageController* stageController = script->stageController_;
 	int id = (int)argv[0].as_real();
-	ref_count_ptr<StgShotObject>::unsync obj = ref_count_ptr<StgShotObject>::unsync::DownCast(script->GetObject(id));
+	auto src2 = script->GetObject(id);
+	ref_count_ptr<StgShotObject>::unsync obj = ref_count_ptr<StgShotObject>::unsync::DownCast(src2);
 	if (obj == NULL)
 		return value();
 	if (obj->GetDelay() > 0)
@@ -3388,7 +3411,8 @@ gstd::value StgStageScript::Func_ObjShot_SetIntersectionCircleA1(gstd::script_ma
 	ref_count_weak_ptr<StgShotObject>::unsync wObj = obj;
 
 	//当たり判定
-	ref_count_ptr<StgIntersectionTarget_Circle>::unsync target = ref_count_ptr<StgIntersectionTarget_Circle>::unsync::DownCast(intersectionManager->GetPoolObject(StgIntersectionTarget::SHAPE_CIRCLE));
+	auto src = intersectionManager->GetPoolObject(StgIntersectionTarget::SHAPE_CIRCLE);
+	ref_count_ptr<StgIntersectionTarget_Circle>::unsync target = ref_count_ptr<StgIntersectionTarget_Circle>::unsync::DownCast(src);
 	target->SetTargetType(typeTarget);
 	target->SetCircle(circle);
 	target->SetObject(wObj);
@@ -3402,7 +3426,8 @@ gstd::value StgStageScript::Func_ObjShot_SetIntersectionCircleA2(gstd::script_ma
 	StgStageScript* script = (StgStageScript*)machine->data;
 	StgStageController* stageController = script->stageController_;
 	int id = (int)argv[0].as_real();
-	ref_count_ptr<StgShotObject>::unsync obj = ref_count_ptr<StgShotObject>::unsync::DownCast(script->GetObject(id));
+	auto src2 = script->GetObject(id);
+	ref_count_ptr<StgShotObject>::unsync obj = ref_count_ptr<StgShotObject>::unsync::DownCast(src2);
 	if (obj == NULL)
 		return value();
 	if (obj->GetDelay() > 0)
@@ -3419,7 +3444,8 @@ gstd::value StgStageScript::Func_ObjShot_SetIntersectionCircleA2(gstd::script_ma
 	ref_count_weak_ptr<StgShotObject>::unsync wObj = obj;
 
 	//当たり判定
-	ref_count_ptr<StgIntersectionTarget_Circle>::unsync target = ref_count_ptr<StgIntersectionTarget_Circle>::unsync::DownCast(intersectionManager->GetPoolObject(StgIntersectionTarget::SHAPE_CIRCLE));
+	auto src = intersectionManager->GetPoolObject(StgIntersectionTarget::SHAPE_CIRCLE);
+	ref_count_ptr<StgIntersectionTarget_Circle>::unsync target = ref_count_ptr<StgIntersectionTarget_Circle>::unsync::DownCast(src);
 	target->SetTargetType(typeTarget);
 	target->SetCircle(circle);
 	target->SetObject(wObj);
@@ -3434,7 +3460,8 @@ gstd::value StgStageScript::Func_ObjShot_SetIntersectionLine(gstd::script_machin
 	StgStageController* stageController = script->stageController_;
 
 	int id = (int)argv[0].as_real();
-	ref_count_ptr<StgShotObject>::unsync obj = ref_count_ptr<StgShotObject>::unsync::DownCast(script->GetObject(id));
+	auto src = script->GetObject(id);
+	ref_count_ptr<StgShotObject>::unsync obj = ref_count_ptr<StgShotObject>::unsync::DownCast(src);
 	if (obj == NULL)
 		return value();
 	if (obj->GetDelay() > 0)
@@ -3453,7 +3480,8 @@ gstd::value StgStageScript::Func_ObjShot_SetIntersectionLine(gstd::script_machin
 
 	//当たり判定
 	ref_count_weak_ptr<StgShotObject>::unsync wObjShot = obj;
-	ref_count_ptr<StgIntersectionTarget_Line>::unsync target = ref_count_ptr<StgIntersectionTarget_Line>::unsync::DownCast(intersectionManager->GetPoolObject(StgIntersectionTarget::SHAPE_LINE));
+	auto src2 = intersectionManager->GetPoolObject(StgIntersectionTarget::SHAPE_LINE);
+	ref_count_ptr<StgIntersectionTarget_Line>::unsync target = ref_count_ptr<StgIntersectionTarget_Line>::unsync::DownCast(src2);
 	target->SetTargetType(typeTarget);
 	target->SetObject(wObjShot);
 	target->SetLine(line);
@@ -3711,8 +3739,8 @@ gstd::value StgStageScript::Func_ObjCrLaser_SetTipDecrement(gstd::script_machine
 		return value();
 
 	double dec = argv[1].as_real();
-	dec = min(dec, 1);
-	dec = max(dec, 0);
+	dec = _MIN(dec, 1);
+	dec = _MAX(dec, 0);
 	obj->SetTipDecrement(dec);
 
 	return value();
@@ -3745,7 +3773,8 @@ gstd::value StgStageScript::Func_ObjItem_Regist(gstd::script_machine* machine, i
 
 	int id = (int)argv[0].as_real();
 
-	ref_count_ptr<StgItemObject>::unsync objItem = ref_count_ptr<StgItemObject>::unsync::DownCast(stageController->GetMainRenderObject(id));
+	auto src = stageController->GetMainRenderObject(id);
+	ref_count_ptr<StgItemObject>::unsync objItem = ref_count_ptr<StgItemObject>::unsync::DownCast(src);
 	if (objItem != NULL) {
 		StgItemManager* itemManager = stageController->GetItemManager();
 		itemManager->AddItem(objItem);
@@ -3838,7 +3867,8 @@ gstd::value StgStageScript::Func_ObjPlayer_AddIntersectionCircleA1(gstd::script_
 {
 	DxScript* script = (DxScript*)machine->data;
 	int id = (int)argv[0].as_real();
-	ref_count_ptr<StgPlayerObject>::unsync obj = ref_count_ptr<StgPlayerObject>::unsync::DownCast(script->GetObject(id));
+	auto src = script->GetObject(id);
+	ref_count_ptr<StgPlayerObject>::unsync obj = ref_count_ptr<StgPlayerObject>::unsync::DownCast(src);
 	if (obj == NULL)
 		return value();
 
@@ -3869,7 +3899,8 @@ gstd::value StgStageScript::Func_ObjPlayer_AddIntersectionCircleA2(gstd::script_
 {
 	DxScript* script = (DxScript*)machine->data;
 	int id = (int)argv[0].as_real();
-	ref_count_ptr<StgPlayerObject>::unsync obj = ref_count_ptr<StgPlayerObject>::unsync::DownCast(script->GetObject(id));
+	auto src = script->GetObject(id);
+	ref_count_ptr<StgPlayerObject>::unsync obj = ref_count_ptr<StgPlayerObject>::unsync::DownCast(src);
 	if (obj == NULL)
 		return value();
 
@@ -3893,7 +3924,8 @@ gstd::value StgStageScript::Func_ObjPlayer_ClearIntersection(gstd::script_machin
 {
 	DxScript* script = (DxScript*)machine->data;
 	int id = (int)argv[0].as_real();
-	ref_count_ptr<StgPlayerObject>::unsync obj = ref_count_ptr<StgPlayerObject>::unsync::DownCast(script->GetObject(id));
+	auto src = script->GetObject(id);
+	ref_count_ptr<StgPlayerObject>::unsync obj = ref_count_ptr<StgPlayerObject>::unsync::DownCast(src);
 	if (obj == NULL)
 		return value();
 	obj->ClearIntersectionRelativeTarget();
@@ -3910,7 +3942,8 @@ gstd::value StgStageScript::Func_ObjCol_IsIntersected(gstd::script_machine* mach
 	if (objBase == NULL)
 		return value();
 
-	ref_count_ptr<StgIntersectionObject>::unsync obj = ref_count_ptr<StgIntersectionObject>::unsync::DownCast(script->GetObject(id));
+	auto src = script->GetObject(id);
+	ref_count_ptr<StgIntersectionObject>::unsync obj = ref_count_ptr<StgIntersectionObject>::unsync::DownCast(src);
 	if (obj == NULL)
 		return value();
 
@@ -3925,7 +3958,8 @@ gstd::value StgStageScript::Func_ObjCol_GetListOfIntersectedEnemyID(gstd::script
 	if (objBase == NULL)
 		return value();
 
-	ref_count_ptr<StgIntersectionObject>::unsync obj = ref_count_ptr<StgIntersectionObject>::unsync::DownCast(script->GetObject(id));
+	auto src2 = script->GetObject(id);
+	ref_count_ptr<StgIntersectionObject>::unsync obj = ref_count_ptr<StgIntersectionObject>::unsync::DownCast(src2);
 	if (obj == NULL)
 		return value();
 
@@ -3933,7 +3967,8 @@ gstd::value StgStageScript::Func_ObjCol_GetListOfIntersectedEnemyID(gstd::script
 	std::vector<long double> listLD;
 	for (int iList = 0; iList < list.size(); iList++) {
 		int idObject = list[iList];
-		ref_count_ptr<StgEnemyObject>::unsync objEnemy = ref_count_ptr<StgEnemyObject>::unsync::DownCast(script->GetObject(idObject));
+		auto src = script->GetObject(idObject);
+		ref_count_ptr<StgEnemyObject>::unsync objEnemy = ref_count_ptr<StgEnemyObject>::unsync::DownCast(src);
 		if (objEnemy != NULL)
 			listLD.push_back(idObject);
 	}
@@ -3945,7 +3980,8 @@ gstd::value StgStageScript::Func_ObjCol_GetIntersectedCount(gstd::script_machine
 {
 	DxScript* script = (DxScript*)machine->data;
 	int id = (int)argv[0].as_real();
-	ref_count_ptr<StgIntersectionObject>::unsync obj = ref_count_ptr<StgIntersectionObject>::unsync::DownCast(script->GetObject(id));
+	auto src = script->GetObject(id);
+	ref_count_ptr<StgIntersectionObject>::unsync obj = ref_count_ptr<StgIntersectionObject>::unsync::DownCast(src);
 	if (obj == NULL)
 		return value(machine->get_engine()->get_real_type(), (long double)0);
 
@@ -4174,7 +4210,8 @@ gstd::value StgStagePlayerScript::Func_ObjSpell_Regist(gstd::script_machine* mac
 	StgStageController* stageController = script->stageController_;
 
 	int id = (int)argv[0].as_real();
-	ref_count_ptr<StgPlayerSpellObject>::unsync objSpell = ref_count_ptr<StgPlayerSpellObject>::unsync::DownCast(stageController->GetMainRenderObject(id));
+	auto src = stageController->GetMainRenderObject(id);
+	ref_count_ptr<StgPlayerSpellObject>::unsync objSpell = ref_count_ptr<StgPlayerSpellObject>::unsync::DownCast(src);
 	if (objSpell != NULL) {
 		script->ActivateObject(objSpell->GetObjectID(), true);
 	}
@@ -4187,7 +4224,8 @@ gstd::value StgStagePlayerScript::Func_ObjSpell_SetDamage(gstd::script_machine* 
 	StgStageController* stageController = script->stageController_;
 
 	int id = (int)argv[0].as_real();
-	ref_count_ptr<StgPlayerSpellObject>::unsync objSpell = ref_count_ptr<StgPlayerSpellObject>::unsync::DownCast(stageController->GetMainRenderObject(id));
+	auto src2 = stageController->GetMainRenderObject(id);
+	ref_count_ptr<StgPlayerSpellObject>::unsync objSpell = ref_count_ptr<StgPlayerSpellObject>::unsync::DownCast(src2);
 	if (objSpell == NULL)
 		return value();
 
@@ -4201,7 +4239,8 @@ gstd::value StgStagePlayerScript::Func_ObjSpell_SetPenetration(gstd::script_mach
 	StgStageController* stageController = script->stageController_;
 
 	int id = (int)argv[0].as_real();
-	ref_count_ptr<StgPlayerSpellObject>::unsync objSpell = ref_count_ptr<StgPlayerSpellObject>::unsync::DownCast(stageController->GetMainRenderObject(id));
+	auto src = stageController->GetMainRenderObject(id);
+	ref_count_ptr<StgPlayerSpellObject>::unsync objSpell = ref_count_ptr<StgPlayerSpellObject>::unsync::DownCast(src);
 	if (objSpell == NULL)
 		return value();
 
@@ -4215,7 +4254,8 @@ gstd::value StgStagePlayerScript::Func_ObjSpell_SetEraseShot(gstd::script_machin
 	StgStageController* stageController = script->stageController_;
 
 	int id = (int)argv[0].as_real();
-	ref_count_ptr<StgPlayerSpellObject>::unsync objSpell = ref_count_ptr<StgPlayerSpellObject>::unsync::DownCast(stageController->GetMainRenderObject(id));
+	auto src = stageController->GetMainRenderObject(id);
+	ref_count_ptr<StgPlayerSpellObject>::unsync objSpell = ref_count_ptr<StgPlayerSpellObject>::unsync::DownCast(src);
 	if (objSpell == NULL)
 		return value();
 
@@ -4230,7 +4270,8 @@ gstd::value StgStagePlayerScript::Func_ObjSpell_SetIntersectionCircle(gstd::scri
 
 	int id = (int)argv[0].as_real();
 
-	ref_count_ptr<StgPlayerSpellObject>::unsync objSpell = ref_count_ptr<StgPlayerSpellObject>::unsync::DownCast(stageController->GetMainRenderObject(id));
+	auto src = stageController->GetMainRenderObject(id);
+	ref_count_ptr<StgPlayerSpellObject>::unsync objSpell = ref_count_ptr<StgPlayerSpellObject>::unsync::DownCast(src);
 	if (objSpell == NULL)
 		return value();
 
@@ -4242,7 +4283,8 @@ gstd::value StgStagePlayerScript::Func_ObjSpell_SetIntersectionCircle(gstd::scri
 
 	//当たり判定
 	ref_count_weak_ptr<StgPlayerSpellObject>::unsync wObjSpell = objSpell;
-	ref_count_ptr<StgIntersectionTarget_Circle>::unsync target = ref_count_ptr<StgIntersectionTarget_Circle>::unsync::DownCast(intersectionManager->GetPoolObject(StgIntersectionTarget::SHAPE_CIRCLE));
+	auto src2 = intersectionManager->GetPoolObject(StgIntersectionTarget::SHAPE_CIRCLE);
+	ref_count_ptr<StgIntersectionTarget_Circle>::unsync target = ref_count_ptr<StgIntersectionTarget_Circle>::unsync::DownCast(src2);
 	target->SetTargetType(StgIntersectionTarget::TYPE_PLAYER_SPELL);
 	target->SetObject(wObjSpell);
 	target->SetCircle(circle);
@@ -4258,7 +4300,8 @@ gstd::value StgStagePlayerScript::Func_ObjSpell_SetIntersectionLine(gstd::script
 
 	int id = (int)argv[0].as_real();
 
-	ref_count_ptr<StgPlayerSpellObject>::unsync objSpell = ref_count_ptr<StgPlayerSpellObject>::unsync::DownCast(stageController->GetMainRenderObject(id));
+	auto src = stageController->GetMainRenderObject(id);
+	ref_count_ptr<StgPlayerSpellObject>::unsync objSpell = ref_count_ptr<StgPlayerSpellObject>::unsync::DownCast(src);
 	if (objSpell == NULL)
 		return value();
 
@@ -4272,7 +4315,8 @@ gstd::value StgStagePlayerScript::Func_ObjSpell_SetIntersectionLine(gstd::script
 
 	//当たり判定
 	ref_count_weak_ptr<StgPlayerSpellObject>::unsync wObjSpell = objSpell;
-	ref_count_ptr<StgIntersectionTarget_Line>::unsync target = ref_count_ptr<StgIntersectionTarget_Line>::unsync::DownCast(intersectionManager->GetPoolObject(StgIntersectionTarget::SHAPE_LINE));
+	auto src2 = intersectionManager->GetPoolObject(StgIntersectionTarget::SHAPE_LINE);
+	ref_count_ptr<StgIntersectionTarget_Line>::unsync target = ref_count_ptr<StgIntersectionTarget_Line>::unsync::DownCast(src2);
 	target->SetTargetType(StgIntersectionTarget::TYPE_PLAYER_SPELL);
 	target->SetObject(wObjSpell);
 	target->SetLine(line);

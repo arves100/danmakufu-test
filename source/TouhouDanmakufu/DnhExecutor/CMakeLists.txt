@@ -18,8 +18,4 @@ if (WIN32)
 endif()
 
 add_executable(DnhExecutor ${EXECUTOR_SOURCES})
-target_link_libraries(DnhExecutor PRIVATE DnhCommon)
-
-if (WIN32)
-	target_link_libraries(DnhExecutor PRIVATE Shlwapi Comctl32)
-endif()
+target_link_libraries(DnhExecutor PRIVATE DnhCommon ${SDL2_LIBRARIES})

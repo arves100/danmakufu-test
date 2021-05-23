@@ -258,7 +258,7 @@ public:
 	void SetFocus(D3DXVECTOR2 pos) { pos_ = pos; }
 	void SetFocusX(float x) { pos_.x = x; }
 	void SetFocusY(float y) { pos_.y = y; }
-	double GetRatio() { return max(ratioX_, ratioY_); }
+	double GetRatio() { return _MAX(ratioX_, ratioY_); }
 	void SetRatio(double ratio)
 	{
 		ratioX_ = ratio;

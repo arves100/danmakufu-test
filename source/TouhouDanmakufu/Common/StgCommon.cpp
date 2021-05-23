@@ -160,9 +160,9 @@ void StgMovePattern_Angle::Move()
 	if (acceleration_ != 0) {
 		speed_ += acceleration_;
 		if (acceleration_ > 0)
-			speed_ = min(speed_, maxSpeed_);
+			speed_ = _MIN(speed_, maxSpeed_);
 		if (acceleration_ < 0)
-			speed_ = max(speed_, maxSpeed_);
+			speed_ = _MAX(speed_, maxSpeed_);
 	}
 	if (angularVelocity_ != 0) {
 		angDirection_ += angularVelocity_;
@@ -230,16 +230,16 @@ void StgMovePattern_XY::Move()
 	if (accelerationX_ != 0) {
 		speedX_ += accelerationX_;
 		if (accelerationX_ > 0)
-			speedX_ = min(speedX_, maxSpeedX_);
+			speedX_ = _MIN(speedX_, maxSpeedX_);
 		if (accelerationX_ < 0)
-			speedX_ = max(speedX_, maxSpeedX_);
+			speedX_ = _MAX(speedX_, maxSpeedX_);
 	}
 	if (accelerationY_ != 0) {
 		speedY_ += accelerationY_;
 		if (accelerationY_ > 0)
-			speedY_ = min(speedY_, maxSpeedY_);
+			speedY_ = _MIN(speedY_, maxSpeedY_);
 		if (accelerationY_ < 0)
-			speedY_ = max(speedY_, maxSpeedY_);
+			speedY_ = _MAX(speedY_, maxSpeedY_);
 	}
 
 	double px = target_->GetPositionX() + speedX_;

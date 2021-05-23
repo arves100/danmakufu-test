@@ -64,7 +64,7 @@ void MenuTask::_MoveCursor()
 				}
 				cursorX_ = countCurrentPageMaxX;
 			}
-			cursorY_ = min(cursorY_, GetCurrentPageMaxY());
+			cursorY_ = _MIN(cursorY_, GetCurrentPageMaxY());
 		} else if (stateCursor == CURSOR_RIGHT) {
 			cursorX_++;
 			if (cursorX_ > countCurrentPageMaxX) {
@@ -75,7 +75,7 @@ void MenuTask::_MoveCursor()
 				}
 				cursorX_ = 0;
 			}
-			cursorY_ = min(cursorY_, GetCurrentPageMaxY());
+			cursorY_ = _MIN(cursorY_, GetCurrentPageMaxY());
 		} else if (stateCursor == CURSOR_UP) {
 			cursorY_--;
 			if (cursorY_ < 0) {
@@ -161,7 +161,7 @@ int MenuTask::GetPageCount()
 		Lock lock(cs_);
 		int countOnePage = (pageMaxX_ + 1) * (pageMaxY_ + 1);
 		int countItem = item_.size();
-		res = max(1, (countItem - 1) / countOnePage + 1);
+		res = _MAX(1, (countItem - 1) / countOnePage + 1);
 	}
 	return res;
 }
@@ -192,19 +192,19 @@ int MenuTask::GetCurrentPageItemCount()
 {
 	int countItem = item_.size();
 	int countCurrentPageItem = countItem - ((pageMaxX_ + 1) * (pageMaxY_ + 1)) * (pageCurrent_ - 1);
-	countCurrentPageItem = min(countCurrentPageItem, (pageMaxX_ + 1) * (pageMaxY_ + 1));
+	countCurrentPageItem = _MIN(countCurrentPageItem, (pageMaxX_ + 1) * (pageMaxY_ + 1));
 	return countCurrentPageItem;
 }
 int MenuTask::GetCurrentPageMaxX()
 {
 	int countCurrentPageItem = GetCurrentPageItemCount();
-	int countCurrentPageMaxX = min(pageMaxX_, max(0, countCurrentPageItem - 1));
+	int countCurrentPageMaxX = _MIN(pageMaxX_, _MAX(0, countCurrentPageItem - 1));
 	return countCurrentPageMaxX;
 }
 int MenuTask::GetCurrentPageMaxY()
 {
 	int countCurrentPageItem = GetCurrentPageItemCount();
-	int countCurrentPageMaxY = min(pageMaxY_, max(0, (countCurrentPageItem - 1) / (pageMaxX_ + 1)));
+	int countCurrentPageMaxY = _MIN(pageMaxY_, _MAX(0, (countCurrentPageItem - 1) / (pageMaxX_ + 1)));
 	return countCurrentPageMaxY;
 }
 

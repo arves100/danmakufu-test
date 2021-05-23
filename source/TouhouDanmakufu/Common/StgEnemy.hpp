@@ -60,7 +60,7 @@ public:
 	void AddLife(double inc)
 	{
 		life_ += inc;
-		life_ = max(life_, 0);
+		life_ = _MAX(life_, 0);
 	}
 	void SetDamageRate(double rateShot, double rateSpell)
 	{

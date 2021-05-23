@@ -124,8 +124,8 @@ public:
 	int GetAlpha() { return alpha_; }
 	D3DCOLOR GetDelayColor() { return colorDelay_; }
 	std::vector<DxCircle>* GetIntersectionCircleList() { return &listCol_; }
-	double GetAngularVelocityMin() { return angularVelocityMin_; }
-	double GetAngularVelocityMax() { return angularVelocityMax_; }
+	double GetAngularVelocity_MIN() { return angularVelocityMin_; }
+	double GetAngularVelocity_MAX() { return angularVelocityMax_; }
 	bool IsFixedAngle() { return bFixedAngle_; }
 
 	ref_count_ptr<Texture> GetTexture();

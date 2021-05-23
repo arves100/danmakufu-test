@@ -230,7 +230,8 @@ void ScriptManager::CallFromLoadThread(gstd::ref_count_ptr<gstd::FileManager::Lo
 {
 	std::wstring path = event->GetPath();
 
-	ref_count_ptr<ManagedScript> script = ref_count_ptr<ManagedScript>::DownCast(event->GetSource());
+	auto src = event->GetSource();
+	ref_count_ptr<ManagedScript> script = ref_count_ptr<ManagedScript>::DownCast(src);
 	if (script == NULL || script->IsLoad())
 		return;
 
@@ -242,7 +243,7 @@ void ScriptManager::CallFromLoadThread(gstd::ref_count_ptr<gstd::FileManager::Lo
 		SetError(e.what());
 	}
 }
-void ScriptManager::RequestEventAll(int type, std::vector<gstd::value>& listValue)
+void ScriptManager::RequestEventAll(int type, std::vector<gstd::value> listValue)
 {
 	{
 		std::list<ref_count_ptr<ManagedScript>>::iterator itrScript = listScriptRun_.begin();
@@ -331,7 +332,7 @@ void ManagedScript::SetScriptManager(ScriptManager* manager)
 	mainThreadID_ = scriptManager_->GetMainThreadID();
 	idScript_ = scriptManager_->IssueScriptID();
 }
-gstd::value ManagedScript::RequestEvent(int type, std::vector<gstd::value>& listValue)
+gstd::value ManagedScript::RequestEvent(int type, std::vector<gstd::value> listValue)
 {
 	gstd::value res;
 	std::string event = "Event";

@@ -191,7 +191,7 @@ void StgSystemController::RenderScriptObject()
 		int countRender = 0;
 		if (scene == StgSystemInformation::SCENE_STG && stageController_ != NULL) {
 			ref_count_ptr<StgStageScriptObjectManager> objectManagerStage = stageController_->GetMainObjectManager();
-			countRender = max(objectManagerStage->GetRenderBucketCapacity() - 1, countRender);
+			countRender = _MAX(objectManagerStage->GetRenderBucketCapacity() - 1, countRender);
 
 			ref_count_ptr<StgStageInformation> infoStage = stageController_->GetStageInformation();
 			bReplay = infoStage->IsReplay();
@@ -199,11 +199,11 @@ void StgSystemController::RenderScriptObject()
 
 		if (infoSystem_->IsPackageMode()) {
 			ref_count_ptr<DxScriptObjectManager> objectManagerPackage = packageController_->GetMainObjectManager();
-			countRender = max(objectManagerPackage->GetRenderBucketCapacity() - 1, countRender);
+			countRender = _MAX(objectManagerPackage->GetRenderBucketCapacity() - 1, countRender);
 		}
 
-		int invalidPriMin = infoSystem_->GetInvaridRenderPriorityMin();
-		int invalidPriMax = infoSystem_->GetInvaridRenderPriorityMax();
+		int invalidPriMin = infoSystem_->GetInvaridRenderPriority_MIN();
+		int invalidPriMax = infoSystem_->GetInvaridRenderPriority_MAX();
 		if (invalidPriMin < 0 && invalidPriMax < 0) {
 			RenderScriptObject(0, countRender);
 		} else {
@@ -322,8 +322,8 @@ void StgSystemController::RenderScriptObject(int priMin, int priMax)
 	int priShot = stageInfo->GetShotObjectPriority();
 	int priItem = stageInfo->GetItemObjectPriority();
 	int priCamera = stageInfo->GetCameraFocusPermitPriority();
-	int invalidPriMin = infoSystem_->GetInvaridRenderPriorityMin();
-	int invalidPriMax = infoSystem_->GetInvaridRenderPriorityMax();
+	int invalidPriMin = infoSystem_->GetInvaridRenderPriority_MIN();
+	int invalidPriMax = infoSystem_->GetInvaridRenderPriority_MAX();
 
 	std::vector<bool> listShotValidPriority;
 	std::vector<bool> listItemValidPriority;
@@ -409,7 +409,7 @@ void StgSystemController::RenderScriptObject(int priMin, int priMax)
 					if (!bClearZBufferFor2DCoordinate) {
 						DxScriptMeshObject* objMesh = dynamic_cast<DxScriptMeshObject*>((*itr).GetPointer());
 						if (objMesh != NULL) {
-							gstd::ref_count_ptr<DxMesh>& mesh = objMesh->GetMesh();
+							gstd::ref_count_ptr<DxMesh> mesh = objMesh->GetMesh();
 							if (mesh != NULL && mesh->IsCoordinate2D()) {
 								graphics->GetDevice()->Clear(0, NULL, D3DCLEAR_ZBUFFER, D3DCOLOR_XRGB(0, 0, 0), 1.0, 0);
 								bClearZBufferFor2DCoordinate = true;
@@ -440,7 +440,7 @@ void StgSystemController::RenderScriptObject(int priMin, int priMax)
 					if (!bClearZBufferFor2DCoordinate) {
 						DxScriptMeshObject* objMesh = dynamic_cast<DxScriptMeshObject*>((*itr).GetPointer());
 						if (objMesh != NULL) {
-							gstd::ref_count_ptr<DxMesh>& mesh = objMesh->GetMesh();
+							gstd::ref_count_ptr<DxMesh> mesh = objMesh->GetMesh();
 							if (mesh != NULL && mesh->IsCoordinate2D()) {
 								graphics->GetDevice()->Clear(0, NULL, D3DCLEAR_ZBUFFER, D3DCOLOR_XRGB(0, 0, 0), 1.0, 0);
 								bClearZBufferFor2DCoordinate = true;

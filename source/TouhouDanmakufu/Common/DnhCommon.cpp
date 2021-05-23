@@ -368,12 +368,12 @@ bool DnhConfiguration::_LoadDefintionFile()
 	windowTitle_ = prop.GetString("window.title");
 
 	screenWidth_ = prop.GetInteger(L"screen.width", 640); // + ::GetSystemMetrics(SM_CXEDGE) + 10
-	screenWidth_ = max(screenWidth_, 640); // + ::GetSystemMetrics(SM_CXEDGE) + 10
-	screenWidth_ = min(screenWidth_, 1920); // + ::GetSystemMetrics(SM_CXEDGE) + 10
+	screenWidth_ = _MAX(screenWidth_, 640); // + ::GetSystemMetrics(SM_CXEDGE) + 10
+	screenWidth_ = _MIN(screenWidth_, 1920); // + ::GetSystemMetrics(SM_CXEDGE) + 10
 
 	screenHeight_ = prop.GetInteger(L"screen.height", 480); // +::GetSystemMetrics(SM_CXEDGE) + 10
-	screenHeight_ = max(screenHeight_, 480); // +::GetSystemMetrics(SM_CXEDGE) + 10
-	screenHeight_ = min(screenHeight_, 1200); // +::GetSystemMetrics(SM_CXEDGE) + 10
+	screenHeight_ = _MAX(screenHeight_, 480); // +::GetSystemMetrics(SM_CXEDGE) + 10
+	screenHeight_ = _MIN(screenHeight_, 1200); // +::GetSystemMetrics(SM_CXEDGE) + 10
 
 	return true;
 }

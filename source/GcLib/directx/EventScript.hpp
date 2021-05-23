@@ -35,7 +35,7 @@ public:
 	int GetCodeCount() { return code_.size(); }
 	void AddCode(gstd::ref_count_ptr<EventScriptCode> code);
 	gstd::ref_count_ptr<EventScriptCode> GetCode(int index) { return code_[index]; }
-	gstd::ref_count_ptr<EventScriptBlock_Main> GetEventBlock(std::string name);
+	gstd::ref_count_ptr<EventScriptBlock_Main>* GetEventBlock(std::string name);
 
 protected:
 	std::vector<gstd::ref_count_ptr<EventScriptCode>> code_;

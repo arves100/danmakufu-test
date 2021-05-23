@@ -473,7 +473,7 @@ void StgShotDataList::_ScanShot(std::vector<ref_count_ptr<StgShotData>::unsync>&
 			RECT rect = data->rcSrc_;
 			int rx = abs(rect.right - rect.left);
 			int ry = abs(rect.bottom - rect.top);
-			int r = min(rx, ry);
+			int r = _MIN(rx, ry);
 			r = r / 3 - 3;
 			if (r <= 3)
 				r = 3;
@@ -635,7 +635,7 @@ StgShotRenderer::StgShotRenderer()
 int StgShotRenderer::GetVertexCount()
 {
 	int res = countRenderVertex_;
-	res = min(countRenderVertex_, vertex_.GetSize() / strideVertexStreamZero_);
+	res = _MIN(countRenderVertex_, vertex_.GetSize() / strideVertexStreamZero_);
 	return res;
 }
 void StgShotRenderer::Render()
@@ -774,7 +774,7 @@ void StgShotObject::_DeleteInAutoDeleteFrame()
 		objectManager->DeleteObject(idObject_);
 		return;
 	}
-	frameAutoDelete_ = max(0, frameAutoDelete_ - 1);
+	frameAutoDelete_ = _MAX(0, frameAutoDelete_ - 1);
 }
 void StgShotObject::_SendDeleteEvent(int bit)
 {
@@ -832,7 +832,8 @@ void StgShotObject::_AddReservedShotWork()
 	for (; itr != list->end(); itr++) {
 		StgShotObject::ReserveShotListData& data = (*itr);
 		int idShot = data.GetShotID();
-		ref_count_ptr<StgShotObject>::unsync obj = ref_count_ptr<StgShotObject>::unsync::DownCast(objectManager->GetObject(idShot));
+		auto src = objectManager->GetObject(idShot);
+		ref_count_ptr<StgShotObject>::unsync obj = ref_count_ptr<StgShotObject>::unsync::DownCast(src);
 		if (obj == NULL || obj->IsDeleted())
 			continue;
 		_AddReservedShot(obj, &data);
@@ -882,7 +883,8 @@ StgShotData* StgShotObject::_GetShotData()
 }
 ref_count_ptr<StgShotObject>::unsync StgShotObject::GetOwnObject()
 {
-	return ref_count_ptr<StgShotObject>::unsync::DownCast(stageController_->GetMainRenderObject(idObject_));
+	auto src = stageController_->GetMainRenderObject(idObject_);
+	return ref_count_ptr<StgShotObject>::unsync::DownCast(src);
 }
 void StgShotObject::_SetVertexPosition(VERTEX_TLX& vertex, float x, float y, float z, float w)
 {
@@ -994,7 +996,8 @@ void StgShotObject::ReserveShotList::Clear(StgStageController* stageController)
 		for (; itr != list->end(); itr++) {
 			StgShotObject::ReserveShotListData& data = (*itr);
 			int idShot = data.GetShotID();
-			ref_count_ptr<StgShotObject>::unsync objShot = ref_count_ptr<StgShotObject>::unsync::DownCast(objectManager->GetObject(idShot));
+			auto src = objectManager->GetObject(idShot);
+			ref_count_ptr<StgShotObject>::unsync objShot = ref_count_ptr<StgShotObject>::unsync::DownCast(src);
 			if (objShot != NULL)
 				objShot->ClearShotObject();
 			objectManager->DeleteObject(idShot);
@@ -1021,7 +1024,7 @@ void StgNormalShotObject::Work()
 		_AddReservedShotWork();
 	}
 
-	delay_ = max(delay_ - 1, 0);
+	delay_ = _MAX(delay_ - 1, 0);
 	frameWork_++;
 
 	angle_.z += angularVelocity_;
@@ -1065,7 +1068,8 @@ void StgNormalShotObject::_AddIntersectionRelativeTarget()
 		ref_count_weak_ptr<StgShotObject>::unsync wObj = obj;
 
 		for (int iTarget = 0; iTarget < listCircle->size(); iTarget++) {
-			ref_count_ptr<StgIntersectionTarget_Circle>::unsync target = ref_count_ptr<StgIntersectionTarget_Circle>::unsync::DownCast(intersectionManager->GetPoolObject(StgIntersectionTarget::SHAPE_CIRCLE));
+			auto src = intersectionManager->GetPoolObject(StgIntersectionTarget::SHAPE_CIRCLE);
+			ref_count_ptr<StgIntersectionTarget_Circle>::unsync target = ref_count_ptr<StgIntersectionTarget_Circle>::unsync::DownCast(src);
 			if (typeOwner_ == OWNER_PLAYER)
 				target->SetTargetType(StgIntersectionTarget::TYPE_PLAYER_SHOT);
 			else
@@ -1142,7 +1146,8 @@ std::vector<ref_count_ptr<StgIntersectionTarget>::unsync> StgNormalShotObject::G
 	StgIntersectionManager* intersectionManager = stageController_->GetIntersectionManager();
 
 	for (int iCircle = 0; iCircle < listCircle->size(); iCircle++) {
-		ref_count_ptr<StgIntersectionTarget_Circle>::unsync target = ref_count_ptr<StgIntersectionTarget_Circle>::unsync::DownCast(intersectionManager->GetPoolObject(StgIntersectionTarget::SHAPE_CIRCLE));
+		auto src = intersectionManager->GetPoolObject(StgIntersectionTarget::SHAPE_CIRCLE);
+		ref_count_ptr<StgIntersectionTarget_Circle>::unsync target = ref_count_ptr<StgIntersectionTarget_Circle>::unsync::DownCast(src);
 		StgIntersectionTarget_Circle* cTarget = (StgIntersectionTarget_Circle*)target.GetPointer();
 
 		DxCircle circle = listCircle->at(iCircle);
@@ -1329,7 +1334,7 @@ void StgNormalShotObject::Intersect(ref_count_ptr<StgIntersectionTarget>::unsync
 	}
 
 	if (life_ != LIFE_SPELL_REGIST)
-		life_ = max(life_ - damage, 0);
+		life_ = _MAX(life_ - damage, 0);
 }
 void StgNormalShotObject::_ConvertToItemAndSendEvent()
 {
@@ -1381,8 +1386,8 @@ void StgNormalShotObject::SetShotDataID(int id)
 			angle_.z = 0;
 		}
 
-		double avMin = shotData->GetAngularVelocityMin();
-		double avMax = shotData->GetAngularVelocityMax();
+		double avMin = shotData->GetAngularVelocity_MIN();
+		double avMax = shotData->GetAngularVelocity_MAX();
 		if (avMin != 0 || avMax != 0) {
 			ref_count_ptr<StgStageInformation> stageInfo = stageController_->GetStageInformation();
 			ref_count_ptr<MersenneTwister> rand = stageInfo->GetMersenneTwister();
@@ -1475,7 +1480,7 @@ void StgLaserObject::Intersect(ref_count_ptr<StgIntersectionTarget>::unsync ownT
 	}
 	}
 	if (life_ != LIFE_SPELL_REGIST)
-		life_ = max(life_ - damage, 0);
+		life_ = _MAX(life_ - damage, 0);
 }
 
 /**********************************************************
@@ -1498,7 +1503,7 @@ void StgLooseLaserObject::Work()
 	if (delay_ == 0)
 		_AddReservedShotWork();
 
-	delay_ = max(delay_ - 1, 0);
+	delay_ = _MAX(delay_ - 1, 0);
 	frameWork_++;
 
 	if (frameFadeDelete_ >= 0)
@@ -1568,10 +1573,10 @@ std::vector<ref_count_ptr<StgIntersectionTarget>::unsync> StgLooseLaserObject::G
 	//当たり判定
 	double ang = GetDirectionAngle();
 	int length = pow(pow(posXE_ - posX_, 2) + pow(posYE_ - posY_, 2), 0.5);
-	int invalidLengthS = min(length, invalidLengthStart_);
+	int invalidLengthS = _MIN(length, invalidLengthStart_);
 	int posXS = posX_ - invalidLengthS * cos(Math::DegreeToRadian(ang));
 	int posYS = posY_ - invalidLengthS * sin(Math::DegreeToRadian(ang));
-	int invalidLengthE = min(length, invalidLengthEnd_);
+	int invalidLengthE = _MIN(length, invalidLengthEnd_);
 	int posXE = posXE_ + invalidLengthE * cos(Math::DegreeToRadian(ang));
 	int posYE = posYE_ + invalidLengthE * sin(Math::DegreeToRadian(ang));
 
@@ -1579,7 +1584,8 @@ std::vector<ref_count_ptr<StgIntersectionTarget>::unsync> StgLooseLaserObject::G
 	DxWidthLine line(posXS, posYS, posXE, posYE, widthIntersection_);
 
 	ref_count_weak_ptr<StgShotObject>::unsync wObj = obj;
-	ref_count_ptr<StgIntersectionTarget_Line>::unsync target = ref_count_ptr<StgIntersectionTarget_Line>::unsync::DownCast(intersectionManager->GetPoolObject(StgIntersectionTarget::SHAPE_LINE));
+	auto src = intersectionManager->GetPoolObject(StgIntersectionTarget::SHAPE_LINE);
+	ref_count_ptr<StgIntersectionTarget_Line>::unsync target = ref_count_ptr<StgIntersectionTarget_Line>::unsync::DownCast(src);
 	if (typeOwner_ == OWNER_PLAYER)
 		target->SetTargetType(StgIntersectionTarget::TYPE_PLAYER_SHOT);
 	else
@@ -1760,9 +1766,9 @@ void StgStraightLaserObject::Work()
 	if (delay_ == 0)
 		_AddReservedShotWork();
 
-	delay_ = max(delay_ - 1, 0);
+	delay_ = _MAX(delay_ - 1, 0);
 	if (delay_ <= 0)
-		scaleX_ = min(1.0, scaleX_ + 0.1);
+		scaleX_ = _MIN(1.0, scaleX_ + 0.1);
 
 	frameWork_++;
 
@@ -1802,7 +1808,7 @@ void StgStraightLaserObject::_DeleteInAutoDeleteFrame()
 
 	if (frameAutoDelete_ <= 0)
 		SetFadeDelete();
-	frameAutoDelete_ = max(0, frameAutoDelete_ - 1);
+	frameAutoDelete_ = _MAX(0, frameAutoDelete_ - 1);
 }
 std::vector<ref_count_ptr<StgIntersectionTarget>::unsync> StgStraightLaserObject::GetIntersectionTargetList()
 {
@@ -1827,7 +1833,7 @@ std::vector<ref_count_ptr<StgIntersectionTarget>::unsync> StgStraightLaserObject
 	//当たり判定
 	int posXS = posX_ + invalidLengthStart_ * cos(Math::DegreeToRadian(angLaser_));
 	int posYS = posY_ + invalidLengthStart_ * sin(Math::DegreeToRadian(angLaser_));
-	int length = max((length_ - invalidLengthEnd_), 0);
+	int length = _MAX((length_ - invalidLengthEnd_), 0);
 	int posXE = posX_ + (int)(length * cos(Math::DegreeToRadian(angLaser_)));
 	int posYE = posY_ + (int)(length * sin(Math::DegreeToRadian(angLaser_)));
 
@@ -1838,7 +1844,8 @@ std::vector<ref_count_ptr<StgIntersectionTarget>::unsync> StgStraightLaserObject
 		return res;
 
 	ref_count_weak_ptr<StgShotObject>::unsync wObj = obj;
-	ref_count_ptr<StgIntersectionTarget_Line>::unsync target = ref_count_ptr<StgIntersectionTarget_Line>::unsync::DownCast(intersectionManager->GetPoolObject(StgIntersectionTarget::SHAPE_LINE));
+	auto src = intersectionManager->GetPoolObject(StgIntersectionTarget::SHAPE_LINE);
+	ref_count_ptr<StgIntersectionTarget_Line>::unsync target = ref_count_ptr<StgIntersectionTarget_Line>::unsync::DownCast(src);
 	if (typeOwner_ == OWNER_PLAYER)
 		target->SetTargetType(StgIntersectionTarget::TYPE_PLAYER_SHOT);
 	else
@@ -2061,7 +2068,7 @@ void StgCurveLaserObject::Work()
 	if (delay_ == 0)
 		_AddReservedShotWork();
 
-	delay_ = max(delay_ - 1, 0);
+	delay_ = _MAX(delay_ - 1, 0);
 	frameWork_++;
 
 	if (frameFadeDelete_ >= 0)
@@ -2155,19 +2162,20 @@ std::vector<ref_count_ptr<StgIntersectionTarget>::unsync> StgCurveLaserObject::G
 /*
 		if (iPos == 0) {
 			double ang = atan2(posYE - posYS, posXE - posXS);
-			int length = min(0, invalidLengthStart_);
+			int length = _MIN(0, invalidLengthStart_);
 			posXS = posXS + length * cos(ang);
 			posYS = posYS + length * sin(ang);
 		}
 		if (iPos == countPos - 2) {
 			double ang = atan2(posYE - posYS, posXE - posXS);
-			int length = max(invalidLengthEnd_, 0);
+			int length = _MAX(invalidLengthEnd_, 0);
 			posXE = posXE - length * cos(ang);
 			posYE = posYE - length * sin(ang);
 		}
 */
 		DxWidthLine line(posXS, posYS, posXE, posYE, widthIntersection_);
-		ref_count_ptr<StgIntersectionTarget_Line>::unsync target = ref_count_ptr<StgIntersectionTarget_Line>::unsync::DownCast(intersectionManager->GetPoolObject(StgIntersectionTarget::SHAPE_LINE));
+		auto src = intersectionManager->GetPoolObject(StgIntersectionTarget::SHAPE_LINE);
+		ref_count_ptr<StgIntersectionTarget_Line>::unsync target = ref_count_ptr<StgIntersectionTarget_Line>::unsync::DownCast(src);
 		if (typeOwner_ == OWNER_PLAYER)
 			target->SetTargetType(StgIntersectionTarget::TYPE_PLAYER_SHOT);
 		else
@@ -2277,7 +2285,7 @@ void StgCurveLaserObject::RenderOnShotManager(D3DXMATRIX& mat)
 	} else {
 		int countPos = listPosition_.size();
 		RECT rcSrcOrg = shotData->GetRect(frameWork_);
-		double rate = (double)(rcSrcOrg.bottom - rcSrcOrg.top) / (double)max(countPos, 1);
+		double rate = (double)(rcSrcOrg.bottom - rcSrcOrg.top) / (double)_MAX(countPos, 1);
 
 		color = color_;
 		double alpha = shotData->GetAlpha() / 255.0;
@@ -2340,7 +2348,7 @@ void StgCurveLaserObject::RenderOnShotManager(D3DXMATRIX& mat)
 				tAlpha -= dAlpha;
 			else if (iPos < countRect / 2)
 				tAlpha = iPos * 256 / (countRect / 2) + (255 - tipDecrement_ * 255.);
-			tAlpha = max(0, tAlpha);
+			tAlpha = _MAX(0, tAlpha);
 
 			D3DCOLOR tColor = color;
 			bool bValidAlpha = StgShotData::IsAlphaBlendValidType(shotBlendType);
