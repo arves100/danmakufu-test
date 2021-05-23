@@ -27,6 +27,8 @@ if (WIN32)
 			set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /MT")
 			set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} /MTd")
 		endif()
+	else()
+		set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -municode -mwindows")
 	endif()
 
 	add_definitions(-DUNICODE -D_UNICODE -D_WIN32_WINNT=0x0601) # Default target Win7
