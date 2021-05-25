@@ -19,3 +19,4 @@ endif()
 
 add_executable(DnhExecutor ${EXECUTOR_SOURCES})
 target_link_libraries(DnhExecutor PRIVATE DnhCommon ${SDL2_LIBRARIES})
+target_include_directories(DnhExecutor PRIVATE ${CMAKE_BINARY_DIR})

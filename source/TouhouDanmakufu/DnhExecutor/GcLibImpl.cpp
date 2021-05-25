@@ -1,6 +1,7 @@
 #include "GcLibImpl.hpp"
 #include "StgScene.hpp"
 #include "System.hpp"
+#include "Version.h"
 
 /**********************************************************
 //EApplication
@@ -102,6 +103,33 @@ bool EApplication::_Loop()
 	if (!fpsController->IsSkip()) {
 		graphics->BeginScene();
 		taskManager->CallRenderFunction();
+
+#ifdef _DEBUG
+		DxText dxs;
+		dxs.SetFontSize(16);
+		dxs.SetPosition(10, 10);
+#ifdef __TAG__
+		dxs.SetText(StringUtility::Format(L"%s@%s", __TAG__, __BRANCH__));
+#else
+		dxs.SetText(StringUtility::FormatToWide("ph3 %s@%s", __COMMIT__, __BRANCH__));
+#endif
+		
+		dxs.SetFontColorTop(D3DCOLOR_ARGB(255, 0, 0, 0));
+		dxs.SetFontColorBottom(D3DCOLOR_ARGB(255, 0, 0, 0));
+		dxs.Render();
+
+		dxs.SetPosition(10, 26);
+		dxs.SetText(StringUtility::FormatToWide("%s (compiler %s)", __TIMESTAMP__,
+#ifdef _MSC_VER
+			"MSVC"
+#elif defined(__GNUC__)
+			"GCC"
+#endif
+		));
+
+		dxs.Render();
+#endif
+		
 		graphics->EndScene();
 	}
 
