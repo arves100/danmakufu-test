@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
-project(Danmakufu)
+project(Danmakufu LANGUAGES CXX)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
@@ -13,34 +13,32 @@ else()
 	include(FindPkgConfig)
 endif()
 
-if (WIN32)
-	include(FindDirectX)
-
+if (WIN32 OR MINGW)
 	if (MSVC)
+		include(FindDirectX) # mingw already includes dxsdk
+
 		set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /SUBSYSTEM:WINDOWS")
-		set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /utf-8 /MP")
 		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /utf-8 /MP")
 
 		if ("${VCPKG_TARGET_TRIPLET}" MATCHES "-static")
 			set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT")
 			set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MTd")
-			set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /MT")
-			set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} /MTd")
 		endif()
 	else()
 		set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -municode -mwindows")
 	endif()
-
+	
+	if (MINGW)
+		set(CMAKE_EXE_LINKER ${CMAKE_CXX_COMPILER})
+	endif()
+	
 	add_definitions(-DUNICODE -D_UNICODE -D_WIN32_WINNT=0x0601) # Default target Win7
 endif()
 
 if (NOT MSVC)
-	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-write-strings -fpermissive")
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-write-strings -fpermissive")
 	set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DNDEBUG")
 	set(CMAKE_CXX_FLAGS_DEBUG " ${CMAKE_CXX_FLAGS_DEBUG} -D_DEBUG")
-	set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -DNDEBUG")
-	set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -D_DEBUG")
 endif()
 
 pkg_check_modules(VORBIS vorbis QUIET)
