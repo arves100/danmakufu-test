@@ -114,8 +114,8 @@ bool EApplication::_Loop()
 		dxs.SetText(StringUtility::FormatToWide("ph3 %s@%s", __COMMIT__, __BRANCH__));
 #endif
 		
-		dxs.SetFontColorTop(D3DCOLOR_ARGB(255, 0, 0, 0));
-		dxs.SetFontColorBottom(D3DCOLOR_ARGB(255, 0, 0, 0));
+		dxs.SetFontColorTop(D3DCOLOR_ARGB(255, 255, 255, 255));
+		dxs.SetFontColorBottom(D3DCOLOR_ARGB(255, 255, 255, 255));
 		dxs.Render();
 
 		dxs.SetPosition(10, 26);
