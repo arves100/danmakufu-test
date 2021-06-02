@@ -1,6 +1,8 @@
 # Danmakufu
 Random experiments with this old game.
 
+For notes about newbase, see newbase/README.MD
+
 ## Building
 1. Install a C++ compiler:
    

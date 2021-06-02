@@ -10,6 +10,8 @@ namespace directx {
 
 class RenderObjectBase;
 class RenderManager;
+
+#if 0
 /**********************************************************
 //FVF頂点フォーマット
 //http://msdn.microsoft.com/ja-jp/library/cc324487.aspx
@@ -170,7 +172,8 @@ struct VERTEX_B4NX {
 	D3DXVECTOR2 texcoord;
 	enum { fvf = (D3DFVF_XYZB4 | D3DFVF_LASTBETA_UBYTE4 | D3DFVF_NORMAL | D3DFVF_TEX1) };
 };
-
+#endif
+	
 class RenderStateFunction;
 class RenderBlock;
 class RenderObject;
@@ -178,6 +181,7 @@ class RenderObject;
 /**********************************************************
 //RenderBlock
 **********************************************************/
+#if 0
 class RenderBlock {
 public:
 	RenderBlock();
@@ -298,7 +302,17 @@ public:
 private:
 	std::vector<D3DXMATRIX> matrix_;
 };
-
+#endif
+enum class PrimitiveType
+{
+	PointList,
+	LineList,
+	LineStrip,
+	TriangleList,
+	TriangleStrip,
+	TriangleFan,
+};
+	
 /**********************************************************
 //RenderObject
 //レンダリングオブジェクト
@@ -306,100 +320,111 @@ private:
 //RenderManagerに登録して描画してもらう
 //(直接描画も可能)
 **********************************************************/
-class RenderObject {
+class RenderObject
+{
 public:
 	RenderObject();
 	virtual ~RenderObject();
 	virtual void Render() = 0;
 	virtual void InitializeVertexBuffer() {}
 	virtual void CalculateWeightCenter() {}
-	D3DXVECTOR3 GetWeightCenter() { return posWeightCenter_; }
-	gstd::ref_count_ptr<Texture> GetTexture(int pos = 0) { return texture_[pos]; }
+	glm::vec3 GetWeightCenter() const { return posWeightCenter_; }
+	Texture& GetTexture(uint8_t pos = 0) const { return *texture_[pos]; }
 
-	void SetRalativeMatrix(D3DXMATRIX mat) { matRelative_ = mat; }
+	void SetRalativeMatrix(const glm::mat4 mat) { matRelative_ = mat; }
 
 	//頂点設定
-	void SetPrimitiveType(D3DPRIMITIVETYPE type) { typePrimitive_ = type; }
-	virtual void SetVertexCount(int count)
+	void SetPrimitiveType(const PrimitiveType type) { typePrimitive_ = type; }
+	virtual void SetVertexCount(const size_t count)
 	{
 		vertex_.SetSize(count * strideVertexStreamZero_);
-		ZeroMemory(vertex_.GetPointer(), vertex_.GetSize());
+		memset(vertex_.GetPointer(), 0, vertex_.GetSize());
 	}
-	virtual int GetVertexCount() { return vertex_.GetSize() / strideVertexStreamZero_; }
+	virtual size_t GetVertexCount() { return vertex_.GetSize() / strideVertexStreamZero_; }
 	void SetVertexIndicies(std::vector<short>& indecies) { vertexIndices_ = indecies; }
 	gstd::ByteBuffer* GetVertexPointer() { return &vertex_; }
 
 	//描画用設定
-	void SetPosition(D3DXVECTOR3& pos) { position_ = pos; }
-	void SetPosition(float x, float y, float z)
+	void SetPosition(const glm::vec3 pos) { position_ = pos; }
+	void SetPosition(const float x, const float y, const float z)
 	{
 		position_.x = x;
 		position_.y = y;
 		position_.z = z;
 	}
-	void SetX(float x) { position_.x = x; }
-	void SetY(float y) { position_.y = y; }
-	void SetZ(float z) { position_.z = z; }
-	void SetAngle(D3DXVECTOR3& angle) { angle_ = angle; }
-	void SetAngleXYZ(float angx = 0.0f, float angy = 0.0f, float angz = 0.0f)
+	void SetX(const float x) { position_.x = x; }
+	void SetY(const float y) { position_.y = y; }
+	void SetZ(const float z) { position_.z = z; }
+	void SetAngle(const glm::vec3 angle) { angle_ = angle; }
+	void SetAngleXYZ(const float angx = 0.0f, const float angy = 0.0f, const float angz = 0.0f)
 	{
 		angle_.x = angx;
 		angle_.y = angy;
 		angle_.z = angz;
 	}
-	void SetScale(D3DXVECTOR3& scale) { scale_ = scale; }
-	void SetScaleXYZ(float sx = 1.0f, float sy = 1.0f, float sz = 1.0f)
+	void SetScale(const glm::vec3 scale) { scale_ = scale; }
+	void SetScaleXYZ(const float sx = 1.0f, const float sy = 1.0f, const float sz = 1.0f)
 	{
 		scale_.x = sx;
 		scale_.y = sy;
 		scale_.z = sz;
 	}
-	void SetTexture(Texture* texture, int stage = 0); //テクスチャ設定
-	void SetTexture(gstd::ref_count_ptr<Texture> texture, int stage = 0); //テクスチャ設定
+	void SetTexture(std::unique_ptr<Texture>&& texture, uint8_t stage = 0); //テクスチャ設定
 
-	bool IsCoordinate2D() { return bCoordinate2D_; }
-	void SetCoordinate2D(bool b) { bCoordinate2D_ = b; }
+	bool IsCoordinate2D() const { return bCoordinate2D_; }
+	void SetCoordinate2D(const bool b) { bCoordinate2D_ = b; }
 
-	gstd::ref_count_ptr<Shader> GetShader() { return shader_; }
+	// TODO TODO TODO TODO
+#if 0
+	gstd::ref_count_ptr<Shader> GetShader() const { return shader_; }
 	void SetShader(gstd::ref_count_ptr<Shader> shader) { shader_ = shader; }
+#endif
+	
 	void BeginShader();
 	void EndShader();
 
 protected:
-	D3DPRIMITIVETYPE typePrimitive_; //
+	PrimitiveType typePrimitive_; //
 	int strideVertexStreamZero_; //1頂点のサイズ
 	gstd::ByteBuffer vertex_; //頂点
 	std::vector<short> vertexIndices_;
-	std::vector<gstd::ref_count_ptr<Texture>> texture_; //テクスチャ
-	D3DXVECTOR3 posWeightCenter_; //重心
+	std::vector<std::unique_ptr<Texture>> texture_; //テクスチャ
+	glm::vec3 posWeightCenter_; //重心
 
 	//シェーダ用
-	IDirect3DVertexDeclaration9* pVertexDecl_;
-	IDirect3DVertexBuffer9* pVertexBuffer_;
-	IDirect3DIndexBuffer9* pIndexBuffer_;
+	bgfx::VertexBufferHandle pVertexBuffer_;
+	bgfx::IndexBufferHandle pIndexBuffer_;
+	bgfx::VertexLayout pVertexDecl_;
 
-	D3DXVECTOR3 position_; //移動先座標
-	D3DXVECTOR3 angle_; //回転角度
-	D3DXVECTOR3 scale_; //拡大率
-	D3DXMATRIX matRelative_; //関係行列
+	glm::vec3 position_; //移動先座標
+	glm::vec3 angle_; //回転角度
+	glm::vec3 scale_; //拡大率
+	glm::mat4 matRelative_; //関係行列
 	bool bCoordinate2D_; //2D座標指定
-	gstd::ref_count_ptr<Shader> shader_;
 
+	// TODO: ! we will need to fix this anyway jk jk bgfx
+#if 0
+	gstd::ref_count_ptr<Shader> shader_;
+#endif
+	
 	virtual void _ReleaseVertexBuffer();
 	virtual void _RestoreVertexBuffer();
 	virtual void _CreateVertexDeclaration() {}
 
 	int _GetPrimitiveCount();
-	void _SetTextureStageCount(int count)
+	
+	void _SetTextureStageCount(const size_t count)
 	{
 		texture_.resize(count);
 		for (int i = 0; i < count; i++)
-			texture_[i] = NULL;
+			texture_[i] = nullptr;
 	}
-	virtual D3DXMATRIX _CreateWorldTransformMaxtrix(); //position_,angle_,scale_から作成
+	
+	virtual glm::mat4 _CreateWorldTransformMaxtrix(); //position_,angle_,scale_から作成
 	void _SetCoordinate2dDeviceMatrix();
 };
 
+#if 0
 /**********************************************************
 //RenderObjectTLX
 //座標3D変換済み、ライティング済み、テクスチャ有り
@@ -833,7 +858,8 @@ protected:
 private:
 	static DxMeshManager* thisBase_;
 };
-
+#endif
+	
 } // namespace directx
 
 #endif

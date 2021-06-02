@@ -1,174 +1,117 @@
 #include "DirectGraphics.hpp"
+#include "DxUtility.hpp"
 
 #include "Texture.hpp"
 
 using namespace gstd;
 using namespace directx;
 
-#include <SDL_syswm.h>
-
-/**********************************************************
-//DirectGraphicsConfig
-**********************************************************/
-DirectGraphicsConfig::DirectGraphicsConfig()
-{
-	widthScreen_ = 800;
-	heightScreen_ = 600;
-	bWindowed_ = true;
-	bUseRef_ = false;
-	colorMode_ = COLOR_MODE_32BIT;
-	bUseTripleBuffer_ = true;
-	bUseWaitTimer_ = false;
-	bIsFullScreen_ = false;
-}
-DirectGraphicsConfig::~DirectGraphicsConfig()
-{
-}
-
 /**********************************************************
 //DirectGraphics
 **********************************************************/
-DirectGraphics* DirectGraphics::thisBase_ = NULL;
+DirectGraphics* DirectGraphics::thisBase_ = nullptr;
 
-DirectGraphics::DirectGraphics()
+DirectGraphics::DirectGraphics() : states_(0), resetFlags_(0), blendFactor_(0), clearFlags_(BGFX_CLEAR_COLOR), init_(false), matProj_(), matView_()
 {
-	pDirect3D_ = NULL;
-	pDevice_ = NULL;
-	pBackSurf_ = NULL;
-	pZBuffer_ = NULL;
-	camera_ = new DxCamera();
-	camera2D_ = new DxCamera2D();
+	camera_ = std::make_unique<DxCamera>();
+	camera2D_ = std::make_unique<DxCamera2D>();
 }
 DirectGraphics::~DirectGraphics()
 {
-	Logger::WriteTop(L"DirectGraphics：終了開始");
+	Shutdown();
+	thisBase_ = nullptr;
+}
 
-	if (pZBuffer_ != NULL)
-		pZBuffer_->Release();
-	if (pBackSurf_ != NULL)
-		pBackSurf_->Release();
-	if (pDevice_ != NULL)
-		pDevice_->Release();
-	if (pDirect3D_ != NULL)
-		pDirect3D_->Release();
-	thisBase_ = NULL;
-	Logger::WriteTop(L"DirectGraphics：終了完了");
-}
-bool DirectGraphics::Initialize(SDL_Window* hWnd)
+bool DirectGraphics::Initialize(void* nwh, void* ndt)
 {
-	return this->Initialize(hWnd, config_);
+	return this->Initialize(config_, nwh, ndt);
 }
-bool DirectGraphics::Initialize(SDL_Window* SDL_hWnd, DirectGraphicsConfig& config)
+
+void DirectGraphics::Shutdown()
 {
-	if (thisBase_ != NULL)
+	if (init_)
+	{
+		//imguiDestroy();
+		bgfx::shutdown();
+		Logger::WriteTop(L"DirectGraphic: Bgfx shutdown");
+		init_ = false;
+	}
+}
+
+bool DirectGraphics::Initialize(DirectGraphicsConfig& config, void* nwh, void* ndt)
+{
+	if (thisBase_ != nullptr)
 		return false;
 
-	// Get native window handle from an SDL2 window
-	SDL_SysWMinfo info;
-
-	SDL_VERSION(&info.version);
-	if (!SDL_GetWindowWMInfo(SDL_hWnd, &info))
-	{
-		OutputDebugStringA(SDL_GetError()); // Not based ...
-		throw gstd::wexception(L"Cannot get SDL window info");
-	}
-
-	HWND hWnd = info.info.win.window;
-
-	Logger::WriteTop(L"DirectGraphics：初期化");
-	pDirect3D_ = Direct3DCreate9(D3D_SDK_VERSION);
-	if (pDirect3D_ == NULL)
-		throw gstd::wexception(L"Direct3DCreate9失敗");
+	Logger::WriteTop(L"DirectGraphics: Bgfx creation");
 
 	config_ = config;
-	hAttachedWindow_ = SDL_hWnd;
 
-	//FullScreenModeの設定
-	ZeroMemory(&d3dppFull_, sizeof(D3DPRESENT_PARAMETERS));
-	d3dppFull_.hDeviceWindow = hWnd;
-	d3dppFull_.BackBufferWidth = config_.GetScreenWidth();
-	d3dppFull_.BackBufferHeight = config_.GetScreenHeight();
-	d3dppFull_.Windowed = FALSE;
-	d3dppFull_.SwapEffect = D3DSWAPEFFECT_DISCARD;
-	if (config_.GetColorMode() == DirectGraphicsConfig::COLOR_MODE_16BIT)
-		d3dppFull_.BackBufferFormat = D3DFMT_R5G6B5;
+	bgfx::Init init;
+
+#ifdef _DEBUG
+	init.debug = true;
+	init.profile = true;
+#else
+	init.debug = false;
+	init.profile = true; // TODO: for now...
+#endif
+
+	init.resolution.width = config_.RenderWidth;
+	init.resolution.height = config_.RenderHeight;
+	
+	if (config_.Color == DirectGraphicsConfig::ColorMode::Bit16)
+		init.resolution.format = bgfx::TextureFormat::R5G6B5;
 	else
-		d3dppFull_.BackBufferFormat = D3DFMT_X8R8G8B8;
-	if (config_.IsTripleBufferEnable())
-		d3dppFull_.BackBufferCount = 1;
+		init.resolution.format = bgfx::TextureFormat::RGB8; // XRGB8
+
+	if (config_.UseTripleBuffer)
+		init.resolution.numBackBuffers = 1;
 	else
-		d3dppFull_.BackBufferCount = 2;
-	if (config_.IsWaitTimerEnable() == false)
-		d3dppFull_.FullScreen_RefreshRateInHz = 60;
-	d3dppFull_.EnableAutoDepthStencil = TRUE;
-	d3dppFull_.AutoDepthStencilFormat = D3DFMT_D16;
-	d3dppFull_.MultiSampleType = D3DMULTISAMPLE_NONE;
+		init.resolution.numBackBuffers = 2;
 
-	//WindowModeの設定
-	D3DDISPLAYMODE dmode;
-	HRESULT hrAdapt = pDirect3D_->GetAdapterDisplayMode(D3DADAPTER_DEFAULT, &dmode);
-	ZeroMemory(&d3dppWin_, sizeof(D3DPRESENT_PARAMETERS));
-	d3dppWin_.BackBufferWidth = config_.GetScreenWidth();
-	d3dppWin_.BackBufferHeight = config_.GetScreenHeight();
-	d3dppWin_.Windowed = TRUE;
-	d3dppWin_.SwapEffect = D3DSWAPEFFECT_DISCARD;
-	d3dppWin_.BackBufferFormat = D3DFMT_UNKNOWN;
-	d3dppWin_.hDeviceWindow = hWnd;
-	d3dppWin_.PresentationInterval = D3DPRESENT_INTERVAL_IMMEDIATE;
+	init.platformData.nwh = nwh;
+	init.platformData.ndt = ndt;
 
-	if (config_.IsTripleBufferEnable())
-		d3dppWin_.BackBufferCount = 1;
-	else
-		d3dppWin_.BackBufferCount = 2;
-	d3dppWin_.EnableAutoDepthStencil = TRUE;
-	d3dppWin_.AutoDepthStencilFormat = D3DFMT_D16;
-	d3dppWin_.MultiSampleType = D3DMULTISAMPLE_NONE;
+	resetFlags_ = 0;
 
-	int countAdapt = pDirect3D_->GetAdapterCount();
+	// TODO: MSAA (MultiSample = None in dhn)
 
-	D3DPRESENT_PARAMETERS d3dpp = config_.IsWindowed() ? d3dppWin_ : d3dppFull_;
-	modeScreen_ = config_.IsWindowed() ? SCREENMODE_WINDOW : SCREENMODE_FULLSCREEN;
-	HRESULT hrDevice = -1;
-	if (config_.IsReferenceEnable()) {
-		hrDevice = pDirect3D_->CreateDevice(D3DADAPTER_DEFAULT, D3DDEVTYPE_REF, hWnd, D3DCREATE_SOFTWARE_VERTEXPROCESSING | D3DCREATE_MULTITHREADED | D3DCREATE_FPU_PRESERVE, &d3dpp, &pDevice_);
-	} else {
-		D3DCAPS9 caps;
-		pDirect3D_->GetDeviceCaps(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, &caps);
-		if (caps.VertexShaderVersion >= D3DVS_VERSION(2, 0)) {
-			hrDevice = pDirect3D_->CreateDevice(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, hWnd, D3DCREATE_HARDWARE_VERTEXPROCESSING | D3DCREATE_MULTITHREADED | D3DCREATE_FPU_PRESERVE, &d3dpp, &pDevice_);
-			if (!FAILED(hrDevice))
-				Logger::WriteTop(L"DirectGraphics：デバイス初期化完了->D3DCREATE_HARDWARE_VERTEXPROCESSING");
-			if (FAILED(hrDevice)) {
-				hrDevice = pDirect3D_->CreateDevice(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, hWnd, D3DCREATE_SOFTWARE_VERTEXPROCESSING | D3DCREATE_MULTITHREADED | D3DCREATE_FPU_PRESERVE, &d3dpp, &pDevice_);
-				if (!FAILED(hrDevice))
-					Logger::WriteTop(L"DirectGraphics：デバイス初期化完了->D3DCREATE_SOFTWARE_VERTEXPROCESSING");
-			}
-		} else {
-			hrDevice = pDirect3D_->CreateDevice(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, hWnd, D3DCREATE_SOFTWARE_VERTEXPROCESSING | D3DCREATE_MULTITHREADED | D3DCREATE_FPU_PRESERVE, &d3dpp, &pDevice_);
-			if (!FAILED(hrDevice))
-				Logger::WriteTop(L"DirectGraphics：デバイス初期化完了->D3DCREATE_SOFTWARE_VERTEXPROCESSING");
-		}
+	if (config_.IsFullscreen)
+		resetFlags_ &= BGFX_RESET_FULLSCREEN;
 
-		if (FAILED(hrDevice)) {
-			Logger::WriteTop(L"DirectGraphics：HEL動作します。おそらく正常動作しません。");
-			hrDevice = pDirect3D_->CreateDevice(D3DADAPTER_DEFAULT, D3DDEVTYPE_REF, hWnd, D3DCREATE_SOFTWARE_VERTEXPROCESSING | D3DCREATE_MULTITHREADED | D3DCREATE_FPU_PRESERVE, &d3dpp, &pDevice_);
-		}
+	if (config_.UseVSync)
+		resetFlags_ &= BGFX_RESET_VSYNC;
+	
+	init.resolution.reset = resetFlags_;
+	init.type = config.Render;
+
+	init.allocator = DxAllocator::Get();
+
+	/*if (config_.IsWaitTimerEnable() == false)
+		d3dppFull_.FullScreen_RefreshRateInHz = 60; // TODO: Is this VSync?
+	d3dppFull_.EnableAutoDepthStencil = TRUE; // TODO!
+	d3dppFull_.AutoDepthStencilFormat = D3DFMT_D16;*/
+
+	// TODO: Bgfx DOES NOT HAVE ANY ADAPTER DETECTION CODE LIKE DHN DIRECTX9 USED TO
+
+	if (!bgfx::init(init))
+	{
+		Logger::WriteTop(L"DirectGraphics: Cannot initialize bgfx");
+		return false;
 	}
 
-	if (FAILED(hrDevice)) {
-		throw gstd::wexception(L"IDirect3DDevice9::CreateDevice失敗");
-	}
 
-	// BackSurface取得
-	pDevice_->GetRenderTarget(0, &pBackSurf_);
 
-	// Zバッファ取得
-	pDevice_->GetDepthStencilSurface(&pZBuffer_);
+#ifdef _DEBUG
+	bgfx::setDebug(BGFX_DEBUG_TEXT);
+#endif
 
 	thisBase_ = this;
 
-	if (camera2D_ != NULL)
+	if (camera2D_ != nullptr)
 		camera2D_->Reset();
+	
 	_InitializeDeviceState();
 
 	BeginScene();
@@ -180,73 +123,71 @@ bool DirectGraphics::Initialize(SDL_Window* SDL_hWnd, DirectGraphicsConfig& conf
 
 void DirectGraphics::_ReleaseDxResource()
 {
-	if (pZBuffer_ != NULL)
-		pZBuffer_->Release();
-	if (pBackSurf_ != NULL)
-		pBackSurf_->Release();
-	std::list<DirectGraphicsListener*>::iterator itr;
-	for (itr = listListener_.begin(); itr != listListener_.end(); itr++) {
-		(*itr)->ReleaseDirectGraphics();
-	}
+	
+	for (auto& itr : listListener_)
+		itr->ReleaseDirectGraphics();
 }
+
 void DirectGraphics::_RestoreDxResource()
 {
-	pDevice_->GetRenderTarget(0, &pBackSurf_);
-	pDevice_->GetDepthStencilSurface(&pZBuffer_);
-	std::list<DirectGraphicsListener*>::iterator itr;
-	for (itr = listListener_.begin(); itr != listListener_.end(); itr++) {
-		(*itr)->RestoreDirectGraphics();
-	}
+	// we can't access the backbuffer on bgfx
+	for (auto& itr : listListener_)
+		itr->RestoreDirectGraphics();
+
 	_InitializeDeviceState();
 }
+
 void DirectGraphics::_Restore()
 {
 	Logger::WriteTop(L"DirectGraphics：_Restore開始");
-	// ディスプレイの協調レベルを調査
-	HRESULT hr = pDevice_->TestCooperativeLevel();
-	if (hr == D3DERR_DEVICELOST) {
-		int count = 0;
-		do {
-			Sleep(500); // 0.5秒待つ
-			count += 500;
-			hr = pDevice_->TestCooperativeLevel();
-			if (hr == D3DERR_DEVICENOTRESET)
-				break;
-		} while (count < 6000);
-	}
 
 	// リストア
 	_ReleaseDxResource();
 
 	//デバイスリセット
-	if (modeScreen_ == SCREENMODE_FULLSCREEN)
-		pDevice_->Reset(&d3dppFull_);
+	if (config_.IsFullscreen)
+		resetFlags_ |= BGFX_RESET_FULLSCREEN; // NOTE: this should not be supported on bgfx
 	else
-		pDevice_->Reset(&d3dppWin_);
+		resetFlags_ &= ~BGFX_RESET_FULLSCREEN;
+
+	if (config_.UseVSync)
+		resetFlags_ |= BGFX_RESET_VSYNC;
+	else
+		resetFlags_ &= ~BGFX_RESET_VSYNC;
+	
+	bgfx::reset(config_.RenderWidth, config_.RenderHeight, resetFlags_);
 
 	_RestoreDxResource();
 
+	if (textureTarget_ != nullptr)
+		bgfx::setViewFrameBuffer(0, textureTarget_->GetHandle());
+
 	Logger::WriteTop(L"DirectGraphics：_Restore完了");
 }
+
 void DirectGraphics::_InitializeDeviceState()
 {
-	D3DXMATRIX viewMat;
-	D3DXMATRIX persMat;
-	if (camera_ != NULL) {
+	glm::mat4 viewMat;
+	
+	if (camera_ != nullptr) {
 		camera_->UpdateDeviceWorldViewMatrix();
+		viewMat = matView_;
 	} else {
-		D3DVECTOR viewFrom = D3DXVECTOR3(100, 300, -500);
-		D3DXMatrixLookAtLH(&viewMat, (D3DXVECTOR3*)&viewFrom, &D3DXVECTOR3(0, 0, 0), &D3DXVECTOR3(0, 1, 0));
+		const auto viewFrom = glm::vec3(100.0f, 300.0f, -500.0f);
+		const auto at = glm::vec3(0.0f, 0.0f, 0.0f);
+		viewMat = glm::lookAtLH(viewFrom, at, glm::vec3(0, 1, 0));
 	}
-	D3DXMatrixPerspectiveFovLH(&persMat, D3DXToRadian(45.0),
-		(float)config_.GetScreenWidth() / (float)config_.GetScreenHeight(), 10, 2000);
 
-	pDevice_->SetTransform(D3DTS_VIEW, &viewMat);
-	pDevice_->SetTransform(D3DTS_PROJECTION, &persMat);
+	const auto persMat = glm::perspectiveFovLH(glm::radians(45.0f), static_cast<float>(config_.RenderWidth),
+		static_cast<float>(config_.RenderHeight), 10.0f, 2000.0f);
 
-	SetCullingMode(D3DCULL_NONE);
-	pDevice_->SetRenderState(D3DRS_SHADEMODE, D3DSHADE_GOURAUD);
-	pDevice_->SetRenderState(D3DRS_AMBIENT, RGB(192, 192, 192));
+	SetViewAndProjMatrix(viewMat, persMat);
+
+	SetCullingMode(CullingMode::None);
+
+	//pDevice_->SetRenderState(D3DRS_SHADEMODE, D3DSHADE_GOURAUD); // TODO
+	//pDevice_->SetRenderState(D3DRS_AMBIENT, RGB(192, 192, 192)); // TODO: Migrate it to a shader
+	
 	SetLightingEnable(true);
 
 	D3DVECTOR dir;
@@ -255,268 +196,285 @@ void DirectGraphics::_InitializeDeviceState()
 	dir.z = -1;
 	SetDirectionalLight(dir);
 
-	SetBlendMode(MODE_BLEND_ALPHA);
+	SetBlendMode(BlendMode::Alpha);
 
 	//αテスト
-	SetAlphaTest(true, 0, D3DCMP_GREATER);
+	SetAlphaTest(true, 0);
 
 	//Zテスト
 	SetZBufferEnable(false);
-	SetZWriteEnalbe(false);
+	SetZWriteEnable(false);
 
 	//Filter
-	SetTextureFilter(MODE_TEXTURE_FILTER_LINEAR);
+	SetTextureFilter(TextureFilterMode::Linear);
 
 	//ViewPort
 	ResetViewPort();
 }
+
 void DirectGraphics::AddDirectGraphicsListener(DirectGraphicsListener* listener)
 {
-	std::list<DirectGraphicsListener*>::iterator itr;
-	for (itr = listListener_.begin(); itr != listListener_.end(); itr++) {
-		if ((*itr) == listener)
-			return;
-	}
-	listListener_.push_back(listener);
+	if (std::find(listListener_.begin(), listListener_.end(), listener) == listListener_.end())
+		listListener_.push_back(listener);
 }
+
 void DirectGraphics::RemoveDirectGraphicsListener(DirectGraphicsListener* listener)
 {
-	std::list<DirectGraphicsListener*>::iterator itr;
-	for (itr = listListener_.begin(); itr != listListener_.end(); itr++) {
-		if ((*itr) != listener)
-			continue;
+	const auto itr = std::find(listListener_.begin(), listListener_.end(), listener);
+	if (itr != listListener_.end())
 		listListener_.erase(itr);
-		break;
-	}
 }
+
+// Bgfx does not allow us to get the view and projection matrix, so we store it in our application
+void DirectGraphics::SetViewAndProjMatrix(const glm::mat4 view, const glm::mat4 proj)
+{
+	matView_ = view;
+	matProj_ = proj;
+	bgfx::setViewTransform(0, &matView_[0], &matProj_[0]);
+}
+
+void DirectGraphics::SetProjMatrix(const glm::mat4 mtx)
+{
+	SetViewAndProjMatrix(matView_, mtx);
+}
+
+void DirectGraphics::SetViewMatrix(const glm::mat4 mtx)
+{
+	SetViewAndProjMatrix(mtx, matProj_);
+}
+
 void DirectGraphics::BeginScene(bool bClear)
 {
 	if (bClear)
-		ClearRenderTarget();
-	pDevice_->BeginScene();
+		Clear();
+	
 	camera_->UpdateDeviceWorldViewMatrix();
 }
-void DirectGraphics::EndScene()
-{
-	pDevice_->EndScene();
 
-	HRESULT hr = pDevice_->Present(NULL, NULL, NULL, NULL);
-	if (FAILED(hr)) {
-		_Restore();
-		_InitializeDeviceState();
-	}
-}
-void DirectGraphics::ClearRenderTarget()
+void DirectGraphics::EndScene() const
 {
-	int width = GetScreenWidth();
-	int height = GetScreenWidth();
-	D3DRECT rcDest = { 0, 0, width, height };
-	if (textureTarget_ == NULL) {
-		pDevice_->Clear(0, NULL, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, D3DCOLOR_XRGB(0, 0, 0), 1.0, 0);
-	} else {
-		pDevice_->Clear(0, NULL, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, D3DCOLOR_ARGB(0, 0, 0, 0), 1.0, 0);
-	}
+	bgfx::frame();
 }
-void DirectGraphics::ClearRenderTarget(RECT rect)
+
+void DirectGraphics::Clear() const
 {
-	D3DRECT rcDest = { rect.left, rect.top, rect.right, rect.bottom };
-	if (textureTarget_ == NULL) {
-		pDevice_->Clear(1, &rcDest, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, D3DCOLOR_XRGB(0, 0, 0), 1.0, 0);
-	} else {
-		pDevice_->Clear(1, &rcDest, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, D3DCOLOR_ARGB(0, 0, 0, 0), 1.0, 0);
-	}
+	bgfx::setViewClear(0, clearFlags_, 0x00000000, 1.0f);
+
+	bgfx::touch(0);
+
+#ifdef _DEBUG
+	bgfx::dbgTextClear();
+#endif
 }
-void DirectGraphics::SetRenderTarget(gstd::ref_count_ptr<Texture> texture)
+
+void DirectGraphics::Clear(const uint16_t x, const uint16_t y, const uint16_t width, const uint16_t height) const
+{
+	bgfx::setViewClear(1, clearFlags_, 0x00000000, 1.0f);
+	bgfx::setViewRect(1, x, y, width, height);
+}
+
+void DirectGraphics::_UpdateState() const
+{
+	bgfx::setState(states_, blendFactor_);
+}
+
+void DirectGraphics::SetRenderTarget(std::shared_ptr<FrameBuffer>& texture)
 {
 	textureTarget_ = texture;
-	if (texture == NULL) {
-		pDevice_->SetRenderTarget(0, pBackSurf_);
-		pDevice_->SetDepthStencilSurface(pZBuffer_);
-	} else {
-		pDevice_->SetRenderTarget(0, texture->GetD3DSurface());
-		pDevice_->SetDepthStencilSurface(texture->GetD3DZBuffer());
+	if (texture == nullptr)
+	{
+		bgfx::setViewFrameBuffer(0, BGFX_INVALID_HANDLE);
 	}
+	else
+	{
+		bgfx::setViewFrameBuffer(0, textureTarget_->GetHandle());
+	}
+	
 	_InitializeDeviceState();
 }
+
 void DirectGraphics::SetLightingEnable(bool bEnable)
 {
-	pDevice_->SetRenderState(D3DRS_LIGHTING, bEnable);
+	//pDevice_->SetRenderState(D3DRS_LIGHTING, bEnable); // TODO: Migrate to a shader
 }
+
 void DirectGraphics::SetSpecularEnable(bool bEnable)
 {
-	pDevice_->SetRenderState(D3DRS_SPECULARENABLE, bEnable);
+	//pDevice_->SetRenderState(D3DRS_SPECULARENABLE, bEnable); // TODO: Migrate to a shader
 }
-void DirectGraphics::SetCullingMode(DWORD mode)
+
+void DirectGraphics::SetCullingMode(CullingMode mode)
 {
-	pDevice_->SetRenderState(D3DRS_CULLMODE, mode);
+	// removes culling
+	states_ &= ~BGFX_STATE_CULL_MASK;
+	
+	switch (mode)
+	{
+	case CullingMode::Cw:
+		states_ |= BGFX_STATE_CULL_CW;
+		break;
+	case CullingMode::Ccw:
+		states_ |= BGFX_STATE_CULL_CCW;
+		break;
+	case CullingMode::None:
+		break;
+	}
+
+	_UpdateState();
 }
+
 void DirectGraphics::SetShadingMode(DWORD mode)
 {
-	pDevice_->SetRenderState(D3DRS_SHADEMODE, mode);
+	//pDevice_->SetRenderState(D3DRS_SHADEMODE, mode); // TODO: ?
 }
+
 void DirectGraphics::SetZBufferEnable(bool bEnable)
 {
-	pDevice_->SetRenderState(D3DRS_ZENABLE, bEnable);
+	if (bEnable)
+		clearFlags_ |= BGFX_CLEAR_DEPTH;
+	else
+		clearFlags_ &= ~BGFX_CLEAR_DEPTH;
+
+	bgfx::setViewClear(0, clearFlags_, 0x000000FF, 1.0f);
 }
-void DirectGraphics::SetZWriteEnalbe(bool bEnable)
+
+void DirectGraphics::SetZWriteEnable(bool bEnable)
 {
-	pDevice_->SetRenderState(D3DRS_ZWRITEENABLE, bEnable);
+	if (bEnable)
+		states_ |= BGFX_STATE_WRITE_Z;
+	else
+		states_ &= ~BGFX_STATE_WRITE_Z;
+
+	_UpdateState();
 }
-void DirectGraphics::SetAlphaTest(bool bEnable, DWORD ref, D3DCMPFUNC func)
+
+void DirectGraphics::SetAlphaTest(bool bEnable, DWORD ref)
 {
-	pDevice_->SetRenderState(D3DRS_ALPHATESTENABLE, bEnable);
+	// TODO: DEPRECATED!!! Should be replaced in a frag shader
+	
+	/*pDevice_->SetRenderState(D3DRS_ALPHATESTENABLE, bEnable);
 	if (bEnable) {
 		pDevice_->SetRenderState(D3DRS_ALPHAFUNC, func);
 		pDevice_->SetRenderState(D3DRS_ALPHAREF, ref);
-	}
+	}*/
 }
-void DirectGraphics::SetBlendMode(DWORD mode, int stage)
+void DirectGraphics::SetBlendMode(BlendMode mode, int stage)
 {
+	states_ &= ~BGFX_STATE_BLEND_MASK; // Clear all blend modes currently set in the state
+	
 	switch (mode) {
-	case MODE_BLEND_NONE: //なし
-		pDevice_->SetTextureStageState(stage, D3DTSS_COLOROP, D3DTOP_MODULATE);
+	case BlendMode::None: //なし
+		/*pDevice_->SetTextureStageState(stage, D3DTSS_COLOROP, D3DTOP_MODULATE); // TODO
 		pDevice_->SetTextureStageState(stage, D3DTSS_ALPHAARG2, D3DTA_CURRENT);
-		pDevice_->SetTextureStageState(stage, D3DTSS_ALPHAOP, D3DTOP_SELECTARG1);
-		pDevice_->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
-		pDevice_->SetRenderState(D3DRS_BLENDOP, D3DBLENDOP_ADD);
+		pDevice_->SetTextureStageState(stage, D3DTSS_ALPHAOP, D3DTOP_SELECTARG1);*/
+		
+		states_ |= BGFX_STATE_BLEND_EQUATION(BGFX_STATE_BLEND_EQUATION_ADD);
 		break;
-	case MODE_BLEND_ALPHA: //αで半透明合成
-		pDevice_->SetTextureStageState(stage, D3DTSS_COLOROP, D3DTOP_MODULATE);
+	case BlendMode::Alpha: //αで半透明合成
+		/*pDevice_->SetTextureStageState(stage, D3DTSS_COLOROP, D3DTOP_MODULATE); // TODO
 		pDevice_->SetTextureStageState(stage, D3DTSS_ALPHAARG2, D3DTA_DIFFUSE);
-		pDevice_->SetTextureStageState(stage, D3DTSS_ALPHAOP, D3DTOP_MODULATE);
-		pDevice_->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
-		pDevice_->SetRenderState(D3DRS_BLENDOP, D3DBLENDOP_ADD);
-		pDevice_->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-		pDevice_->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+		pDevice_->SetTextureStageState(stage, D3DTSS_ALPHAOP, D3DTOP_MODULATE);*/
+		
+		states_ |= BGFX_STATE_BLEND_EQUATION(BGFX_STATE_BLEND_EQUATION_ADD);
+		states_ |= BGFX_STATE_BLEND_FUNC(BGFX_STATE_BLEND_SRC_ALPHA, BGFX_STATE_BLEND_INV_SRC_ALPHA); // TODO: Is AlphaBlend enabled?
 		break;
-	case MODE_BLEND_ADD_RGB: //RGBで加算合成
-		pDevice_->SetTextureStageState(stage, D3DTSS_COLOROP, D3DTOP_MODULATE);
+	case BlendMode::Add_RGB: //RGBで加算合成
+		/*pDevice_->SetTextureStageState(stage, D3DTSS_COLOROP, D3DTOP_MODULATE); // TODO
 		pDevice_->SetTextureStageState(stage, D3DTSS_ALPHAARG2, D3DTA_CURRENT);
-		pDevice_->SetTextureStageState(stage, D3DTSS_ALPHAOP, D3DTOP_SELECTARG1);
-		pDevice_->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
-		pDevice_->SetRenderState(D3DRS_BLENDOP, D3DBLENDOP_ADD);
-		pDevice_->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_ONE);
-		pDevice_->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ONE);
+		pDevice_->SetTextureStageState(stage, D3DTSS_ALPHAOP, D3DTOP_SELECTARG1);*/
+		
+		states_ |= BGFX_STATE_BLEND_EQUATION(BGFX_STATE_BLEND_EQUATION_ADD);
+		states_ |= BGFX_STATE_BLEND_FUNC(BGFX_STATE_BLEND_ONE, BGFX_STATE_BLEND_ONE);  // TODO: Is AlphaBlend enabled?
 		break;
-	case MODE_BLEND_ADD_ARGB: //αで加算合成
-		pDevice_->SetTextureStageState(stage, D3DTSS_ALPHAOP, D3DTOP_MODULATE); //ARG1とARG2のα値を乗算してα値を取得します。
+	case BlendMode::Add_ARGB: //αで加算合成
+		/*pDevice_->SetTextureStageState(stage, D3DTSS_ALPHAOP, D3DTOP_MODULATE); //ARG1とARG2のα値を乗算してα値を取得します。
 		pDevice_->SetTextureStageState(stage, D3DTSS_ALPHAARG1, D3DTA_TEXTURE); //テクスチャのα値
 		pDevice_->SetTextureStageState(stage, D3DTSS_ALPHAARG2, D3DTA_DIFFUSE); //頂点のα値
 		pDevice_->SetTextureStageState(stage, D3DTSS_COLOROP, D3DTOP_MODULATE); //ARG1とARG2のカラーの値を乗算します。
 		pDevice_->SetTextureStageState(stage, D3DTSS_COLORARG1, D3DTA_TEXTURE); //テクスチャのカラー
-		pDevice_->SetTextureStageState(stage, D3DTSS_COLORARG2, D3DTA_DIFFUSE); //頂点のカラー
-		pDevice_->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
-		pDevice_->SetRenderState(D3DRS_BLENDOP, D3DBLENDOP_ADD);
-		pDevice_->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-		pDevice_->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ONE);
+		pDevice_->SetTextureStageState(stage, D3DTSS_COLORARG2, D3DTA_DIFFUSE); //頂点のカラー*/ // TODO
+		
+		states_ |= BGFX_STATE_BLEND_EQUATION(BGFX_STATE_BLEND_EQUATION_ADD);
+		states_ |= BGFX_STATE_BLEND_FUNC(BGFX_STATE_BLEND_SRC_ALPHA, BGFX_STATE_BLEND_ONE); // TODO: Is AlphaBlend enabled?
 		break;
-	case MODE_BLEND_MULTIPLY: //乗算合成
-		pDevice_->SetTextureStageState(stage, D3DTSS_COLOROP, D3DTOP_MODULATE);
+	case BlendMode::Multiply: //乗算合成
+		/*pDevice_->SetTextureStageState(stage, D3DTSS_COLOROP, D3DTOP_MODULATE);
 		pDevice_->SetTextureStageState(stage, D3DTSS_ALPHAARG2, D3DTA_CURRENT);
-		pDevice_->SetTextureStageState(stage, D3DTSS_ALPHAOP, D3DTOP_SELECTARG1);
-		pDevice_->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
-		pDevice_->SetRenderState(D3DRS_BLENDOP, D3DBLENDOP_ADD);
-		pDevice_->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_ZERO);
-		pDevice_->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_SRCCOLOR);
-		// pDevice_->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_DESTCOLOR);
-		// pDevice_->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ZERO);
-		/*
-			pDevice_->SetTextureStageState(stage,D3DTSS_COLOROP, D3DTOP_MODULATE);
-			pDevice_->SetTextureStageState(stage,D3DTSS_ALPHAARG2, D3DTA_CURRENT);
-			pDevice_->SetTextureStageState(stage,D3DTSS_ALPHAOP, D3DTOP_SELECTARG1);
-			pDevice_->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
-			pDevice_->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_ZERO);
-			pDevice_->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_SRCCOLOR);
-		*/
+		pDevice_->SetTextureStageState(stage, D3DTSS_ALPHAOP, D3DTOP_SELECTARG1);*/ // TODO
+		
+		states_ |= BGFX_STATE_BLEND_EQUATION(BGFX_STATE_BLEND_EQUATION_ADD);
+		states_ |= BGFX_STATE_BLEND_FUNC(BGFX_STATE_BLEND_ZERO, BGFX_STATE_BLEND_SRC_COLOR); // TODO: Is AlphaBlend enabled?
 		break;
-		/*
-		case MODE_BLEND_SUBTRACT://減算合成
-			pDevice_->SetTextureStageState(stage, D3DTSS_COLOROP,D3DTOP_MODULATE);
-			pDevice_->SetTextureStageState(stage, D3DTSS_ALPHAARG2,D3DTA_CURRENT);
-			pDevice_->SetTextureStageState(stage, D3DTSS_ALPHAOP,D3DTOP_SELECTARG1);
-			pDevice_->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
-			pDevice_->SetRenderState(D3DRS_BLENDOP, D3DBLENDOP_REVSUBTRACT);
-			pDevice_->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_ONE);
-			pDevice_->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ONE);
-			break;
-		*/
-	case MODE_BLEND_SUBTRACT: //減算合成
-		pDevice_->SetTextureStageState(stage, D3DTSS_ALPHAOP, D3DTOP_MODULATE); //ARG1とARG2のα値を乗算してα値を取得します。
+	case BlendMode::Subtract: //減算合成
+		/*pDevice_->SetTextureStageState(stage, D3DTSS_ALPHAOP, D3DTOP_MODULATE); //ARG1とARG2のα値を乗算してα値を取得します。
 		pDevice_->SetTextureStageState(stage, D3DTSS_ALPHAARG1, D3DTA_TEXTURE); //テクスチャのα値
 		pDevice_->SetTextureStageState(stage, D3DTSS_ALPHAARG2, D3DTA_DIFFUSE); //頂点のα値
 		pDevice_->SetTextureStageState(stage, D3DTSS_COLOROP, D3DTOP_MODULATE); //ARG1とARG2のカラーの値を乗算します。
 		pDevice_->SetTextureStageState(stage, D3DTSS_COLORARG1, D3DTA_TEXTURE); //テクスチャのカラー
-		pDevice_->SetTextureStageState(stage, D3DTSS_COLORARG2, D3DTA_DIFFUSE); //頂点のカラー
-		pDevice_->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
-		pDevice_->SetRenderState(D3DRS_BLENDOP, D3DBLENDOP_REVSUBTRACT);
-		pDevice_->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-		pDevice_->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ONE);
+		pDevice_->SetTextureStageState(stage, D3DTSS_COLORARG2, D3DTA_DIFFUSE); //頂点のカラー*/ // TODO
+		
+		states_ |= BGFX_STATE_BLEND_EQUATION(BGFX_STATE_BLEND_EQUATION_REVSUB); // TODO: Is AlphaBlend enabled?
+		states_ |= BGFX_STATE_BLEND_FUNC(BGFX_STATE_BLEND_SRC_ALPHA, BGFX_STATE_BLEND_ONE);
 		break;
-	case MODE_BLEND_SHADOW: //影描画用
-		pDevice_->SetTextureStageState(stage, D3DTSS_COLOROP, D3DTOP_MODULATE);
+	case BlendMode::Shadow: //影描画用
+		/*pDevice_->SetTextureStageState(stage, D3DTSS_COLOROP, D3DTOP_MODULATE);
 		pDevice_->SetTextureStageState(stage, D3DTSS_ALPHAARG2, D3DTA_CURRENT);
-		pDevice_->SetTextureStageState(stage, D3DTSS_ALPHAOP, D3DTOP_SELECTARG1);
-		pDevice_->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
-		pDevice_->SetRenderState(D3DRS_BLENDOP, D3DBLENDOP_ADD);
-		pDevice_->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_ZERO);
-		pDevice_->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCCOLOR);
+		pDevice_->SetTextureStageState(stage, D3DTSS_ALPHAOP, D3DTOP_SELECTARG1);*/ // TODO
+		
+		states_ |= BGFX_STATE_BLEND_EQUATION(BGFX_STATE_BLEND_EQUATION_ADD); // TODO: Is AlphaBlend enabled?
+		states_ |= BGFX_STATE_BLEND_FUNC(BGFX_STATE_BLEND_ZERO, BGFX_STATE_BLEND_INV_SRC_COLOR);
 		break;
-	case MODE_BLEND_INV_DESTRGB: //描画先色反転合成
-		pDevice_->SetTextureStageState(stage, D3DTSS_ALPHAOP, D3DTOP_MODULATE); //ARG1とARG2のα値を乗算してα値を取得します。
+	case BlendMode::InvDestRGB: //描画先色反転合成
+		/*pDevice_->SetTextureStageState(stage, D3DTSS_ALPHAOP, D3DTOP_MODULATE); //ARG1とARG2のα値を乗算してα値を取得します。
 		pDevice_->SetTextureStageState(stage, D3DTSS_ALPHAARG1, D3DTA_TEXTURE); //テクスチャのα値
 		pDevice_->SetTextureStageState(stage, D3DTSS_ALPHAARG2, D3DTA_DIFFUSE); //頂点のα値
 		pDevice_->SetTextureStageState(stage, D3DTSS_COLOROP, D3DTOP_MODULATE); //ARG1とARG2のカラーの値を乗算します。
 		pDevice_->SetTextureStageState(stage, D3DTSS_COLORARG1, D3DTA_TEXTURE); //テクスチャのカラー
-		pDevice_->SetTextureStageState(stage, D3DTSS_COLORARG2, D3DTA_DIFFUSE); //頂点のカラー
-		pDevice_->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
-		pDevice_->SetRenderState(D3DRS_BLENDOP, D3DBLENDOP_ADD);
-		pDevice_->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_INVDESTCOLOR);
-		pDevice_->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCCOLOR);
+		pDevice_->SetTextureStageState(stage, D3DTSS_COLORARG2, D3DTA_DIFFUSE); //頂点のカラー*/ // TODO
+
+		states_ |= BGFX_STATE_BLEND_EQUATION(BGFX_STATE_BLEND_EQUATION_ADD); // TODO: Is AlphaBlend enabled?
+		states_ |= BGFX_STATE_BLEND_FUNC(BGFX_STATE_BLEND_INV_DST_COLOR, BGFX_STATE_BLEND_INV_SRC_COLOR);
 		break;
 	}
-	// 減算半透明合成
-	// pDevice_->SetRenderState(D3DRS_BLENDOP, D3DBLENDOP_REVSUBTRACT);
-	// pDevice_->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-	// pDevice_->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ONE);
 
-	// ハイライト(覆い焼き)
-	// pDevice_->SetRenderState(D3DRS_BLENDOP, D3DBLENDOP_ADD);
-	// pDevice_->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_DESTCOLOR);
-	// pDevice_->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ONE);
+	_UpdateState();
+}
 
-	// リバース(反転)
-	// pDevice_->SetRenderState(D3DRS_BLENDOP, D3DBLENDOP_ADD);
-	// pDevice_->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_INVDESTCOLOR);
-	// pDevice_->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ZERO);
-}
-void DirectGraphics::SetFillMode(DWORD mode)
-{
-	pDevice_->SetRenderState(D3DRS_FILLMODE, mode);
-}
 void DirectGraphics::SetFogEnable(bool bEnable)
 {
-	pDevice_->SetRenderState(D3DRS_FOGENABLE, bEnable ? TRUE : FALSE);
+	// TODO: DEPRECATED!!!
+	//pDevice_->SetRenderState(D3DRS_FOGENABLE, bEnable ? TRUE : FALSE);
 }
-bool DirectGraphics::IsFogEnable()
+
+bool DirectGraphics::IsFogEnable() const
 {
-	DWORD fog = FALSE;
+	/*DWORD fog = FALSE;
 	pDevice_->GetRenderState(D3DRS_FOGENABLE, &fog);
 	bool res = fog == TRUE;
-	return res;
+	return res;*/
+	return false; // TODO: DEPRECATED!! Please move to a shader
 }
+
 void DirectGraphics::SetVertexFog(bool bEnable, D3DCOLOR color, float start, float end)
 {
+	/*
+	// TODO: DEPRECATED!! Please move to a shader
 	SetFogEnable(bEnable);
 	pDevice_->SetRenderState(D3DRS_FOGCOLOR, color);
 	pDevice_->SetRenderState(D3DRS_FOGVERTEXMODE, D3DFOG_LINEAR);
 	pDevice_->SetRenderState(D3DRS_FOGSTART, *(DWORD*)(&start));
 	pDevice_->SetRenderState(D3DRS_FOGEND, *(DWORD*)(&end));
+	*/
 }
+
 void DirectGraphics::SetPixelFog(bool bEnable, D3DCOLOR color, float start, float end)
 {
 }
-void DirectGraphics::SetTextureFilter(DWORD mode, int stage)
+
+void DirectGraphics::SetTextureFilter(TextureFilterMode mode, int stage)
 {
+	/*
+	// TODO: ?
 	switch (mode) {
 	case MODE_TEXTURE_FILTER_NONE:
 		pDevice_->SetSamplerState(stage, D3DSAMP_MINFILTER, D3DTEXF_NONE);
@@ -530,10 +488,13 @@ void DirectGraphics::SetTextureFilter(DWORD mode, int stage)
 		pDevice_->SetSamplerState(stage, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
 		pDevice_->SetSamplerState(stage, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
 		break;
-	}
+	}*/
 }
-DWORD DirectGraphics::GetTextureFilter(int stage)
+
+DirectGraphics::TextureFilterMode DirectGraphics::GetTextureFilter(int stage) const
 {
+	/*
+	// TODO: ?
 	int res = MODE_TEXTURE_FILTER_NONE;
 	DWORD mode;
 	pDevice_->GetSamplerState(stage, D3DSAMP_MINFILTER, &mode);
@@ -548,11 +509,14 @@ DWORD DirectGraphics::GetTextureFilter(int stage)
 		res = MODE_TEXTURE_FILTER_LINEAR;
 		break;
 	}
-	return res;
+	return res;*/
+	return TextureFilterMode::None; // TODO
 }
+
 void DirectGraphics::SetDirectionalLight(D3DVECTOR& dir)
 {
-	D3DLIGHT9 light;
+	// TODO: DEPRECATED!!! Please move to a shader!
+	/*D3DLIGHT9 light;
 	ZeroMemory(&light, sizeof(D3DLIGHT9));
 	light.Type = D3DLIGHT_DIRECTIONAL;
 	light.Diffuse.r = 0.5f;
@@ -563,86 +527,56 @@ void DirectGraphics::SetDirectionalLight(D3DVECTOR& dir)
 	light.Ambient.b = 0.5f;
 	light.Direction = dir;
 	pDevice_->SetLight(0, &light);
-	pDevice_->LightEnable(0, TRUE);
+	pDevice_->LightEnable(0, TRUE);*/
 }
-void DirectGraphics::SetViewPort(int x, int y, int width, int height)
+
+void DirectGraphics::SetViewPort(bgfx::ViewId id, uint16_t x, uint16_t y, uint16_t width, uint16_t height)
 {
-	D3DVIEWPORT9 viewPort;
-	ZeroMemory(&viewPort, sizeof(D3DVIEWPORT9));
-	viewPort.X = x;
-	viewPort.Y = y;
-	viewPort.Width = width;
-	viewPort.Height = height;
-	viewPort.MinZ = 0.0f;
-	viewPort.MaxZ = 1.0f;
-	pDevice_->SetViewport(&viewPort);
+	bgfx::setViewClear(id, BGFX_CLEAR_DEPTH | BGFX_CLEAR_COLOR, 0x000000FF, 1.0f);
+	bgfx::setViewRect(id, x, y, width, height);
+
+	if (id == 0)
+	{
+		config_.RenderWidth = width;
+		config_.RenderHeight = height;
+	}
 }
+
 void DirectGraphics::ResetViewPort()
 {
-	SetViewPort(0, 0, GetScreenWidth(), GetScreenHeight());
+	SetViewPort(0, 0, 0, config_.RenderWidth, config_.RenderHeight);
 }
-int DirectGraphics::GetScreenWidth()
+
+float DirectGraphics::GetScreenWidthRatio() const
 {
-	return config_.GetScreenWidth();
+	return 1.0f; // TODO
 }
-int DirectGraphics::GetScreenHeight()
+
+float DirectGraphics::GetScreenHeightRatio() const
 {
-	return config_.GetScreenHeight();
+	return 1.0f; // TODO
 }
-double DirectGraphics::GetScreenWidthRatio()
-{
-	int w, h;
-	SDL_GetWindowSize(hAttachedWindow_, &w, &h);
-	return w / config_.GetScreenWidth();
-}
-double DirectGraphics::GetScreenHeightRatio()
-{
-	int w, h;
-	SDL_GetWindowSize(hAttachedWindow_, &w, &h);
-	return h / config_.GetScreenHeight();
-}
-POINT DirectGraphics::GetMousePosition()
+
+POINT DirectGraphics::GetMousePosition() const
 {
 	int x, y;
 	SDL_GetMouseState(&x, &y);
-
-	double ratioWidth = GetScreenWidthRatio();
-	double ratioHeight = GetScreenHeightRatio();
-	if (ratioWidth != 0) {
-		x /= ratioWidth;
-	}
-	if (ratioHeight != 0) {
-		y /= ratioHeight;
-	}
-
 	return { x, y };
 }
-void DirectGraphics::SaveBackSurfaceToFile(std::wstring path)
-{
-	RECT rect = { 0, 0, config_.GetScreenWidth(), config_.GetScreenHeight() };
-	LPDIRECT3DSURFACE9 pBackSurface = NULL;
-	pDevice_->GetRenderTarget(0, &pBackSurface);
-	D3DXSaveSurfaceToFile(path.c_str(), D3DXIFF_BMP,
-		pBackSurface, NULL, &rect);
-	pBackSurface->Release();
-}
-bool DirectGraphics::IsPixelShaderSupported(int major, int minor)
-{
-	D3DCAPS9 caps;
-	pDevice_->GetDeviceCaps(&caps);
-	bool res = caps.PixelShaderVersion >= D3DPS_VERSION(major, minor);
-	return res;
-}
 
+// TODO: This should be migrated into DhnExecutor
+#if 0 
 /**********************************************************
 //DirectGraphicsPrimaryWindow
 **********************************************************/
 DirectGraphicsPrimaryWindow::DirectGraphicsPrimaryWindow()
 {
 }
+
 DirectGraphicsPrimaryWindow::~DirectGraphicsPrimaryWindow()
 {
 }
+
 void DirectGraphicsPrimaryWindow::_PauseDrawing()
 {
 	// TODO: This needs to be changed by DirectX
@@ -650,27 +584,30 @@ void DirectGraphicsPrimaryWindow::_PauseDrawing()
 
 	gstd::Application::GetBase()->SetActive(false);
 }
+
 void DirectGraphicsPrimaryWindow::_RestartDrawing()
 {
 	gstd::Application::GetBase()->SetActive(true);
 }
+
 bool DirectGraphicsPrimaryWindow::Initialize()
 {
 	this->Initialize(config_);
 	return true;
 }
+
 bool DirectGraphicsPrimaryWindow::Initialize(DirectGraphicsConfig& config)
 {
-	int wWidth = config.GetScreenWidth();
-	int wHeight = config.GetScreenHeight();
+	const auto wWidth = config.ScreenWidth, wHeight = config.ScreenHeight;
 
 	// TODO: Should we add OpenGL/Vulkan here?
-	// TODO: Would High DPI work on this game?
-	int flags = SDL_WINDOW_ALLOW_HIGHDPI;
+	// TODO: HighDPI support
+	Uint32 flags = 0;
 
-	if (config.IsFullScreen())
-		// TODO: Borderless fullscreen ?
+	if (config.Screen == DirectGraphicsConfig::ScreenMode::Fullscreen)
 		flags &= SDL_WINDOW_FULLSCREEN;
+	else if (config.Screen == DirectGraphicsConfig::ScreenMode::DesktopFullscreen)
+		flags &= SDL_WINDOW_FULLSCREEN_DESKTOP;
 
 	hWnd_ = SDL_CreateWindow("", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, wWidth, wHeight, flags);
 
@@ -715,14 +652,12 @@ void DirectGraphicsPrimaryWindow::EventProcedure(SDL_Event* evt)
 		break;
 
 	case SDL_KEYDOWN:
-		if (evt->key.keysym.sym == SDLK_F12)
-		{
-			bShutdown_ = true;
-		}
-
 		if ( (evt->key.keysym.sym == SDLK_RETURN || evt->key.keysym.sym == SDLK_RETURN2)
 			&& (evt->key.keysym.mod & KMOD_LALT || evt->key.keysym.mod & KMOD_RALT) )
 			ChangeScreenMode();
+		break;
+
+	default:
 		break;
 	}
 }
@@ -755,17 +690,16 @@ void DirectGraphicsPrimaryWindow::ChangeScreenMode()
 	//テクスチャレストア
 	_RestoreDxResource();
 }
+#endif
 
 /**********************************************************
 //DxCamera
 **********************************************************/
-DxCamera::DxCamera()
+DxCamera::DxCamera() : matProjection_()
 {
 	Reset();
 }
-DxCamera::~DxCamera()
-{
-}
+
 void DxCamera::Reset()
 {
 	radius_ = 500;
@@ -783,135 +717,90 @@ void DxCamera::Reset()
 	clipFar_ = 2000;
 }
 
-D3DXVECTOR3 DxCamera::GetCameraPosition()
+glm::vec3 DxCamera::GetCameraPosition() const
 {
-	D3DXVECTOR3 res;
-	res.x = pos_.x + (float)(radius_ * cos(D3DXToRadian(angleElevation_)) * cos(D3DXToRadian(angleAzimuth_)));
-	res.y = pos_.y + (float)(radius_ * sin(D3DXToRadian(angleElevation_)));
-	res.z = pos_.z + (float)(radius_ * cos(D3DXToRadian(angleElevation_)) * sin(D3DXToRadian(angleAzimuth_)));
+	glm::vec3 res;
+	res.x = pos_.x + (radius_ * glm::cos(glm::radians(angleElevation_)) * glm::cos(glm::radians(angleAzimuth_)));
+	res.y = pos_.y + (radius_ * glm::sin(glm::radians(angleElevation_)));
+	res.z = pos_.z + (radius_ * glm::cos(glm::radians(angleElevation_)) * glm::sin(glm::radians(angleAzimuth_)));
 	return res;
 }
-D3DXMATRIX DxCamera::GetMatrixLookAtLH()
+
+glm::mat4 DxCamera::GetMatrixLookAtLH() const
 {
-	D3DXMATRIX res;
-	D3DXVECTOR3 posCamera = GetCameraPosition();
+	const auto posCamera = GetCameraPosition();
+	glm::vec4 vCameraUp(0.0f, 1.0f, 0.0f, 0.0f);
 
-	D3DXVECTOR3 vCameraUp(0, 1, 0);
-	{
-		D3DXQUATERNION qRot(0, 0, 0, 1.0f);
-		D3DXQuaternionRotationYawPitchRoll(&qRot,
-			Math::DegreeToRadian(yaw_), Math::DegreeToRadian(pitch_), Math::DegreeToRadian(roll_));
-		D3DXMATRIX matRot;
-		D3DXMatrixRotationQuaternion(&matRot, &qRot);
-		D3DXVec3TransformCoord((D3DXVECTOR3*)&vCameraUp, (D3DXVECTOR3*)&vCameraUp, &matRot);
+	{ // ###E
+
+		const auto matRot = glm::yawPitchRoll(glm::radians(yaw_), glm::radians(pitch_), glm::radians(roll_));
+		vCameraUp = matRot * vCameraUp;
 	}
 
-	D3DXVECTOR3 posTo = pos_;
+	auto posTo = glm::vec4(pos_, 0.0f);
 	{
-		D3DXMATRIX matTrans1;
-		D3DXMatrixTranslation(&matTrans1, -posCamera.x, -posCamera.y, -posCamera.z);
-		D3DXMATRIX matTrans2;
-		D3DXMatrixTranslation(&matTrans2, posCamera.x, posCamera.y, posCamera.z);
+		glm::mat4 matTrans1, matTrans2;
 
-		float pitch = pitch_;
+		glm::translate(matTrans1, glm::vec3(-posCamera.x, -posCamera.y, -posCamera.z));
+		glm::translate(matTrans2, glm::vec3(posCamera.x, posCamera.y, posCamera.z));
 
-		D3DXQUATERNION qRot(0, 0, 0, 1.0f);
-		D3DXQuaternionRotationYawPitchRoll(&qRot,
-			Math::DegreeToRadian(yaw_), Math::DegreeToRadian(pitch_), Math::DegreeToRadian(0));
-		D3DXMATRIX matRot;
-		D3DXMatrixRotationQuaternion(&matRot, &qRot);
-
-		D3DXMATRIX mat;
-		mat = matTrans1 * matRot * matTrans2;
-		D3DXVec3TransformCoord((D3DXVECTOR3*)&posTo, (D3DXVECTOR3*)&posTo, &mat);
+		const auto matRot = glm::yawPitchRoll(glm::radians(yaw_), glm::radians(pitch_), glm::radians(0.0f));
+		const auto mat = matTrans1 * matRot * matTrans2;
+		posTo = mat * posTo;
 	}
 
-	D3DXMatrixLookAtLH(&res, &posCamera, &posTo, &vCameraUp);
-	return res;
+	return glm::lookAtLH(posCamera, glm::vec3(posTo), glm::vec3(vCameraUp));
 }
-void DxCamera::UpdateDeviceWorldViewMatrix()
+
+void DxCamera::UpdateDeviceWorldViewMatrix() const
 {
 	DirectGraphics* graph = DirectGraphics::GetBase();
-	if (graph == NULL)
+	if (!graph)
 		return;
-	IDirect3DDevice9* device = graph->GetDevice();
-
-	D3DXMATRIX matView = GetMatrixLookAtLH();
-	device->SetTransform(D3DTS_VIEW, &matView);
+	
+	const auto mtx = GetMatrixLookAtLH();
+	graph->SetViewMatrix(mtx);
 }
+
+void DxCamera::UpdateDeviceProjectionMatrix() const
+{
+	DirectGraphics* graph = DirectGraphics::GetBase();
+	if (!graph)
+		return;
+
+	graph->SetProjMatrix(matProjection_);
+}
+
 void DxCamera::SetProjectionMatrix(float width, float height, float posNear, float posFar)
 {
-	DirectGraphics* graph = DirectGraphics::GetBase();
-	if (graph == NULL)
-		return;
-	IDirect3DDevice9* device = graph->GetDevice();
-
-	D3DXMatrixPerspectiveFovLH(&matProjection_, D3DXToRadian(45.0),
-		width / height, posNear, posFar);
-
+	matProjection_ = glm::perspectiveFovLH(glm::radians(45.0f), width, height, posNear, posFar);
+	
 	if (clipNear_ < 1)
 		clipNear_ = 1;
 	if (clipFar_ < 1)
 		clipFar_ = 1;
+	
 	clipNear_ = posNear;
 	clipFar_ = posFar;
-
-	/*
-	ref_count_ptr<DxCamera2D> camera2D = graph->GetCamera2D();
-	D3DXVECTOR2 pos = camera2D->GetLeftTopPosition();
-	double ratio = camera2D->GetRatio();
-	D3DXMATRIX matScale;
-	D3DXMatrixScaling(&matScale, ratio, ratio, 1.0);
-	D3DXMATRIX matTrans;
-	D3DXMatrixTranslation(&matTrans, pos.x / width, pos.y / height, 0);
-
-	persMat = persMat * matScale;
-	persMat = persMat * matTrans;
-	*/
 }
-void DxCamera::UpdateDeviceProjectionMatrix()
-{
-	DirectGraphics* graph = DirectGraphics::GetBase();
-	if (graph == NULL)
-		return;
-	IDirect3DDevice9* device = graph->GetDevice();
-	device->SetTransform(D3DTS_PROJECTION, &matProjection_);
-}
-D3DXVECTOR2 DxCamera::TransformCoordinateTo2D(D3DXVECTOR3 pos)
+
+glm::vec2 DxCamera::TransformCoordinateTo2D(glm::vec3 pos) // ###E2
 {
 	DirectGraphics* graphics = DirectGraphics::GetBase();
-	IDirect3DDevice9* device = graphics->GetDevice();
-	int width = graphics->GetConfigData().GetScreenWidth();
-	int height = graphics->GetConfigData().GetScreenHeight();
+	const auto width = graphics->GetRenderWidth(), height = graphics->GetRenderHeight();
 
-	D3DXMATRIX matView;
-	device->GetTransform(D3DTS_VIEW, &matView);
-	D3DXMATRIX matPers;
-	device->GetTransform(D3DTS_PROJECTION, &matPers);
+	const glm::mat4 mat = graphics->GetViewMatrix() * graphics->GetProjMatrix();
+	
+	glm::vec4 vect = { pos.x, pos.y, pos.z, 1.0f };
 
-	D3DXMATRIX mat = matView * matPers;
-	D3DXVECTOR4 vect;
-	vect.x = pos.x;
-	vect.y = pos.y;
-	vect.z = pos.z;
-	vect.w = 1;
-
-	float vx = vect.x;
-	float vy = vect.y;
-	float vz = vect.z;
-
-	vect.x = (vx * mat._11) + (vy * mat._21) + (vz * mat._31) + mat._41;
-	vect.y = (vx * mat._12) + (vy * mat._22) + (vz * mat._32) + mat._42;
-	vect.z = (vx * mat._13) + (vy * mat._23) + (vz * mat._33) + mat._43;
-	vect.w = (vx * mat._14) + (vy * mat._24) + (vz * mat._34) + mat._44;
+	vect = vect * mat;
 
 	if (vect.w > 0) {
-		vect.x = width / 2 + (vect.x / vect.w) * width / 2;
-		vect.y = height / 2 - (vect.y / vect.w) * height / 2; // Ｙ方向は上が正となるため
+		vect.x = static_cast<float>(width) / 2 + (vect.x / vect.w) * static_cast<float>(width) / 2;
+		vect.y = static_cast<float>(height) / 2 - (vect.y / vect.w) * static_cast<float>(height) / 2; // Ｙ方向は上が正となるため
 	}
-
-	D3DXVECTOR2 res(vect.x, vect.y);
-	return res;
+	
+	return { vect.x , vect.y };
 }
 
 /**********************************************************
@@ -921,94 +810,94 @@ DxCamera2D::DxCamera2D()
 {
 	pos_.x = 400;
 	pos_.y = 300;
-	ratioX_ = 1.0;
-	ratioY_ = 1.0;
+	ratioX_ = 1.0f;
+	ratioY_ = 1.0f;
 	angleZ_ = 0;
 	bEnable_ = false;
+	rcClip_ = { 0, 0, 0, 0 };
+	
 }
-DxCamera2D::~DxCamera2D()
-{
-}
+
 void DxCamera2D::Reset()
 {
 	DirectGraphics* graphics = DirectGraphics::GetBase();
-	int width = graphics->GetScreenWidth();
-	int height = graphics->GetScreenHeight();
-	if (posReset_ == NULL) {
-		pos_.x = width / 2;
-		pos_.y = height / 2;
+	const auto width = graphics->GetRenderWidth(), height = graphics->GetRenderHeight();
+	if (posReset_ == nullptr) {
+		pos_.x = static_cast<float>(width) / 2;
+		pos_.y = static_cast<float>(height) / 2;
 	} else {
 		pos_.x = posReset_->x;
 		pos_.y = posReset_->y;
 	}
-	ratioX_ = 1.0;
-	ratioY_ = 1.0;
+	ratioX_ = 1.0f;
+	ratioY_ = 1.0f;
 	SetRect(&rcClip_, 0, 0, width, height);
 
 	angleZ_ = 0;
 }
-D3DXVECTOR2 DxCamera2D::GetLeftTopPosition()
+
+glm::vec2 DxCamera2D::GetLeftTopPosition() const
 {
 	return GetLeftTopPosition(pos_, ratioX_, ratioY_, rcClip_);
 }
-D3DXVECTOR2 DxCamera2D::GetLeftTopPosition(D3DXVECTOR2 focus, double ratio)
+
+glm::vec2 DxCamera2D::GetLeftTopPosition(glm::vec2 focus, float ratio)
 {
 	return GetLeftTopPosition(focus, ratio, ratio);
 }
-D3DXVECTOR2 DxCamera2D::GetLeftTopPosition(D3DXVECTOR2 focus, double ratioX, double ratioY)
+
+glm::vec2 DxCamera2D::GetLeftTopPosition(glm::vec2 focus, float ratioX, float ratioY)
 {
 	DirectGraphics* graphics = DirectGraphics::GetBase();
-	int width = graphics->GetScreenWidth();
-	int height = graphics->GetScreenHeight();
+	const auto width = graphics->GetRenderWidth(), height = graphics->GetRenderHeight();
 	RECT rcClip;
-	ZeroMemory(&rcClip, sizeof(RECT));
+	memset(&rcClip, 0, sizeof(rcClip));
 	rcClip.right = width;
 	rcClip.bottom = height;
 	return GetLeftTopPosition(focus, ratioX, ratioY, rcClip);
 }
-D3DXVECTOR2 DxCamera2D::GetLeftTopPosition(D3DXVECTOR2 focus, double ratioX, double ratioY, RECT rcClip)
+
+glm::vec2 DxCamera2D::GetLeftTopPosition(glm::vec2 focus, float ratioX, float ratioY, RECT rcClip)
 {
-	int width = rcClip.right - rcClip.left;
-	int height = rcClip.bottom - rcClip.top;
+	const int width = rcClip.right - rcClip.left, height = rcClip.bottom - rcClip.top;
 
-	int cx = rcClip.left + width / 2; //画面の中心座標x
-	int cy = rcClip.top + height / 2; //画面の中心座標y
+	const int cx = rcClip.left + width / 2; //画面の中心座標x
+	const int cy = rcClip.top + height / 2; //画面の中心座標y
 
-	int dx = focus.x - cx; //現フォーカスでの画面左端位置
-	int dy = focus.y - cy; //現フォーカスでの画面上端位置
+	const auto dx = focus.x - cx; //現フォーカスでの画面左端位置
+	const auto dy = focus.y - cy; //現フォーカスでの画面上端位置
 
-	D3DXVECTOR2 res;
-	res.x = cx - dx * ratioX; //現フォーカスでの画面中心の位置(x座標変換量)
-	res.y = cy - dy * ratioY; //現フォーカスでの画面中心の位置(y座標変換量)
+	glm::vec2 res;
+	res.x = static_cast<float>(cx) - dx * ratioX; //現フォーカスでの画面中心の位置(x座標変換量)
+	res.y = static_cast<float>(cy) - dy * ratioY; //現フォーカスでの画面中心の位置(y座標変換量)
 
-	res.x -= (width / 2) * ratioX; //現フォーカスでの画面左の位置(x座標変換量)
-	res.y -= (height / 2) * ratioY; //現フォーカスでの画面中心の位置(x座標変換量)
+	res.x -= static_cast<float>(width) / 2 * ratioX; //現フォーカスでの画面左の位置(x座標変換量)
+	res.y -= static_cast<float>(height) / 2 * ratioY; //現フォーカスでの画面中心の位置(x座標変換量)
 
 	return res;
 }
 
-D3DXMATRIX DxCamera2D::GetMatrix()
+glm::mat4 DxCamera2D::GetMatrix() const
 {
-	D3DXVECTOR2 pos = GetLeftTopPosition();
-	D3DXMATRIX matScale;
-	D3DXMatrixScaling(&matScale, ratioX_, ratioY_, 1.0);
-	D3DXMATRIX matTrans;
-	D3DXMatrixTranslation(&matTrans, pos.x, pos.y, 0);
+	const auto pos = GetLeftTopPosition();
+	glm::mat4 matScale;
+	glm::scale(matScale, glm::vec3(ratioX_, ratioY_, 1.0f));
+	glm::mat4 matTrans;
+	glm::translate(matTrans, glm::vec3(pos.x, pos.y, 0.0f));
 
-	D3DXMATRIX matAngleZ;
-	D3DXMatrixIdentity(&matAngleZ);
-	if (angleZ_ != 0) {
-		D3DXMATRIX matTransRot1;
-		D3DXMatrixTranslation(&matTransRot1, -GetFocusX() + pos.x, -GetFocusY() + pos.y, 0);
-		D3DXMATRIX matRot;
-		D3DXMatrixRotationYawPitchRoll(&matRot, 0, 0, D3DXToRadian(angleZ_));
-		D3DXMATRIX matTransRot2;
-		D3DXMatrixTranslation(&matTransRot2, GetFocusX() - pos.x, GetFocusY() - pos.y, 0);
+	glm::mat4 matAngleZ = glm::identity<glm::mat4>();
+
+	if (static_cast<int>(angleZ_) != 0) {
+		glm::mat4 matTransRot1;
+		glm::translate(matTransRot1, glm::vec3(-GetFocusX() + pos.x, -GetFocusY() + pos.y, 0.0f));
+		// D3DXMatrixRotationYawPitchRoll(&matRot, 0, 0, D3DXToRadian(angleZ_))
+		const auto matRot = glm::eulerAngleZ(glm::radians(angleZ_));
+		glm::mat4 matTransRot2;
+		glm::translate(matTransRot2, glm::vec3(GetFocusX() - pos.x, GetFocusY() - pos.y, 0.0f));
 		matAngleZ = matTransRot1 * matRot * matTransRot2;
 	}
 
-	D3DXMATRIX mat;
-	D3DXMatrixIdentity(&mat);
+	auto mat = glm::identity<glm::mat4>();
 	mat = mat * matScale;
 	mat = mat * matAngleZ;
 	mat = mat * matTrans;

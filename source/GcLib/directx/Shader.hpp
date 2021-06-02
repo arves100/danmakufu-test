@@ -16,21 +16,26 @@ class ShaderData;
 /**********************************************************
 //ShaderData
 **********************************************************/
-class ShaderData {
-	friend Shader;
-	friend ShaderManager;
+struct ShaderData
+{
+	ShaderData() : VertexShader(BGFX_INVALID_HANDLE), FragmentationShader(BGFX_INVALID_HANDLE), Program(BGFX_INVALID_HANDLE) {}
+	
+	virtual ~ShaderData()
+	{
+		if (bgfx::isValid(Program))
+			bgfx::destroy(Program);
+		
+		if (bgfx::isValid(VertexShader))
+			bgfx::destroy(VertexShader);
 
-public:
-	ShaderData();
-	virtual ~ShaderData();
-	std::wstring GetName() { return name_; }
+		if (bgfx::isValid(FragmentationShader))
+			bgfx::destroy(FragmentationShader);
+	}
 
-private:
-	ShaderManager* manager_;
-	ID3DXEffect* effect_;
-	std::wstring name_;
-	volatile bool bLoad_;
-	volatile bool bText_;
+	bgfx::ShaderHandle VertexShader;
+	bgfx::ShaderHandle FragmentationShader;
+	bgfx::ProgramHandle Program;
+	std::string Name;
 };
 
 /**********************************************************
@@ -38,7 +43,6 @@ private:
 **********************************************************/
 class ShaderManager : public DirectGraphicsListener {
 	friend Shader;
-	friend ShaderData;
 
 public:
 	ShaderManager();
@@ -48,45 +52,45 @@ public:
 	gstd::CriticalSection& GetLock() { return lock_; }
 	void Clear();
 
+#if 0
 	virtual void ReleaseDirectGraphics() { ReleaseDxResource(); }
 	virtual void RestoreDirectGraphics() { RestoreDxResource(); }
 	void ReleaseDxResource();
 	void RestoreDxResource();
+#endif
+	
+	virtual bool IsDataExists(std::string name);
+	bool GetShaderData(std::string name, std::shared_ptr<ShaderData>& shader);
+	bool CreateFromFile(std::string path, std::shared_ptr<Shader>& shader); //読み込みます。ShaderDataは保持しますが、Shaderは保持しません。
+	bool CreateFromText(std::string source, std::shared_ptr<Shader>& shader); //読み込みます。ShaderDataは保持しますが、Shaderは保持しません。
 
-	virtual bool IsDataExists(std::wstring name);
-	gstd::ref_count_ptr<ShaderData> GetShaderData(std::wstring name);
-	gstd::ref_count_ptr<Shader> CreateFromFile(std::wstring path); //読み込みます。ShaderDataは保持しますが、Shaderは保持しません。
-	gstd::ref_count_ptr<Shader> CreateFromText(std::string source); //読み込みます。ShaderDataは保持しますが、Shaderは保持しません。
-	gstd::ref_count_ptr<Shader> CreateFromFileInLoadThread(std::wstring path);
-	virtual void CallFromLoadThread(gstd::ref_count_ptr<gstd::FileManager::LoadThreadEvent> event);
+	void AddShader(std::string name, std::shared_ptr<Shader>& shader);
+	void DeleteShader(std::string name);
+	bool GetShader(std::string name, std::shared_ptr<Shader>& shader);
+	std::shared_ptr<Shader>& GetDefaultSkinnedMeshShader();
 
-	void AddShader(std::wstring name, gstd::ref_count_ptr<Shader> shader);
-	void DeleteShader(std::wstring name);
-	gstd::ref_count_ptr<Shader> GetShader(std::wstring name);
-	gstd::ref_count_ptr<Shader> GetDefaultSkinnedMeshShader();
-
-	void CheckExecutingShaderZero();
 	std::wstring GetLastError();
 
 protected:
 	gstd::CriticalSection lock_;
-	std::map<std::wstring, gstd::ref_count_ptr<Shader>> mapShader_;
-	std::map<std::wstring, gstd::ref_count_ptr<ShaderData>> mapShaderData_;
+	std::map<std::string, std::shared_ptr<Shader>> mapShader_;
+	std::map<std::string, std::shared_ptr<ShaderData>> mapShaderData_;
 
-	std::list<Shader*> listExecuteShader_;
 	std::wstring lastError_;
 
-	void _ReleaseShaderData(std::wstring name);
-	bool _CreateFromFile(std::wstring path);
+	void _ReleaseShaderData(std::string name);
+	bool _CreateFromFile(std::string path);
 	bool _CreateFromText(std::string& source);
 	void _BeginShader(Shader* shader, int pass);
 	void _EndShader(Shader* shader);
-	static std::wstring _GetTextSourceID(std::string& source);
+	static std::string _GetTextSourceID(std::string& source);
 
 private:
 	static ShaderManager* thisBase_;
 };
 
+// TODO wdym ?
+#if 0
 /**********************************************************
 //ShaderParameter
 **********************************************************/
@@ -125,6 +129,7 @@ private:
 	gstd::ref_count_ptr<gstd::ByteBuffer> value_;
 	gstd::ref_count_ptr<Texture> texture_;
 };
+#endif
 
 /**********************************************************
 //Shader
@@ -138,43 +143,26 @@ public:
 	virtual ~Shader();
 	void Release();
 
-	int Begin(int pass = 0);
-	void End();
+	void Submit();
 
-	ID3DXEffect* GetEffect();
-	void ReleaseDxResource();
-	void RestoreDxResource();
-
-	bool CreateFromFile(std::wstring path);
+	bool CreateFromFile(std::string path);
 	bool CreateFromText(std::string& source);
-	bool IsLoad() { return data_ != NULL && data_->bLoad_; }
+	bool IsLoad() const { return data_ != nullptr && bgfx::isValid(data_->Program); }
 
-	bool SetTechnique(std::string name);
-	bool SetMatrix(std::string name, D3DXMATRIX matrix);
-	bool SetMatrixArray(std::string name, std::vector<D3DXMATRIX>& matrix);
-	bool SetVector(std::string name, D3DXVECTOR4 vector);
+#if 0
+	bool SetMatrix(std::string name, glm::mat4 matrix);
+	bool SetMatrixArray(std::string name, std::vector<glm::mat4>& matrix);
+	bool SetVector(std::string name, glm::vec4 vector);
 	bool SetFloat(std::string name, float value);
 	bool SetFloatArray(std::string name, std::vector<float>& values);
 	bool SetTexture(std::string name, gstd::ref_count_ptr<Texture> texture);
+#endif
 
 protected:
-	gstd::ref_count_ptr<ShaderData> data_;
+	std::shared_ptr<ShaderData> data_;
+	std::map<std::string, bgfx::UniformHandle> params_;
 
-	// bool bLoadShader_;
-	// IDirect3DVertexShader9* pVertexShader_;
-	// IDirect3DPixelShader9* pPixelShader_;
-
-	std::string technique_;
-	std::map<std::string, gstd::ref_count_ptr<ShaderParameter>> mapParam_;
-
-	ShaderData* _GetShaderData() { return data_.GetPointer(); }
-	gstd::ref_count_ptr<ShaderParameter> _GetParameter(std::string name, bool bCreate);
-
-	int _Begin();
-	void _End();
-	void _BeginPass(int pass = 0);
-	void _EndPass();
-	bool _SetupParameter();
+	ShaderData& _GetShaderData() const { return *data_; }
 };
 
 } // namespace directx

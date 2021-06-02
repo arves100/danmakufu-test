@@ -4,7 +4,7 @@
 #include "DxConstant.hpp"
 
 namespace directx {
-
+#if 0
 /**********************************************************
 //ColorAccess
 **********************************************************/
@@ -156,34 +156,6 @@ private:
 **********************************************************/
 class DxMath {
 public:
-	static D3DXVECTOR2 Normalize(const D3DXVECTOR2& v)
-	{
-		return *D3DXVec2Normalize(&D3DXVECTOR2(), &v);
-	}
-	static D3DXVECTOR3 Normalize(const D3DXVECTOR3& v)
-	{
-		return *D3DXVec3Normalize(&D3DXVECTOR3(), &v);
-	}
-	static float DotProduct(const D3DXVECTOR2& v1, const D3DXVECTOR2& v2)
-	{
-		return D3DXVec2Dot(&v1, &v2);
-	}
-	static float DotProduct(const D3DXVECTOR3& v1, const D3DXVECTOR3& v2)
-	{
-		return D3DXVec3Dot(&v1, &v2);
-	}
-	static float CrossProduct(const D3DXVECTOR2& v1, const D3DXVECTOR2& v2)
-	{
-		return D3DXVec2CCW(&v1, &v2);
-	}
-	static D3DXVECTOR3 CrossProduct(const D3DXVECTOR3& v1, const D3DXVECTOR3& v2)
-	{
-		return *D3DXVec3Cross(&D3DXVECTOR3(), &v1, &v2);
-	}
-
-	//ベクトルと行列の積
-	static D3DXVECTOR4 VectMatMulti(D3DXVECTOR4 v, D3DMATRIX& mat);
-
 	//衝突判定：点－多角形
 	static bool IsIntersected(D3DXVECTOR2& pos, std::vector<D3DXVECTOR2>& list);
 
@@ -220,7 +192,38 @@ inline void SetRectD(RECT_D* rect, double left, double top, double right, double
 	rect->right = right;
 	rect->bottom = bottom;
 }
+#endif
 
+class DxAllocator
+{
+public:
+	DxAllocator() : alloc(new bx::DefaultAllocator())
+	{
+		instance_ = this;
+	}
+
+	virtual ~DxAllocator()
+	{
+		if (alloc)
+		{
+			delete alloc;
+			alloc = nullptr;
+		}
+
+		instance_ = nullptr;
+	}
+
+	static bx::AllocatorI* Get()
+	{
+		return instance_->alloc;
+	}
+
+private:
+	bx::AllocatorI* alloc;
+	static DxAllocator* instance_;
+};
+
+	
 } // namespace directx
 
 #endif

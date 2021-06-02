@@ -39,10 +39,8 @@ struct GameController
 /**********************************************************
 //DirectInput
 **********************************************************/
-class DirectInput {
-	static DirectInput* thisBase_;
-
-public:
+class DirectInput
+{
 public:
 	DirectInput();
 	virtual ~DirectInput();
@@ -79,6 +77,10 @@ protected:
 	bool _InitializeJoypad();
 
 	int _GetStateSub(bool flag, int state);
+
+private:
+	static DirectInput* thisBase_;
+
 };
 
 /**********************************************************

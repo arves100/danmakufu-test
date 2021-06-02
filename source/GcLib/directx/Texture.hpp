@@ -4,49 +4,23 @@
 #include "DirectGraphics.hpp"
 #include "DxConstant.hpp"
 
-namespace directx {
-
-class TextureData;
+namespace directx
+{
 class Texture;
 class TextureManager;
-class TextureInfoPanel;
 
 /**********************************************************
 //Texture
 **********************************************************/
-class TextureData {
-	friend Texture;
-	friend TextureManager;
-	friend TextureInfoPanel;
-
-public:
-	enum {
-		TYPE_TEXTURE,
-		TYPE_RENDER_TARGET,
-	};
-
-public:
-	TextureData();
-	virtual ~TextureData();
-	std::wstring GetName() { return name_; }
-	D3DXIMAGE_INFO GetImageInfo() { return infoImage_; }
-
-protected:
-	int type_;
-	TextureManager* manager_;
-	IDirect3DTexture9* pTexture_;
-	D3DXIMAGE_INFO infoImage_;
-	std::wstring name_;
-	volatile bool bLoad_;
-
-	IDirect3DSurface9* lpRenderSurface_; //バックバッファ実体(レンダリングターゲット用)
-	IDirect3DSurface9* lpRenderZ_; //バックバッファのZバッファ実体(レンダリングターゲット用)
+struct TextureData
+{
+	uint16_t Width, Height;
+	bgfx::TextureHandle Handle;
+	std::string Name;
 };
 
 class Texture : public gstd::FileManager::LoadObject {
-	friend TextureData;
 	friend TextureManager;
-	friend TextureInfoPanel;
 
 public:
 	Texture();
@@ -54,23 +28,51 @@ public:
 	virtual ~Texture();
 	void Release();
 
-	std::wstring GetName();
-	bool CreateFromFile(std::wstring path);
-	bool CreateRenderTarget(std::wstring name);
-	bool CreateFromFileInLoadThread(std::wstring path, bool bLoadImageInfo = false);
+	std::string GetName() const { return data_->Name; }
+	bool CreateFromFile(std::string path);
 
-	void SetTexture(IDirect3DTexture9* pTexture);
-	IDirect3DTexture9* GetD3DTexture();
-	IDirect3DSurface9* GetD3DSurface();
-	IDirect3DSurface9* GetD3DZBuffer();
+	bool CreateFromFileInLoadThread(std::string path, bool bLoadImageInfo = false);
 
-	int GetWidth();
-	int GetHeight();
-	bool IsLoad() { return data_ != NULL && data_->bLoad_; }
+	bgfx::TextureHandle GetHandle() const;
+
+	int GetWidth() const { return data_->Width; }
+	int GetHeight() const { return data_->Height; }
+	bool IsLoad() const { return bgfx::isValid(data_->Handle); }
 
 protected:
-	gstd::ref_count_ptr<TextureData> data_;
-	TextureData* _GetTextureData() { return data_.GetPointer(); }
+	std::shared_ptr<TextureData> data_;
+};
+
+/**********************************************************
+//FrameBuffer
+**********************************************************/
+struct FrameBufferData
+{
+	uint16_t Width, Height;
+	bgfx::FrameBufferHandle Handle;
+	std::string Name;
+};
+
+class FrameBuffer {
+	friend TextureManager;
+
+public:
+	FrameBuffer();
+	FrameBuffer(FrameBuffer* texture);
+	virtual ~FrameBuffer();
+	void Release();
+
+	std::string GetName() const { return data_->Name; }
+	bool Create(std::string path);
+
+	bgfx::FrameBufferHandle GetHandle() const { return data_->Handle; }
+
+	int GetWidth() const { return data_->Width; }
+	int GetHeight() const { return data_->Height; }
+	bool IsLoad() const { return bgfx::isValid(data_->Handle); }
+
+protected:
+	std::shared_ptr<FrameBufferData> data_;
 };
 
 /**********************************************************
@@ -78,12 +80,11 @@ protected:
 	**********************************************************/
 class TextureManager : public DirectGraphicsListener, public gstd::FileManager::LoadThreadListener {
 	friend Texture;
-	friend TextureData;
-	friend TextureInfoPanel;
+	friend FrameBuffer;
 	static TextureManager* thisBase_;
 
 public:
-	static const std::wstring TARGET_TRANSITION;
+	static const std::string TARGET_TRANSITION;
 
 public:
 	TextureManager();
@@ -93,33 +94,35 @@ public:
 	gstd::CriticalSection& GetLock() { return lock_; }
 
 	virtual void Clear();
-	virtual void Add(std::wstring name, gstd::ref_count_ptr<Texture> texture); //テクスチャの参照を保持します
-	virtual void Release(std::wstring name); //保持している参照を解放します
-	virtual bool IsDataExists(std::wstring name);
+	virtual void Add(std::string name, std::shared_ptr<FrameBuffer>& texture); //テクスチャの参照を保持します
+	virtual void ReleaseFrameBuffer(std::string name); //保持している参照を解放します
+	virtual bool IsDataExists(std::string name);
+	virtual bool IsFrameBufferExists(std::string name);
 
 	virtual void ReleaseDirectGraphics() { ReleaseDxResource(); }
 	virtual void RestoreDirectGraphics() { RestoreDxResource(); }
 	void ReleaseDxResource();
 	void RestoreDxResource();
 
-	gstd::ref_count_ptr<TextureData> GetTextureData(std::wstring name);
-	gstd::ref_count_ptr<Texture> CreateFromFile(std::wstring path); //テクスチャを読み込みます。TextureDataは保持しますが、Textureは保持しません。
-	gstd::ref_count_ptr<Texture> CreateRenderTarget(std::wstring name);
-	gstd::ref_count_ptr<Texture> GetTexture(std::wstring name); //作成済みのテクスチャを取得します
-	gstd::ref_count_ptr<Texture> CreateFromFileInLoadThread(std::wstring path, bool bLoadImageInfo = false);
-	virtual void CallFromLoadThread(gstd::ref_count_ptr<gstd::FileManager::LoadThreadEvent> event);
+	bool GetTextureData(std::string name, std::shared_ptr<TextureData>& out);
+	bool CreateDataFromFile(std::string path, std::shared_ptr<TextureData>& out);
+	bool CreateRenderTarget(std::string name, std::shared_ptr<FrameBufferData>& data);
+	bool GetFrameBuffer(std::string name, std::shared_ptr<FrameBuffer>& data); //作成済みのテクスチャを取得します
 
-	void SetInfoPanel(gstd::ref_count_ptr<TextureInfoPanel> panel) { panelInfo_ = panel; }
+	gstd::ref_count_ptr<Texture> CreateFromFileInLoadThread(std::string path, bool bLoadImageInfo = false);
+	virtual void CallFromLoadThread(gstd::ref_count_ptr<gstd::FileManager::LoadThreadEvent> event);
 
 protected:
 	gstd::CriticalSection lock_;
-	std::map<std::wstring, gstd::ref_count_ptr<Texture>> mapTexture_;
-	std::map<std::wstring, gstd::ref_count_ptr<TextureData>> mapTextureData_;
-	gstd::ref_count_ptr<TextureInfoPanel> panelInfo_;
+	std::map<std::string, std::shared_ptr<FrameBuffer>> mapFrameBuffer_;
+	std::map<std::string, std::shared_ptr<TextureData>> mapTextureData_;
+	std::map<std::string, std::shared_ptr<FrameBufferData>> mapFrameBufferData_;
+	std::map<std::string, gstd::ref_count_ptr<Texture>> mapTexture_;
 
-	void _ReleaseTextureData(std::wstring name);
-	bool _CreateFromFile(std::wstring path);
-	bool _CreateRenderTarget(std::wstring name);
+	void _ReleaseTextureData(std::string name);
+	void _ReleaseFrameBufferData(std::string name);
+	bool _CreateFromFile(std::string path);
+	bool _CreateRenderTarget(std::string name);
 };
 
 } // namespace directx

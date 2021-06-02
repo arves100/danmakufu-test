@@ -60,6 +60,10 @@ if (NOT ZLIB_FOUND)
 	set(ZLIB_LIBRARIES ZLIB::ZLIB)
 endif()
 
+find_package(glm CONFIG REQUIRED)
+
+include(FindBgfx)
+
 execute_process(COMMAND git branch --show-current WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} OUTPUT_VARIABLE __BRANCH__ OUTPUT_STRIP_TRAILING_WHITESPACE)
 execute_process(COMMAND git rev-parse HEAD WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} OUTPUT_VARIABLE __COMMIT__ OUTPUT_STRIP_TRAILING_WHITESPACE)
 execute_process(COMMAND git tag --points-at HEAD WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} OUTPUT_VARIABLE TAG_DIRTY OUTPUT_STRIP_TRAILING_WHITESPACE)
@@ -68,6 +72,7 @@ if (NOT TAG_DIRTY STREQUAL "")
 	string(REPLACE "^0" "" __TAG__ ${TAG_DIRTY})
 endif()
 
-configure_file(source/Version.h.in ${CMAKE_CURRENT_BINARY_DIR}/Version.h)
+configure_file(source/Version.h.in ${CMAKE_CURRENT_BINARY_DIR}/generated/Version.h)
+include_directories(${CMAKE_CURRENT_BINARY_DIR}/generated)
 
 add_subdirectory(source)

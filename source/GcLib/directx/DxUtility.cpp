@@ -3,6 +3,8 @@
 using namespace gstd;
 using namespace directx;
 
+#if 0
+
 /**********************************************************
 //ColorAccess
 **********************************************************/
@@ -276,3 +278,6 @@ bool DxMath::IsIntersected(DxLine3D& line, std::vector<DxTriangle>& triangles, s
 	bool res = out.size() > 0;
 	return res;
 }
+#endif
+
+DxAllocator* directx::DxAllocator::instance_ = nullptr;

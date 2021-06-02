@@ -7,160 +7,160 @@ namespace directx {
 
 class DxCamera;
 class DxCamera2D;
-class Texture;
+class FrameBuffer;
+	
 /**********************************************************
 //DirectGraphicsConfig
 **********************************************************/
-class DirectGraphicsConfig {
-public:
-	enum {
-		COLOR_MODE_16BIT,
-		COLOR_MODE_32BIT,
+struct DirectGraphicsConfig
+{
+	enum class ColorMode
+	{
+		Bit16,
+		Bit32,
 	};
 
-public:
-	DirectGraphicsConfig();
-	virtual ~DirectGraphicsConfig();
-	int GetScreenWidth() { return widthScreen_; }
-	void SetScreenWidth(int width) { widthScreen_ = width; }
-	int GetScreenHeight() { return heightScreen_; }
-	void SetScreenHeight(int height) { heightScreen_ = height; }
-	bool IsWindowed() { return bWindowed_; }
-	void SetWindowd(bool bWindowed) { bWindowed_ = bWindowed; }
-	bool IsReferenceEnable() { return bUseRef_; }
-	void SetReferenceEnable(bool bEnable) { bUseRef_ = bEnable; }
-	int GetColorMode() { return colorMode_; }
-	void SetColorMode(int mode) { colorMode_ = mode; }
-	bool IsTripleBufferEnable() { return bUseTripleBuffer_; }
-	void SetTripleBufferEnable(bool bEnable) { bUseTripleBuffer_ = bEnable; }
-	bool IsWaitTimerEnable() { return bUseWaitTimer_; }
-	void SetWaitTimerEnable(bool bEnable) { bUseWaitTimer_ = bEnable; }
-	bool IsFullScreen() { return bIsFullScreen_; }
-	void SetFullScreen(bool b) { bIsFullScreen_ = b; }
+	enum class ScreenMode
+	{
+		Fullscreen,
+		DesktopFullscreen,
+		Windowed,
+	};
 
-protected:
-	int widthScreen_;
-	int heightScreen_;
-	bool bWindowed_;
-	bool bUseRef_;
-	int colorMode_;
-	bool bUseTripleBuffer_;
-	bool bUseWaitTimer_;
-	bool bIsFullScreen_;
+	DirectGraphicsConfig() : RenderWidth(800), RenderHeight(600), Color(ColorMode::Bit32),
+		UseTripleBuffer(false), IsFullscreen(false), UseVSync(false), Render(bgfx::RendererType::Direct3D9) {}
+
+	uint16_t RenderWidth, RenderHeight;
+	ColorMode Color;
+	bool UseTripleBuffer, IsFullscreen, UseVSync;
+	bgfx::RendererType::Enum Render;
 };
 
-class DirectGraphicsListener {
+class DirectGraphicsListener
+{
 public:
-	virtual ~DirectGraphicsListener() {}
+	virtual ~DirectGraphicsListener() = default;
 	virtual void ReleaseDirectGraphics() {}
 	virtual void RestoreDirectGraphics() {}
 	virtual void StartChangeScreenMode() { ReleaseDirectGraphics(); }
 	virtual void EndChangeScreenMode() { RestoreDirectGraphics(); }
 };
 
-class DirectGraphics {
+class DirectGraphics
+	{
 	static DirectGraphics* thisBase_;
 
-public:
-	enum {
-		SCREENMODE_FULLSCREEN,
-		SCREENMODE_WINDOW,
-	};
-	enum {
-		MODE_BLEND_NONE, //なし
-		MODE_BLEND_ALPHA, //αで半透明合成
-		MODE_BLEND_ADD_RGB, //RGBで加算合成
-		MODE_BLEND_ADD_ARGB, //αで加算合成
-		MODE_BLEND_MULTIPLY, //乗算合成
-		MODE_BLEND_SUBTRACT, //減算合成
-		MODE_BLEND_SHADOW, //影描画用
-		MODE_BLEND_INV_DESTRGB, //描画先色反転合成
-
-		MODE_TEXTURE_FILTER_NONE, //フィルタなし
-		MODE_TEXTURE_FILTER_POINT, //補間なし
-		MODE_TEXTURE_FILTER_LINEAR, //線形補間
+public:	
+	enum class BlendMode
+	{
+		None, //なし
+		Alpha, //αで半透明合成
+		Add_RGB, //RGBで加算合成
+		Add_ARGB, //αで加算合成
+		Multiply, //乗算合成
+		Subtract, //減算合成
+		Shadow, //影描画用
+		InvDestRGB, //描画先色反転合成
 	};
 
-public:
+	enum class TextureFilterMode
+	{
+		None, //フィルタなし
+		Point, //補間なし
+		Linear, //線形補間
+	};
+
+	enum class CullingMode
+	{
+		None,
+		Cw,
+		Ccw,
+	};
+
 	DirectGraphics();
 	virtual ~DirectGraphics();
 	static DirectGraphics* GetBase() { return thisBase_; }
-	SDL_Window* GetAttachedWindowHandle() { return hAttachedWindow_; }
 
-	virtual bool Initialize(SDL_Window* hWnd);
-	virtual bool Initialize(SDL_Window* hWnd, DirectGraphicsConfig& config);
+	virtual bool Initialize(void* nwh, void* ndt);
+	virtual bool Initialize(DirectGraphicsConfig& config, void* nwh, void* ndt);
+	void Shutdown();
+	
 	void AddDirectGraphicsListener(DirectGraphicsListener* listener);
 	void RemoveDirectGraphicsListener(DirectGraphicsListener* listener);
-	int GetScreenMode() { return modeScreen_; }
-	D3DPRESENT_PARAMETERS GetFullScreenPresentParameter() { return d3dppFull_; }
-	D3DPRESENT_PARAMETERS GetWindowPresentParameter() { return d3dppWin_; }
 
-	IDirect3DDevice9* GetDevice() { return pDevice_; }
 	DirectGraphicsConfig& GetConfigData() { return config_; }
 
 	void BeginScene(bool bClear = true); //描画開始
-	void EndScene(); //描画終了
-	void ClearRenderTarget();
-	void ClearRenderTarget(RECT rect);
-	void SetRenderTarget(gstd::ref_count_ptr<Texture> texture);
-	gstd::ref_count_ptr<Texture> GetRenderTarget() { return textureTarget_; }
+	void EndScene() const; //描画終了
+	void Clear() const;
+	void Clear(uint16_t x, uint16_t y, uint16_t width, uint16_t height) const;
+
+	void SetProjMatrix(glm::mat4 mtx);
+	void SetViewMatrix(glm::mat4 mtx);
+	glm::mat4 GetProjMatrix() const { return matProj_; }
+	glm::mat4 GetViewMatrix() const { return matView_; }
+	
+	void SetViewAndProjMatrix(glm::mat4 view, glm::mat4 proj);
+
+	void SetRenderTarget(std::shared_ptr<FrameBuffer>& texture);
 
 	//レンダリングステートラッパ
 	void SetLightingEnable(bool bEnable); //ライティング
 	void SetSpecularEnable(bool bEnable); //スペキュラ
-	void SetCullingMode(DWORD mode); //カリング
+	void SetCullingMode(CullingMode mode); //カリング
 	void SetShadingMode(DWORD mode); //シェーディング
 	void SetZBufferEnable(bool bEnable); //Zバッファ参照
-	void SetZWriteEnalbe(bool bEnable); //Zバッファ書き込み
-	void SetAlphaTest(bool bEnable, DWORD ref = 0, D3DCMPFUNC func = D3DCMP_GREATER);
-	void SetBlendMode(DWORD mode, int stage = 0);
-	void SetFillMode(DWORD mode);
+	void SetZWriteEnable(bool bEnable); //Zバッファ書き込み
+	void SetAlphaTest(bool bEnable, DWORD ref = 0);
+	void SetBlendMode(BlendMode mode, int stage = 0);
 	void SetFogEnable(bool bEnable);
-	bool IsFogEnable();
+	bool IsFogEnable() const;
 	void SetVertexFog(bool bEnable, D3DCOLOR color, float start, float end);
 	void SetPixelFog(bool bEnable, D3DCOLOR color, float start, float end);
-	void SetTextureFilter(DWORD mode, int stage = 0);
-	DWORD GetTextureFilter(int stage = 0);
+	void SetTextureFilter(TextureFilterMode mode, int stage = 0);
+	TextureFilterMode GetTextureFilter(int stage = 0) const;
 
 	void SetDirectionalLight(D3DVECTOR& dir);
 
-	void SetViewPort(int x, int y, int width, int height);
+	void SetViewPort(bgfx::ViewId id, uint16_t x, uint16_t y, uint16_t width, uint16_t height);
 	void ResetViewPort();
 
-	int GetScreenWidth();
-	int GetScreenHeight();
-	double GetScreenWidthRatio();
-	double GetScreenHeightRatio();
-	POINT GetMousePosition();
-	gstd::ref_count_ptr<DxCamera> GetCamera() { return camera_; }
-	gstd::ref_count_ptr<DxCamera2D> GetCamera2D() { return camera2D_; }
+	uint16_t GetRenderWidth() const { return config_.RenderWidth; }
+	uint16_t GetRenderHeight() const { return config_.RenderHeight; }
 
-	void SaveBackSurfaceToFile(std::wstring path);
-	bool IsPixelShaderSupported(int major, int minor);
+	float GetScreenWidthRatio() const;
+	float GetScreenHeightRatio() const;
+	POINT GetMousePosition() const;
+	DxCamera& GetCamera() const { return *camera_; }
+	DxCamera2D& GetCamera2D() const { return *camera2D_; }
 
 protected:
-	IDirect3D9* pDirect3D_;
-	IDirect3DDevice9* pDevice_;
-	D3DPRESENT_PARAMETERS d3dppFull_;
-	D3DPRESENT_PARAMETERS d3dppWin_;
-	IDirect3DSurface9* pBackSurf_;
-	IDirect3DSurface9* pZBuffer_;
 
 	DirectGraphicsConfig config_;
-	SDL_Window* hAttachedWindow_;
-	int modeScreen_;
 	std::list<DirectGraphicsListener*> listListener_;
 
-	gstd::ref_count_ptr<DxCamera> camera_;
-	gstd::ref_count_ptr<DxCamera2D> camera2D_;
-	gstd::ref_count_ptr<Texture> textureTarget_;
+	std::unique_ptr<DxCamera> camera_;
+	std::unique_ptr<DxCamera2D> camera2D_;
+	std::shared_ptr<FrameBuffer> textureTarget_;
 
 	void _ReleaseDxResource();
 	void _RestoreDxResource();
 	void _Restore();
 	void _InitializeDeviceState();
+
+	uint64_t states_;
+	uint32_t resetFlags_;
+	uint32_t blendFactor_;
+	uint16_t clearFlags_;
+	bool init_;
+	
+	void _UpdateState() const;
+
+	glm::mat4 matProj_, matView_;
 };
 
+// TODO: Migrate to an application specific part
+#if 0
 /**********************************************************
 //DirectGraphicsPrimaryWindow
 **********************************************************/
@@ -177,121 +177,127 @@ protected:
 	void _PauseDrawing();
 	void _RestartDrawing();
 };
-
+#endif
+	
 /**********************************************************
 //DxCamera
 **********************************************************/
-class DxCamera {
+class DxCamera
+	{
 public:
 	DxCamera();
-	virtual ~DxCamera();
+	virtual ~DxCamera() = default;
 	void Reset();
-	D3DXVECTOR3 GetCameraPosition();
-	D3DXVECTOR3 GetFocusPosition() { return pos_; }
+	
+	glm::vec3 GetCameraPosition() const;
+	glm::vec3 GetFocusPosition() const { return pos_; }
+	
 	void SetFocus(float x, float y, float z)
 	{
 		pos_.x = x;
 		pos_.y = y;
 		pos_.z = z;
 	}
-	void SetFocusX(float x) { pos_.x = x; }
-	void SetFocusY(float y) { pos_.y = y; }
-	void SetFocusZ(float z) { pos_.z = z; }
-	float GetRadius() { return radius_; }
-	void SetRadius(float r) { radius_ = r; }
-	float GetAzimuthAngle() { return angleAzimuth_; }
-	void SetAzimuthAngle(float angle) { angleAzimuth_ = angle; }
-	float GetElevationAngle() { return angleElevation_; }
-	void SetElevationAngle(float angle) { angleElevation_ = angle; }
+	void SetFocusX(const float x) { pos_.x = x; }
+	void SetFocusY(const float y) { pos_.y = y; }
+	void SetFocusZ(const float z) { pos_.z = z; }
+	
+	float GetRadius() const  { return radius_; }
+	void SetRadius(const float r) { radius_ = r; }
+	float GetAzimuthAngle() const  { return angleAzimuth_; }
+	void SetAzimuthAngle(const float angle) { angleAzimuth_ = angle; }
+	float GetElevationAngle() const  { return angleElevation_; }
+	void SetElevationAngle(const float angle) { angleElevation_ = angle; }
 
-	float GetYaw() { return yaw_; }
-	void SetYaw(float yaw) { yaw_ = yaw; }
-	float GetPitch() { return pitch_; }
-	void SetPitch(float pitch) { pitch_ = pitch; }
-	float GetRoll() { return roll_; }
-	void SetRoll(float roll) { roll_ = roll; }
+	float GetYaw() const { return yaw_; }
+	void SetYaw(const float yaw) { yaw_ = yaw; }
+	float GetPitch() const  { return pitch_; }
+	void SetPitch(const float pitch) { pitch_ = pitch; }
+	float GetRoll() const  { return roll_; }
+	void SetRoll(const float roll) { roll_ = roll; }
 
-	double GetNearClip() { return clipNear_; }
-	double GetFarClip() { return clipFar_; }
+	float GetNearClip() const  { return clipNear_; }
+	float GetFarClip() const  { return clipFar_; }
 
-	D3DXMATRIX GetMatrixLookAtLH();
-	void UpdateDeviceWorldViewMatrix();
+	glm::mat4 GetMatrixLookAtLH() const;
+	void UpdateDeviceProjectionMatrix() const;
+	void UpdateDeviceWorldViewMatrix() const;
 	void SetProjectionMatrix(float width, float height, float posNear, float posFar);
-	void UpdateDeviceProjectionMatrix();
 
-	D3DXVECTOR2 TransformCoordinateTo2D(D3DXVECTOR3 pos);
+	glm::vec2 TransformCoordinateTo2D(glm::vec3 pos);
 
 private:
-	D3DXVECTOR3 pos_; //焦点
+	glm::vec3 pos_; //焦点
 	float radius_;
 	float angleAzimuth_;
 	float angleElevation_;
-	D3DXMATRIX matProjection_;
+	glm::mat4 matProjection_;
 
 	float yaw_;
 	float pitch_;
 	float roll_;
 
-	double clipNear_;
-	double clipFar_;
+	float clipNear_;
+	float clipFar_;
 };
 
 /**********************************************************
 //DxCamera2D
 **********************************************************/
-class DxCamera2D {
+class DxCamera2D
+{
 public:
 	DxCamera2D();
-	virtual ~DxCamera2D();
+	virtual ~DxCamera2D() = default;
 
-	bool IsEnable() { return bEnable_; }
-	void SetEnable(bool bEnable) { bEnable_ = bEnable; }
+	bool IsEnable() const { return bEnable_; }
+	void SetEnable(const bool bEnable) { bEnable_ = bEnable; }
 
-	D3DXVECTOR2 GetFocusPosition() { return pos_; }
-	float GetFocusX() { return pos_.x; }
-	float GetFocusY() { return pos_.y; }
-	void SetFocus(float x, float y)
+	glm::vec2 GetFocusPosition() const { return pos_; }
+	float GetFocusX() const { return pos_.x; }
+	float GetFocusY() const { return pos_.y; }
+	void SetFocus(const float x, const float y)
 	{
 		pos_.x = x;
 		pos_.y = y;
 	}
-	void SetFocus(D3DXVECTOR2 pos) { pos_ = pos; }
-	void SetFocusX(float x) { pos_.x = x; }
-	void SetFocusY(float y) { pos_.y = y; }
-	double GetRatio() { return _MAX(ratioX_, ratioY_); }
-	void SetRatio(double ratio)
+	void SetFocus(const glm::vec2 pos) { pos_ = pos; }
+	void SetFocusX(const float x) { pos_.x = x; }
+	void SetFocusY(const float y) { pos_.y = y; }
+	float GetRatio() const { return glm::min(ratioX_, ratioY_); }
+	void SetRatio(const float ratio)
 	{
 		ratioX_ = ratio;
 		ratioY_ = ratio;
 	}
-	double GetRatioX() { return ratioX_; }
-	void SetRatioX(double ratio) { ratioX_ = ratio; }
-	double GetRatioY() { return ratioY_; }
-	void SetRatioY(double ratio) { ratioY_ = ratio; }
-	double GetAngleZ() { return angleZ_; }
-	void SetAngleZ(double angle) { angleZ_ = angle; }
+	float GetRatioX() const { return ratioX_; }
+	void SetRatioX(const float ratio) { ratioX_ = ratio; }
+	float GetRatioY() const { return ratioY_; }
+	void SetRatioY(const float ratio) { ratioY_ = ratio; }
+	float GetAngleZ() const { return angleZ_; }
+	void SetAngleZ(const float angle) { angleZ_ = angle; }
 
-	RECT GetClip() { return rcClip_; }
-	void SetClip(RECT rect) { rcClip_ = rect; }
+	RECT GetClip() const { return rcClip_; }
+	void SetClip(const RECT rect) { rcClip_ = rect; }
 
-	void SetResetFocus(gstd::ref_count_ptr<D3DXVECTOR2> pos) { posReset_ = pos; }
+	void SetResetFocus(gstd::ref_count_ptr<glm::vec2> pos) { posReset_ = pos; }
 	void Reset();
-	inline D3DXVECTOR2 GetLeftTopPosition();
-	inline static D3DXVECTOR2 GetLeftTopPosition(D3DXVECTOR2 focus, double ratio);
-	inline static D3DXVECTOR2 GetLeftTopPosition(D3DXVECTOR2 focus, double ratioX, double ratioY);
-	inline static D3DXVECTOR2 GetLeftTopPosition(D3DXVECTOR2 focus, double ratioX, double ratioY, RECT rcClip);
+	inline glm::vec2 GetLeftTopPosition() const;
+	inline static glm::vec2 GetLeftTopPosition(glm::vec2 focus, float ratio);
+	inline static glm::vec2 GetLeftTopPosition(glm::vec2 focus, float ratioX, float ratioY);
+	inline static glm::vec2 GetLeftTopPosition(glm::vec2 focus, float ratioX, float ratioY, RECT rcClip);
 
-	D3DXMATRIX GetMatrix();
+	glm::mat4 GetMatrix() const;
 
 private:
 	bool bEnable_;
-	D3DXVECTOR2 pos_; //焦点
-	double ratioX_; //拡大率
-	double ratioY_;
-	double angleZ_;
+	glm::vec2 pos_; //焦点
+	float ratioX_; //拡大率
+	float ratioY_;
+	float angleZ_;
 	RECT rcClip_; //視野
 
-	gstd::ref_count_ptr<D3DXVECTOR2> posReset_;
+	gstd::ref_count_ptr<glm::vec2> posReset_;
 };
 
 } // namespace directx

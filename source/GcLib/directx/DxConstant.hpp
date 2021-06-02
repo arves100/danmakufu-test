@@ -3,13 +3,6 @@
 
 #include "../gstd/GstdLib.hpp"
 
-//define
-#define D3D_OVERLOADS
-#define DIRECTINPUT_VERSION 0x0800
-#define DIRECTSOUND_VERSION 0x0900
-
-#define DWORD_PTR DWORD*
-
 #ifdef _DEBUG
 #undef new
 #endif
@@ -20,13 +13,35 @@
 #include <msacm.h> //for acm
 
 #include <basetsd.h>
-#include <d3d9.h>
-#include <d3dx9.h>
 #include <dsound.h>
 #include <SDL.h>
 
 #include <vorbis/codec.h>
 #include <vorbis/vorbisfile.h>
+
+// TODO: DEFINE NOMINMAX AND GET RID OF THIS ON WINDOWS
+#ifdef min
+#undef min
+#endif
+#ifdef max
+#undef max
+#endif
+
+// BGFX
+#include <bx/bx.h>
+#include <bx/allocator.h>
+#include <bimg/decode.h>
+#include <bgfx/bgfx.h>
+
+// GLM (math library)
+#include <glm/glm.hpp>
+#include <glm/gtc/quaternion.hpp>
+#include <glm/gtx/euler_angles.hpp>
+
+#include <glm/ext/matrix_transform.hpp> // glm::translate, glm::rotate, glm::scale
+#include <glm/ext/matrix_clip_space.hpp> // glm::perspective
+#include <glm/ext/scalar_constants.hpp> // glm::pi
+#include <glm/ext/quaternion_transform.hpp>
 
 #ifdef _DEBUG
 #include <crtdbg.h>
