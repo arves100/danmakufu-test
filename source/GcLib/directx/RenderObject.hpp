@@ -465,7 +465,7 @@ public:
 
 	Shader* GetShader() const { return shader_.get(); }
 
-	void Submit()
+	void Submit(bgfx::ViewId id = 0)
 	{
 		if (bRecreate_)
 			_RestoreBuffers();
@@ -476,7 +476,7 @@ public:
 		bgfx::setVertexBuffer(0, pVertexBuffer_);
 		bgfx::setIndexBuffer(pIndexBuffer_);
 
-		shader_->Submit();
+		shader_->Submit(id);
 	}
 
 	T* GetVertex(const size_t index) const

@@ -92,17 +92,17 @@ public:
 
 	void BeginScene(bool bClear = true); //描画開始
 	void EndScene() const; //描画終了
-	void Clear() const;
-	void Clear(uint16_t x, uint16_t y, uint16_t width, uint16_t height) const;
+	void Clear(bgfx::ViewId id = 0) const;
+	void Clear(bgfx::ViewId id, uint16_t x, uint16_t y, uint16_t width, uint16_t height) const;
 
-	void SetProjMatrix(glm::mat4 mtx);
-	void SetViewMatrix(glm::mat4 mtx);
+	void SetProjMatrix(glm::mat4 mtx, bgfx::ViewId id = 0);
+	void SetViewMatrix(glm::mat4 mtx, bgfx::ViewId id = 0);
 	glm::mat4 GetProjMatrix() const { return matProj_; }
 	glm::mat4 GetViewMatrix() const { return matView_; }
 	
-	void SetViewAndProjMatrix(glm::mat4 view, glm::mat4 proj);
+	void SetViewAndProjMatrix(glm::mat4 view, glm::mat4 proj, bgfx::ViewId id = 0);
 
-	void SetRenderTarget(std::shared_ptr<FrameBuffer>& texture);
+	void SetRenderTarget(std::shared_ptr<FrameBuffer>& texture, bgfx::ViewId id = 0);
 
 	//レンダリングステートラッパ
 	void SetSpecularEnable(bool bEnable); //スペキュラ
@@ -120,9 +120,6 @@ public:
 	TextureFilterMode GetTextureFilter(int stage = 0) const;
 
 	void SetDirectionalLight(D3DVECTOR& dir);
-
-	void SetViewPort(bgfx::ViewId id, uint16_t x, uint16_t y, uint16_t width, uint16_t height);
-	void ResetViewPort();
 
 	uint16_t GetRenderWidth() const { return config_.RenderWidth; }
 	uint16_t GetRenderHeight() const { return config_.RenderHeight; }
@@ -142,7 +139,7 @@ protected:
 
 	std::unique_ptr<DxCamera> camera_;
 	std::unique_ptr<DxCamera2D> camera2D_;
-	std::shared_ptr<FrameBuffer> textureTarget_;
+	std::unordered_map<bgfx::ViewId, std::shared_ptr<FrameBuffer>> textureTarget_;
 
 	void _ReleaseDxResource();
 	void _RestoreDxResource();
@@ -219,8 +216,8 @@ public:
 	float GetFarClip() const  { return clipFar_; }
 
 	glm::mat4 GetMatrixLookAtLH() const;
-	void UpdateDeviceProjectionMatrix() const;
-	void UpdateDeviceWorldViewMatrix() const;
+	void UpdateDeviceProjectionMatrix(bgfx::ViewId id = 0) const;
+	void UpdateDeviceWorldViewMatrix(bgfx::ViewId id = 0) const;
 	void SetProjectionMatrix(float width, float height, float posNear, float posFar, float fov = 45.0f);
 
 	glm::vec2 TransformCoordinateTo2D(glm::vec3 pos);

@@ -156,8 +156,10 @@ void DirectGraphics::_Restore()
 
 	_RestoreDxResource();
 
-	if (textureTarget_ != nullptr)
-		bgfx::setViewFrameBuffer(0, textureTarget_->GetHandle());
+	for (auto& tt : textureTarget_)
+	{
+		bgfx::setViewFrameBuffer(tt.first, tt.second->GetHandle());		
+	}
 
 	Logger::WriteTop(L"DirectGraphics：_Restore完了");
 }
@@ -188,9 +190,6 @@ void DirectGraphics::_InitializeDeviceState()
 	//Zテスト
 	SetZWriteEnable(false);
 	SetDepthTest(false);
-
-	//ViewPort
-	ResetViewPort();
 }
 
 void DirectGraphics::AddDirectGraphicsListener(DirectGraphicsListener* listener)
@@ -207,22 +206,21 @@ void DirectGraphics::RemoveDirectGraphicsListener(DirectGraphicsListener* listen
 }
 
 // Bgfx does not allow us to get the view and projection matrix, so we store it in our application
-void DirectGraphics::SetViewAndProjMatrix(const glm::mat4 view, const glm::mat4 proj)
+void DirectGraphics::SetViewAndProjMatrix(const glm::mat4 view, const glm::mat4 proj, bgfx::ViewId id)
 {
 	matView_ = view;
 	matProj_ = proj;
-	bgfx::setViewTransform(0, &matView_[0], &matProj_[0]);
-	Clear();
+	bgfx::setViewTransform(id, &matView_[0], &matProj_[0]);
 }
 
-void DirectGraphics::SetProjMatrix(const glm::mat4 mtx)
+void DirectGraphics::SetProjMatrix(const glm::mat4 mtx, bgfx::ViewId id)
 {
-	SetViewAndProjMatrix(matView_, mtx);
+	SetViewAndProjMatrix(matView_, mtx, id);
 }
 
-void DirectGraphics::SetViewMatrix(const glm::mat4 mtx)
+void DirectGraphics::SetViewMatrix(const glm::mat4 mtx, bgfx::ViewId id)
 {
-	SetViewAndProjMatrix(mtx, matProj_);
+	SetViewAndProjMatrix(mtx, matProj_, id);
 }
 
 void DirectGraphics::BeginScene(bool bClear)
@@ -230,14 +228,11 @@ void DirectGraphics::BeginScene(bool bClear)
 	if (bClear)
 		Clear();
 
-	bgfx::touch(0);
-	camera_->UpdateDeviceWorldViewMatrix();
-	Clear();
-	
 #ifdef _DEBUG
 	bgfx::dbgTextClear();
 #endif
 
+	camera_->UpdateDeviceWorldViewMatrix();
 	states_ = BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A;
 }
 
@@ -246,16 +241,17 @@ void DirectGraphics::EndScene() const
 	bgfx::frame();
 }
 
-void DirectGraphics::Clear() const
+void DirectGraphics::Clear(bgfx::ViewId id) const
 {
-	bgfx::setViewClear(0, clearFlags_, 0x00000000, 1.0f, 0);	
-	bgfx::setViewRect(0, 0, 0, config_.RenderWidth, config_.RenderHeight);
+	bgfx::setViewClear(id, clearFlags_, 0x00000000, 1.0f, 0);	
+	bgfx::setViewRect(id, 0, 0, config_.RenderWidth, config_.RenderHeight);
+	bgfx::touch(id);
 }
 
-void DirectGraphics::Clear(const uint16_t x, const uint16_t y, const uint16_t width, const uint16_t height) const
+void DirectGraphics::Clear(const bgfx::ViewId id, const uint16_t x, const uint16_t y, const uint16_t width, const uint16_t height) const
 {
-	bgfx::setViewClear(1, clearFlags_, 0x00000000, 1.0f);
-	bgfx::setViewRect(1, x, y, width, height);
+	bgfx::setViewClear(id, clearFlags_, 0x00000000, 1.0f);
+	bgfx::setViewRect(id, x, y, width, height);
 }
 
 void DirectGraphics::UpdateState() const
@@ -263,16 +259,16 @@ void DirectGraphics::UpdateState() const
 	bgfx::setState(states_, blendFactor_);
 }
 
-void DirectGraphics::SetRenderTarget(std::shared_ptr<FrameBuffer>& texture)
+void DirectGraphics::SetRenderTarget(std::shared_ptr<FrameBuffer>& texture, bgfx::ViewId id)
 {
-	textureTarget_ = texture;
+	textureTarget_[id] = texture;
 	if (texture == nullptr)
 	{
-		bgfx::setViewFrameBuffer(0, BGFX_INVALID_HANDLE);
+		bgfx::setViewFrameBuffer(id, BGFX_INVALID_HANDLE);
 	}
 	else
 	{
-		bgfx::setViewFrameBuffer(0, textureTarget_->GetHandle());
+		bgfx::setViewFrameBuffer(id, textureTarget_[id]->GetHandle());
 	}
 	
 	_InitializeDeviceState();
@@ -502,23 +498,6 @@ void DirectGraphics::SetDirectionalLight(D3DVECTOR& dir)
 	pDevice_->LightEnable(0, TRUE);*/
 }
 
-void DirectGraphics::SetViewPort(bgfx::ViewId id, uint16_t x, uint16_t y, uint16_t width, uint16_t height)
-{
-	bgfx::setViewClear(id, BGFX_CLEAR_DEPTH | BGFX_CLEAR_COLOR, 0x000000FF, 1.0f);
-	bgfx::setViewRect(id, x, y, width, height);
-
-	if (id == 0)
-	{
-		config_.RenderWidth = width;
-		config_.RenderHeight = height;
-	}
-}
-
-void DirectGraphics::ResetViewPort()
-{
-	SetViewPort(0, 0, 0, config_.RenderWidth, config_.RenderHeight);
-}
-
 float DirectGraphics::GetScreenWidthRatio() const
 {
 	return 1.0f; // TODO
@@ -721,23 +700,23 @@ glm::mat4 DxCamera::GetMatrixLookAtLH() const
 	return glm::lookAtLH(posCamera, glm::vec3(posTo), glm::vec3(vCameraUp));
 }
 
-void DxCamera::UpdateDeviceWorldViewMatrix() const
+void DxCamera::UpdateDeviceWorldViewMatrix(bgfx::ViewId id) const
 {
 	DirectGraphics* graph = DirectGraphics::GetBase();
 	if (!graph)
 		return;
 	
 	const auto mtx = GetMatrixLookAtLH();
-	graph->SetViewAndProjMatrix(mtx, matProjection_);
+	graph->SetViewAndProjMatrix(mtx, matProjection_, id);
 }
 
-void DxCamera::UpdateDeviceProjectionMatrix() const
+void DxCamera::UpdateDeviceProjectionMatrix(bgfx::ViewId id) const
 {
 	DirectGraphics* graph = DirectGraphics::GetBase();
 	if (!graph)
 		return;
 
-	graph->SetProjMatrix(matProjection_);
+	graph->SetProjMatrix(matProjection_, id);
 }
 
 void DxCamera::SetProjectionMatrix(float width, float height, float posNear, float posFar, float fov)

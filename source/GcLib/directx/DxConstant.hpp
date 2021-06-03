@@ -12,6 +12,8 @@
 #include <mmreg.h> //for acm
 #include <msacm.h> //for acm
 
+#include <unordered_map>
+
 #include <basetsd.h>
 #include <dsound.h>
 #include <SDL.h>

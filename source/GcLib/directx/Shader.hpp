@@ -127,7 +127,7 @@ public:
 	virtual ~Shader();
 	void Release();
 
-	void Submit();
+	void Submit(bgfx::ViewId id = 0);
 
 	bool CreateFromFile(std::string name, std::string vsh, std::string fsh);
 	bool IsLoad() const { return data_ != nullptr && bgfx::isValid(data_->Program); }

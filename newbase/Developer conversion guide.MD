@@ -31,6 +31,7 @@ NOTE: DInput will mostly receive a refactor anyway, I'd prefer seeing a virtual 
 - Changed return time of some classes to pointers (while using unique_ptr, NEVER FREE those classes)
 - UpdateState is now PUBLIC, you have to MANULLY update the state before submitting meshes
 - SetZBufferEnable -> SetDepthTest
+- Viewport concepts are now removed, please use multiple view instead
 
 ### RenderObjects
 Vertex declaractions (ex FVF) uses BGFX vertexlayout now, please switch to the new code.

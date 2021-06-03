@@ -354,7 +354,7 @@ void Shader::Release()
 	}
 }
 
-void Shader::Submit()
+void Shader::Submit(bgfx::ViewId id)
 {
 	for (auto& s : mapTex_)
 	{
@@ -369,7 +369,7 @@ void Shader::Submit()
 	}
 
 	
-	bgfx::submit(0, data_->Program);	
+	bgfx::submit(id, data_->Program);	
 }
 
 bool Shader::CreateFromFile(std::string name, std::string vsh, std::string fsh)
