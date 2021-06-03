@@ -105,11 +105,10 @@ public:
 	void SetRenderTarget(std::shared_ptr<FrameBuffer>& texture);
 
 	//レンダリングステートラッパ
-	void SetLightingEnable(bool bEnable); //ライティング
 	void SetSpecularEnable(bool bEnable); //スペキュラ
 	void SetCullingMode(CullingMode mode); //カリング
 	void SetShadingMode(DWORD mode); //シェーディング
-	void SetZBufferEnable(bool bEnable); //Zバッファ参照
+	void SetDepthTest(bool bEnable); //Zバッファ参照
 	void SetZWriteEnable(bool bEnable); //Zバッファ書き込み
 	void SetAlphaTest(bool bEnable, DWORD ref = 0);
 	void SetBlendMode(BlendMode mode, int stage = 0);
@@ -133,6 +132,8 @@ public:
 
 	DxCamera* GetCamera() const { return camera_.get(); }
 	DxCamera2D* GetCamera2D() const { return camera2D_.get(); }
+		
+	void UpdateState() const;
 
 protected:
 
@@ -153,8 +154,6 @@ protected:
 	uint32_t blendFactor_;
 	uint16_t clearFlags_;
 	bool init_;
-	
-	void _UpdateState() const;
 
 	glm::mat4 matProj_, matView_;
 };

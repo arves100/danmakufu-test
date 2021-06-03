@@ -29,6 +29,8 @@ NOTE: DInput will mostly receive a refactor anyway, I'd prefer seeing a virtual 
 - Shaders are completely revampred, please see its specific section for more information
 - SetProjectionMatrix can now work with fov (default 45.0f like original dhn)
 - Changed return time of some classes to pointers (while using unique_ptr, NEVER FREE those classes)
+- UpdateState is now PUBLIC, you have to MANULLY update the state before submitting meshes
+- SetZBufferEnable -> SetDepthTest
 
 ### RenderObjects
 Vertex declaractions (ex FVF) uses BGFX vertexlayout now, please switch to the new code.

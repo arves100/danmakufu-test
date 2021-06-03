@@ -11,7 +11,7 @@ using namespace directx;
 **********************************************************/
 DirectGraphics* DirectGraphics::thisBase_ = nullptr;
 
-DirectGraphics::DirectGraphics() : states_(0), resetFlags_(0), blendFactor_(0), clearFlags_(BGFX_CLEAR_COLOR), init_(false), matProj_(), matView_()
+DirectGraphics::DirectGraphics() : states_(BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A), resetFlags_(0), blendFactor_(0), clearFlags_(BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH), init_(false), matProj_(), matView_()
 {
 	camera_ = std::make_unique<DxCamera>();
 	camera2D_ = std::make_unique<DxCamera2D>();
@@ -164,13 +164,14 @@ void DirectGraphics::_Restore()
 
 void DirectGraphics::_InitializeDeviceState()
 {
-#if 0
+
 	SetCullingMode(CullingMode::None);
 
+#if 0
 	//pDevice_->SetRenderState(D3DRS_SHADEMODE, D3DSHADE_GOURAUD); // TODO
 	//pDevice_->SetRenderState(D3DRS_AMBIENT, RGB(192, 192, 192)); // TODO: Migrate it to a shader
 	
-	SetLightingEnable(true);
+	
 
 	D3DVECTOR dir;
 	dir.x = -1;
@@ -183,14 +184,15 @@ void DirectGraphics::_InitializeDeviceState()
 	//αテスト
 	SetAlphaTest(true, 0);
 
-	//Zテスト
-	SetZBufferEnable(false);
-	SetZWriteEnable(false);
 
 	//Filter
 	SetTextureFilter(TextureFilterMode::Linear);
 #endif
-	
+
+	//Zテスト
+	SetZWriteEnable(false);
+	SetDepthTest(false);
+
 	//ViewPort
 	ResetViewPort();
 }
@@ -239,6 +241,8 @@ void DirectGraphics::BeginScene(bool bClear)
 #ifdef _DEBUG
 	bgfx::dbgTextClear();
 #endif
+
+	states_ = BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A;
 }
 
 void DirectGraphics::EndScene() const
@@ -266,7 +270,7 @@ void DirectGraphics::Clear(const uint16_t x, const uint16_t y, const uint16_t wi
 	bgfx::setViewRect(1, x, y, width, height);
 }
 
-void DirectGraphics::_UpdateState() const
+void DirectGraphics::UpdateState() const
 {
 	bgfx::setState(states_, blendFactor_);
 }
@@ -284,11 +288,6 @@ void DirectGraphics::SetRenderTarget(std::shared_ptr<FrameBuffer>& texture)
 	}
 	
 	_InitializeDeviceState();
-}
-
-void DirectGraphics::SetLightingEnable(bool bEnable)
-{
-	//pDevice_->SetRenderState(D3DRS_LIGHTING, bEnable); // TODO: Migrate to a shader
 }
 
 void DirectGraphics::SetSpecularEnable(bool bEnable)
@@ -312,8 +311,6 @@ void DirectGraphics::SetCullingMode(CullingMode mode)
 	case CullingMode::None:
 		break;
 	}
-
-	_UpdateState();
 }
 
 void DirectGraphics::SetShadingMode(DWORD mode)
@@ -321,14 +318,12 @@ void DirectGraphics::SetShadingMode(DWORD mode)
 	//pDevice_->SetRenderState(D3DRS_SHADEMODE, mode); // TODO: ?
 }
 
-void DirectGraphics::SetZBufferEnable(bool bEnable)
+void DirectGraphics::SetDepthTest(bool bEnable)
 {
 	if (bEnable)
-		clearFlags_ |= BGFX_CLEAR_DEPTH;
+		states_ |= BGFX_STATE_DEPTH_TEST_LESS;
 	else
-		clearFlags_ &= ~BGFX_CLEAR_DEPTH;
-
-	bgfx::setViewClear(0, clearFlags_, 0x000000FF, 1.0f);
+		states_ &= ~BGFX_STATE_DEPTH_TEST_LESS;
 }
 
 void DirectGraphics::SetZWriteEnable(bool bEnable)
@@ -337,8 +332,6 @@ void DirectGraphics::SetZWriteEnable(bool bEnable)
 		states_ |= BGFX_STATE_WRITE_Z;
 	else
 		states_ &= ~BGFX_STATE_WRITE_Z;
-
-	_UpdateState();
 }
 
 void DirectGraphics::SetAlphaTest(bool bEnable, DWORD ref)
@@ -429,8 +422,6 @@ void DirectGraphics::SetBlendMode(BlendMode mode, int stage)
 		states_ |= BGFX_STATE_BLEND_FUNC(BGFX_STATE_BLEND_INV_DST_COLOR, BGFX_STATE_BLEND_INV_SRC_COLOR);
 		break;
 	}
-
-	_UpdateState();
 }
 
 void DirectGraphics::SetFogEnable(bool bEnable)
