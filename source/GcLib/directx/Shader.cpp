@@ -38,8 +38,8 @@ bool ShaderManager::Initialize()
 	DirectGraphics* graphics = DirectGraphics::GetBase();
 	graphics->AddDirectGraphicsListener(this);
 
-	//if (!_CreateFromFile(DEFAULT_SUBMIT_SHADER, "dhn_final", "dhn_final"))
-	//	return false;
+	if (!_CreateFromFile(DEFAULT_SUBMIT_SHADER, "", "dhn_final"))
+		return false;
 
 	//if (!_CreateFromFile(NAME_DEFAULT_SKINNED_MESH, "dhn_mqo", ""))
 	//	return false;

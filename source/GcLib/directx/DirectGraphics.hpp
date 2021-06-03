@@ -120,7 +120,7 @@ public:
 	void SetTextureFilter(TextureFilterMode mode, int stage = 0);
 	TextureFilterMode GetTextureFilter(int stage = 0) const;
 
-	void SetDirectionalLight(D3DVECTOR& dir);
+	void SetDirectionalLight(glm::vec3 v);
 
 	uint16_t GetRenderWidth() const { return config_.RenderWidth; }
 	uint16_t GetRenderHeight() const { return config_.RenderHeight; }
@@ -138,6 +138,8 @@ public:
 
 	void Submit(bgfx::ViewId id, bgfx::ProgramHandle prog);
 	void RestoreViews();
+
+	void SetLightingEnable(bool b);
 
 protected:
 
@@ -167,8 +169,10 @@ protected:
 	// Work for the shader !
 	
 	std::shared_ptr<ShaderData> shader_;
-	bool useLight_;
-	bgfx::UniformHandle uniforms_[3];
+	glm::vec4 sh_options_;
+	bgfx::UniformHandle uniforms_[5];
+	glm::vec4 sh_light_direction;
+	glm::vec4 sh_light_ambient, sh_light_diffuse;
 };
 
 // TODO: Migrate to an application specific part

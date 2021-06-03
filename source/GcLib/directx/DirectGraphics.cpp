@@ -6,15 +6,25 @@
 using namespace gstd;
 using namespace directx;
 
+#define SHADER_OPTION_LIGHT 0 << 1
+
 /**********************************************************
 //DirectGraphics
 **********************************************************/
 DirectGraphics* DirectGraphics::thisBase_ = nullptr;
 
-DirectGraphics::DirectGraphics() : states_(BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A), resetFlags_(0), blendFactor_(0), clearFlags_(BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH), init_(false), matProj_(), matView_()
+DirectGraphics::DirectGraphics() : states_(BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A), resetFlags_(0), blendFactor_(0),
+	clearFlags_(BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH), init_(false), matProj_(), matView_(), sh_options_(0.0f, 0.0f, 0.0f, 0.0f),
+	sh_light_direction(0.0f), sh_light_ambient(0.5f, 0.5f, 0.5f, 1.0f), sh_light_diffuse(0.5f, 0.5f, 0.5f, 1.0f)
 {
 	camera_ = std::make_unique<DxCamera>();
 	camera2D_ = std::make_unique<DxCamera2D>();
+
+	uniforms_[0] = BGFX_INVALID_HANDLE;
+	uniforms_[1] = BGFX_INVALID_HANDLE;
+	uniforms_[2] = BGFX_INVALID_HANDLE;
+	uniforms_[3] = BGFX_INVALID_HANDLE;
+	uniforms_[4] = BGFX_INVALID_HANDLE;
 }
 DirectGraphics::~DirectGraphics()
 {
@@ -29,9 +39,24 @@ bool DirectGraphics::Initialize(void* nwh, void* ndt)
 
 void DirectGraphics::Shutdown()
 {
+	if (bgfx::isValid(uniforms_[4]))
+		bgfx::destroy(uniforms_[4]);
+	
+	if (bgfx::isValid(uniforms_[3]))
+		bgfx::destroy(uniforms_[3]);
+
+	if (bgfx::isValid(uniforms_[2]))
+		bgfx::destroy(uniforms_[2]);
+	
+	if (bgfx::isValid(uniforms_[1]))
+		bgfx::destroy(uniforms_[1]);
+
 	if (bgfx::isValid(uniforms_[0]))
 		bgfx::destroy(uniforms_[0]);
 
+	shader_.reset();
+	defaultFB_.reset();
+	
 	if (init_)
 	{
 		bgfx::shutdown();
@@ -120,6 +145,10 @@ bool DirectGraphics::Initialize(DirectGraphicsConfig& config, void* nwh, void* n
 	shader_ = std::make_shared<ShaderData>();
 
 	uniforms_[0] = bgfx::createUniform("s_viewtex", bgfx::UniformType::Sampler);
+	uniforms_[1] = bgfx::createUniform("u_options", bgfx::UniformType::Vec4);
+	uniforms_[2] = bgfx::createUniform("u_light_ambient", bgfx::UniformType::Vec4);
+	uniforms_[3] = bgfx::createUniform("u_light_diffuse", bgfx::UniformType::Vec4);
+	uniforms_[4] = bgfx::createUniform("u_light_direction", bgfx::UniformType::Vec4);
 	
 	Logger::WriteTop(L"DirectGraphics：初期化完了");
 	return true;
@@ -307,7 +336,12 @@ void DirectGraphics::EndScene() const
 		const auto it = textureTarget_.find(index); // eh???? textureTarget_[index] ???
 		const auto& fb = it->second;
 		
-		bgfx::setTexture(0, uniforms_[0], bgfx::getTexture(fb->GetHandle()));
+		bgfx::setTexture(0, uniforms_[0], bgfx::getTexture(fb->GetHandle())); // s_viewtex
+		bgfx::setUniform(uniforms_[1], &sh_options_[0]); // u_options
+		bgfx::setUniform(uniforms_[2], &sh_light_ambient[0]); // u_light_ambient
+		bgfx::setUniform(uniforms_[3], &sh_light_diffuse[0]); // u_light_diffuse
+		bgfx::setUniform(uniforms_[4], &sh_light_direction[0]); // u_light_direction
+		
 		bgfx::submit(1, shader_->Program);
 	}
 	
@@ -563,21 +597,9 @@ DirectGraphics::TextureFilterMode DirectGraphics::GetTextureFilter(int stage) co
 	return TextureFilterMode::None; // TODO
 }
 
-void DirectGraphics::SetDirectionalLight(D3DVECTOR& dir)
+void DirectGraphics::SetDirectionalLight(glm::vec3 v)
 {
-	// TODO: DEPRECATED!!! Please move to a shader!
-	/*D3DLIGHT9 light;
-	ZeroMemory(&light, sizeof(D3DLIGHT9));
-	light.Type = D3DLIGHT_DIRECTIONAL;
-	light.Diffuse.r = 0.5f;
-	light.Diffuse.g = 0.5f;
-	light.Diffuse.b = 0.5f;
-	light.Ambient.r = 0.5f;
-	light.Ambient.g = 0.5f;
-	light.Ambient.b = 0.5f;
-	light.Direction = dir;
-	pDevice_->SetLight(0, &light);
-	pDevice_->LightEnable(0, TRUE);*/
+	sh_light_direction = glm::vec4(v, 0.0f);
 }
 
 float DirectGraphics::GetScreenWidthRatio() const
@@ -759,8 +781,8 @@ glm::mat4 DxCamera::GetMatrixLookAtLH() const
 
 	{ // ###E
 
-		//const auto matRot = glm::yawPitchRoll(glm::radians(yaw_), glm::radians(pitch_), glm::radians(roll_));
-		//vCameraUp = matRot * vCameraUp;
+		const auto matRot = glm::yawPitchRoll(glm::radians(yaw_), glm::radians(pitch_), glm::radians(roll_));
+		vCameraUp = matRot * vCameraUp;
 	}
 
 	auto posTo = glm::vec4(pos_, 0.0f);
@@ -920,7 +942,6 @@ glm::mat4 DxCamera2D::GetMatrix() const
 	if (static_cast<int>(angleZ_) != 0) {
 		glm::mat4 matTransRot1;
 		glm::translate(matTransRot1, glm::vec3(-GetFocusX() + pos.x, -GetFocusY() + pos.y, 0.0f));
-		// D3DXMatrixRotationYawPitchRoll(&matRot, 0, 0, D3DXToRadian(angleZ_))
 		const auto matRot = glm::eulerAngleZ(glm::radians(angleZ_));
 		glm::mat4 matTransRot2;
 		glm::translate(matTransRot2, glm::vec3(GetFocusX() - pos.x, GetFocusY() - pos.y, 0.0f));
@@ -932,4 +953,12 @@ glm::mat4 DxCamera2D::GetMatrix() const
 	mat = mat * matAngleZ;
 	mat = mat * matTrans;
 	return mat;
+}
+
+void DirectGraphics::SetLightingEnable(bool b)
+{
+	if (b)
+		sh_options_.x = static_cast<uint32_t>(sh_options_.x) | SHADER_OPTION_LIGHT;
+	else
+		sh_options_.x = static_cast<uint32_t>(sh_options_.x)  & ~SHADER_OPTION_LIGHT;
 }
