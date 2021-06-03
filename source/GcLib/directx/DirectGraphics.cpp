@@ -59,10 +59,10 @@ bool DirectGraphics::Initialize(DirectGraphicsConfig& config, void* nwh, void* n
 	init.resolution.width = config_.RenderWidth;
 	init.resolution.height = config_.RenderHeight;
 	
-	/*if (config_.Color == DirectGraphicsConfig::ColorMode::Bit16) // TODO
+	if (config_.Color == DirectGraphicsConfig::ColorMode::Bit16)
 		init.resolution.format = bgfx::TextureFormat::R5G6B5;
 	else
-		init.resolution.format = bgfx::TextureFormat::RGB8; // XRGB8*/
+		init.resolution.format = bgfx::TextureFormat::RGBA8;
 
 	if (!config_.UseTripleBuffer)
 		init.resolution.numBackBuffers = 1;
@@ -164,14 +164,11 @@ void DirectGraphics::_Restore()
 
 void DirectGraphics::_InitializeDeviceState()
 {
-
 	SetCullingMode(CullingMode::None);
 
 #if 0
 	//pDevice_->SetRenderState(D3DRS_SHADEMODE, D3DSHADE_GOURAUD); // TODO
 	//pDevice_->SetRenderState(D3DRS_AMBIENT, RGB(192, 192, 192)); // TODO: Migrate it to a shader
-	
-	
 
 	D3DVECTOR dir;
 	dir.x = -1;
@@ -183,7 +180,6 @@ void DirectGraphics::_InitializeDeviceState()
 
 	//αテスト
 	SetAlphaTest(true, 0);
-
 
 	//Filter
 	SetTextureFilter(TextureFilterMode::Linear);
@@ -252,16 +248,8 @@ void DirectGraphics::EndScene() const
 
 void DirectGraphics::Clear() const
 {
-//	bgfx::setViewClear(0, clearFlags_, 0x00000000, 1.0f, 0);
-			bgfx::setViewClear(0
-				, BGFX_CLEAR_COLOR|BGFX_CLEAR_DEPTH
-				, 0x00000000
-				, 1.0f
-				, 0
-				);
-	
+	bgfx::setViewClear(0, clearFlags_, 0x00000000, 1.0f, 0);	
 	bgfx::setViewRect(0, 0, 0, config_.RenderWidth, config_.RenderHeight);
-
 }
 
 void DirectGraphics::Clear(const uint16_t x, const uint16_t y, const uint16_t width, const uint16_t height) const
