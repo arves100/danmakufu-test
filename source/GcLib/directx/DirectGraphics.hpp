@@ -130,9 +130,9 @@ public:
 
 	float GetScreenWidthRatio() const;
 	float GetScreenHeightRatio() const;
-	POINT GetMousePosition() const;
-	DxCamera& GetCamera() const { return *camera_; }
-	DxCamera2D& GetCamera2D() const { return *camera2D_; }
+
+	DxCamera* GetCamera() const { return camera_.get(); }
+	DxCamera2D* GetCamera2D() const { return camera2D_.get(); }
 
 protected:
 
@@ -222,7 +222,7 @@ public:
 	glm::mat4 GetMatrixLookAtLH() const;
 	void UpdateDeviceProjectionMatrix() const;
 	void UpdateDeviceWorldViewMatrix() const;
-	void SetProjectionMatrix(float width, float height, float posNear, float posFar);
+	void SetProjectionMatrix(float width, float height, float posNear, float posFar, float fov = 45.0f);
 
 	glm::vec2 TransformCoordinateTo2D(glm::vec3 pos);
 

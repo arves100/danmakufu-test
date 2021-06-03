@@ -29,6 +29,8 @@
 
 // BGFX
 #include <bx/bx.h>
+#include <bx/timer.h>
+#include <bx/os.h>
 #include <bx/allocator.h>
 #include <bimg/decode.h>
 #include <bgfx/bgfx.h>

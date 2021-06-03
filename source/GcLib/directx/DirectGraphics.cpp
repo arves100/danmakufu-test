@@ -24,14 +24,13 @@ DirectGraphics::~DirectGraphics()
 
 bool DirectGraphics::Initialize(void* nwh, void* ndt)
 {
-	return this->Initialize(config_, nwh, ndt);
+	return Initialize(config_, nwh, ndt);
 }
 
 void DirectGraphics::Shutdown()
 {
 	if (init_)
 	{
-		//imguiDestroy();
 		bgfx::shutdown();
 		Logger::WriteTop(L"DirectGraphic: Bgfx shutdown");
 		init_ = false;
@@ -51,21 +50,21 @@ bool DirectGraphics::Initialize(DirectGraphicsConfig& config, void* nwh, void* n
 
 #ifdef _DEBUG
 	init.debug = true;
-	init.profile = true;
+	init.profile = false;
 #else
 	init.debug = false;
-	init.profile = true; // TODO: for now...
+	init.profile = false;
 #endif
 
 	init.resolution.width = config_.RenderWidth;
 	init.resolution.height = config_.RenderHeight;
 	
-	if (config_.Color == DirectGraphicsConfig::ColorMode::Bit16)
+	/*if (config_.Color == DirectGraphicsConfig::ColorMode::Bit16) // TODO
 		init.resolution.format = bgfx::TextureFormat::R5G6B5;
 	else
-		init.resolution.format = bgfx::TextureFormat::RGB8; // XRGB8
+		init.resolution.format = bgfx::TextureFormat::RGB8; // XRGB8*/
 
-	if (config_.UseTripleBuffer)
+	if (!config_.UseTripleBuffer)
 		init.resolution.numBackBuffers = 1;
 	else
 		init.resolution.numBackBuffers = 2;
@@ -101,12 +100,11 @@ bool DirectGraphics::Initialize(DirectGraphicsConfig& config, void* nwh, void* n
 		return false;
 	}
 
-
-
 #ifdef _DEBUG
 	bgfx::setDebug(BGFX_DEBUG_TEXT);
 #endif
 
+	init_ = true;
 	thisBase_ = this;
 
 	if (camera2D_ != nullptr)
@@ -114,8 +112,7 @@ bool DirectGraphics::Initialize(DirectGraphicsConfig& config, void* nwh, void* n
 	
 	_InitializeDeviceState();
 
-	BeginScene();
-	EndScene();
+	bgfx::frame();
 
 	Logger::WriteTop(L"DirectGraphics：初期化完了");
 	return true;
@@ -167,22 +164,7 @@ void DirectGraphics::_Restore()
 
 void DirectGraphics::_InitializeDeviceState()
 {
-	glm::mat4 viewMat;
-	
-	if (camera_ != nullptr) {
-		camera_->UpdateDeviceWorldViewMatrix();
-		viewMat = matView_;
-	} else {
-		const auto viewFrom = glm::vec3(100.0f, 300.0f, -500.0f);
-		const auto at = glm::vec3(0.0f, 0.0f, 0.0f);
-		viewMat = glm::lookAtLH(viewFrom, at, glm::vec3(0, 1, 0));
-	}
-
-	const auto persMat = glm::perspectiveFovLH(glm::radians(45.0f), static_cast<float>(config_.RenderWidth),
-		static_cast<float>(config_.RenderHeight), 10.0f, 2000.0f);
-
-	SetViewAndProjMatrix(viewMat, persMat);
-
+#if 0
 	SetCullingMode(CullingMode::None);
 
 	//pDevice_->SetRenderState(D3DRS_SHADEMODE, D3DSHADE_GOURAUD); // TODO
@@ -207,7 +189,8 @@ void DirectGraphics::_InitializeDeviceState()
 
 	//Filter
 	SetTextureFilter(TextureFilterMode::Linear);
-
+#endif
+	
 	//ViewPort
 	ResetViewPort();
 }
@@ -231,6 +214,7 @@ void DirectGraphics::SetViewAndProjMatrix(const glm::mat4 view, const glm::mat4 
 	matView_ = view;
 	matProj_ = proj;
 	bgfx::setViewTransform(0, &matView_[0], &matProj_[0]);
+	Clear();
 }
 
 void DirectGraphics::SetProjMatrix(const glm::mat4 mtx)
@@ -247,8 +231,14 @@ void DirectGraphics::BeginScene(bool bClear)
 {
 	if (bClear)
 		Clear();
-	
+
+	bgfx::touch(0);
 	camera_->UpdateDeviceWorldViewMatrix();
+	Clear();
+	
+#ifdef _DEBUG
+	bgfx::dbgTextClear();
+#endif
 }
 
 void DirectGraphics::EndScene() const
@@ -258,13 +248,16 @@ void DirectGraphics::EndScene() const
 
 void DirectGraphics::Clear() const
 {
-	bgfx::setViewClear(0, clearFlags_, 0x00000000, 1.0f);
+//	bgfx::setViewClear(0, clearFlags_, 0x00000000, 1.0f, 0);
+			bgfx::setViewClear(0
+				, BGFX_CLEAR_COLOR|BGFX_CLEAR_DEPTH
+				, 0x00000000
+				, 1.0f
+				, 0
+				);
+	
+	bgfx::setViewRect(0, 0, 0, config_.RenderWidth, config_.RenderHeight);
 
-	bgfx::touch(0);
-
-#ifdef _DEBUG
-	bgfx::dbgTextClear();
-#endif
 }
 
 void DirectGraphics::Clear(const uint16_t x, const uint16_t y, const uint16_t width, const uint16_t height) const
@@ -557,13 +550,6 @@ float DirectGraphics::GetScreenHeightRatio() const
 	return 1.0f; // TODO
 }
 
-POINT DirectGraphics::GetMousePosition() const
-{
-	int x, y;
-	SDL_GetMouseState(&x, &y);
-	return { x, y };
-}
-
 // TODO: This should be migrated into DhnExecutor
 #if 0 
 /**********************************************************
@@ -728,26 +714,30 @@ glm::vec3 DxCamera::GetCameraPosition() const
 
 glm::mat4 DxCamera::GetMatrixLookAtLH() const
 {
-	const auto posCamera = GetCameraPosition();
+	auto posCamera = GetCameraPosition();
 	glm::vec4 vCameraUp(0.0f, 1.0f, 0.0f, 0.0f);
 
 	{ // ###E
 
-		const auto matRot = glm::yawPitchRoll(glm::radians(yaw_), glm::radians(pitch_), glm::radians(roll_));
-		vCameraUp = matRot * vCameraUp;
+		//const auto matRot = glm::yawPitchRoll(glm::radians(yaw_), glm::radians(pitch_), glm::radians(roll_));
+		//vCameraUp = matRot * vCameraUp;
 	}
 
 	auto posTo = glm::vec4(pos_, 0.0f);
 	{
-		glm::mat4 matTrans1, matTrans2;
+		glm::mat4 matTrans1(1.0f), matTrans2(1.0f);
 
-		glm::translate(matTrans1, glm::vec3(-posCamera.x, -posCamera.y, -posCamera.z));
-		glm::translate(matTrans2, glm::vec3(posCamera.x, posCamera.y, posCamera.z));
+		matTrans1 = glm::translate(matTrans1, glm::vec3(-posCamera.x, -posCamera.y, -posCamera.z));
+		matTrans2 = glm::translate(matTrans2, glm::vec3(posCamera.x, posCamera.y, posCamera.z));
 
 		const auto matRot = glm::yawPitchRoll(glm::radians(yaw_), glm::radians(pitch_), glm::radians(0.0f));
 		const auto mat = matTrans1 * matRot * matTrans2;
 		posTo = mat * posTo;
 	}
+
+	vCameraUp = glm::vec4(0.0f, 1.0f, 0.0f, 0.0f);
+	posTo = glm::vec4(0.0f, 0.0f, 0.0f, 0.0f);
+	posCamera = glm::vec3(0.0f, 0.0f, -7.0f);
 
 	return glm::lookAtLH(posCamera, glm::vec3(posTo), glm::vec3(vCameraUp));
 }
@@ -759,7 +749,7 @@ void DxCamera::UpdateDeviceWorldViewMatrix() const
 		return;
 	
 	const auto mtx = GetMatrixLookAtLH();
-	graph->SetViewMatrix(mtx);
+	graph->SetViewAndProjMatrix(mtx, matProjection_);
 }
 
 void DxCamera::UpdateDeviceProjectionMatrix() const
@@ -771,9 +761,9 @@ void DxCamera::UpdateDeviceProjectionMatrix() const
 	graph->SetProjMatrix(matProjection_);
 }
 
-void DxCamera::SetProjectionMatrix(float width, float height, float posNear, float posFar)
+void DxCamera::SetProjectionMatrix(float width, float height, float posNear, float posFar, float fov)
 {
-	matProjection_ = glm::perspectiveFovLH(glm::radians(45.0f), width, height, posNear, posFar);
+	matProjection_ = glm::perspectiveFovLH(glm::radians(fov), width, height, posNear, posFar);
 	
 	if (clipNear_ < 1)
 		clipNear_ = 1;

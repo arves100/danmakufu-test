@@ -7,7 +7,6 @@ using namespace directx;
 
 static void bimgImageFree(void* _ptr, void* _userData)
 {
-	BX_UNUSED(_ptr);
 	bimg::ImageContainer* imageContainer = (bimg::ImageContainer*)_userData;
 	bimg::imageFree(imageContainer);
 }
@@ -30,15 +29,18 @@ Texture::~Texture()
 
 void Texture::Release()
 {
-	Lock lock(TextureManager::GetBase()->GetLock());
-	TextureManager* manager = TextureManager::GetBase();
-	if (manager != nullptr && data_ != nullptr && manager->IsDataExists(data_->Name)) {
-		//自身とTextureManager内の数だけになったら削除
-		if (data_.use_count() == 2) {
-			manager->_ReleaseTextureData(data_->Name);
-		}
+	if (data_ != nullptr)
+	{
+		Lock lock(TextureManager::GetBase()->GetLock());
+		TextureManager* manager = TextureManager::GetBase();
+		if (manager != nullptr && manager->IsDataExists(data_->Name)) {
+			//自身とTextureManager内の数だけになったら削除
+			if (data_.use_count() == 2) {
+				manager->_ReleaseTextureData(data_->Name);
+			}
 
-		data_.reset();
+			data_.reset();
+		}
 	}
 }
 
@@ -49,8 +51,6 @@ bool Texture::CreateFromFile(std::string path)
 	Lock lock(TextureManager::GetBase()->GetLock());
 	Release();
 	TextureManager* manager = TextureManager::GetBase();
-	ref_count_ptr<Texture> texture;
-
 	if (manager->CreateDataFromFile(path, data_))
 		return true;
 
@@ -78,15 +78,15 @@ bgfx::TextureHandle Texture::GetHandle() const
 	bgfx::TextureHandle res = BGFX_INVALID_HANDLE;
 	{
 		bool bWait = true;
-		const auto time = timeGetTime();
+		const auto time = bx::getHPFrequency();
 		while (bWait) {
 			Lock lock(TextureManager::GetBase()->GetLock());
 			bWait = !IsLoad();
 
-			if (bWait)
+			if (!bWait)
 				res = data_->Handle;
 			
-			if (bWait && timeGetTime() - time > 10000) {
+			if (bWait && bx::getHPFrequency() - time > 10000) {
 				//一定時間たってもだめだったらロック？ame; // TODO ,.,.,,.,.
 				Logger::WriteTop(
 					StringUtility::Format(L"テクスチャ読み込みを行えていません。ロック？ ：%S", data_->Name));
@@ -94,7 +94,7 @@ bgfx::TextureHandle Texture::GetHandle() const
 			}
 
 			if (bWait)
-				::Sleep(1);
+				bx::sleep(1);
 		}
 	}
 	
@@ -185,8 +185,20 @@ void TextureManager::Clear()
 {
 	Lock lock(lock_);
 	mapFrameBuffer_.clear();
+
+	for (auto& data : mapFrameBufferData_)
+	{
+		_ReleaseFrameBufferData(data.first);
+	}
+	
 	mapFrameBufferData_.clear();
 	mapTexture_.clear();
+
+	for (auto& data : mapTextureData_)
+	{
+		_ReleaseTextureData(data.first);	
+	}
+	
 	mapTextureData_.clear();
 }
 
@@ -205,7 +217,7 @@ void TextureManager::_ReleaseTextureData(std::string name)
 void TextureManager::_ReleaseFrameBufferData(std::string name)
 {
 	Lock lock(lock_);
-	if (IsDataExists(name))
+	if (IsFrameBufferExists(name))
 	{
 		auto& ptr = mapFrameBufferData_[name];
 		bgfx::destroy(ptr->Handle);
@@ -273,6 +285,7 @@ bool TextureManager::_CreateFromFile(std::string path)
 		data->Width = static_cast<uint16_t>(container->m_width);
 		data->Height = static_cast<uint16_t>(container->m_height);
 		data->Handle = bgfx::createTexture2D(data->Width, data->Height, false, container->m_numLayers, static_cast<bgfx::TextureFormat::Enum>(container->m_format), 0, mem); // TODO: flags?
+		data->Name = path;
 		
 		if (!bgfx::isValid(data->Handle)) {
 			throw gstd::wexception(L"D3DXCreateTextureFromFileInMemoryEx失敗");
@@ -432,7 +445,6 @@ gstd::ref_count_ptr<Texture> TextureManager::CreateFromFileInLoadThread(std::str
 						const auto mem = bgfx::makeRef(container->m_data, container->m_size, bimgImageFree, container);
 						buf.Clear();
 
-						auto data = std::make_shared<TextureData>();
 						data->Width = static_cast<uint16_t>(container->m_width);
 						data->Height = static_cast<uint16_t>(container->m_height);
 						data->Handle = bgfx::createTexture2D(data->Width, data->Height, false, container->m_numLayers, static_cast<bgfx::TextureFormat::Enum>(container->m_format), 0, mem); // TODO: flags?
@@ -562,7 +574,7 @@ bool TextureManager::GetFrameBuffer(std::string name, std::shared_ptr<FrameBuffe
 void TextureManager::Add(std::string name, std::shared_ptr<FrameBuffer>& texture)
 {
 	Lock lock(lock_);
-	if (mapFrameBuffer_.find(name) != mapFrameBuffer_.end())
+	if (mapFrameBuffer_.find(name) == mapFrameBuffer_.end())
 	{
 		mapFrameBuffer_[name] = texture;
 	}
