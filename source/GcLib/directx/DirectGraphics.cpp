@@ -1,6 +1,6 @@
 #include "DirectGraphics.hpp"
 #include "DxUtility.hpp"
-
+#include "Shader.hpp"
 #include "Texture.hpp"
 
 using namespace gstd;
@@ -29,6 +29,9 @@ bool DirectGraphics::Initialize(void* nwh, void* ndt)
 
 void DirectGraphics::Shutdown()
 {
+	if (bgfx::isValid(uniforms_[0]))
+		bgfx::destroy(uniforms_[0]);
+
 	if (init_)
 	{
 		bgfx::shutdown();
@@ -114,8 +117,35 @@ bool DirectGraphics::Initialize(DirectGraphicsConfig& config, void* nwh, void* n
 
 	bgfx::frame();
 
+	shader_ = std::make_shared<ShaderData>();
+
+	uniforms_[0] = bgfx::createUniform("s_viewtex", bgfx::UniformType::Sampler);
+	
 	Logger::WriteTop(L"DirectGraphics：初期化完了");
 	return true;
+}
+
+void DirectGraphics::RestoreViews()
+{
+	views_.clear();
+	
+	// Drawing will work like this
+	// We draw everything to view 0 (connected to the default fb)
+	// We compute DirectGraphic specific shader work in view1 with the data of view0
+	TextureManager::GetBase()->GetFrameBuffer(TextureManager::DEFAULT_FRAMEBUFFER, defaultFB_);
+	textureTarget_[0] = defaultFB_;
+	bgfx::setViewFrameBuffer(0, defaultFB_->GetHandle());
+
+	// Setup default views
+	views_.push_back(1);
+	views_.push_back(0);
+	bgfx::setViewName(0, "Draw view");
+	bgfx::setViewName(1, "Computed view");
+	
+	Clear(0);
+	Clear(1);
+
+	bgfx::setViewOrder(0, static_cast<uint16_t>(views_.size()), &views_[0]);
 }
 
 void DirectGraphics::_ReleaseDxResource()
@@ -132,6 +162,14 @@ void DirectGraphics::_RestoreDxResource()
 		itr->RestoreDirectGraphics();
 
 	_InitializeDeviceState();
+}
+
+void DirectGraphics::Submit(bgfx::ViewId id, bgfx::ProgramHandle prog)
+{
+	if (id == 1 || id + 1 > views_.size())
+		return; // you cannot submit meshes to the shader compute view (unless you are the compute shader)
+
+	bgfx::submit(id, prog);
 }
 
 void DirectGraphics::_Restore()
@@ -192,6 +230,31 @@ void DirectGraphics::_InitializeDeviceState()
 	SetDepthTest(false);
 }
 
+bgfx::ViewId DirectGraphics::AddView(std::string name)
+{
+	if (views_.size() >= 65534)
+		return 65535; // INVALID!
+	
+	const bgfx::ViewId id = static_cast<bgfx::ViewId>(views_.size());
+	bgfx::setViewName(id, name.c_str());
+
+	auto it = views_.begin();
+	std::advance(it, id - 1); // never override the final view!
+	views_.insert(it, id);
+	bgfx::setViewOrder(0, static_cast<uint16_t>(views_.size()), &views_[0]);
+	return id;
+}
+
+void DirectGraphics::RemoveView(bgfx::ViewId id)
+{
+	if (id >= views_.size() || id == 0) // you can not override the default views
+		return;
+
+	auto it = views_.begin();
+	std::advance(it, id);
+	views_.erase(it);
+}
+
 void DirectGraphics::AddDirectGraphicsListener(DirectGraphicsListener* listener)
 {
 	if (std::find(listListener_.begin(), listListener_.end(), listener) == listListener_.end())
@@ -238,11 +301,24 @@ void DirectGraphics::BeginScene(bool bClear)
 
 void DirectGraphics::EndScene() const
 {
+	// Perform view1 drawing
+	{
+		const auto index = views_[1];
+		const auto it = textureTarget_.find(index); // eh???? textureTarget_[index] ???
+		const auto& fb = it->second;
+		
+		bgfx::setTexture(0, uniforms_[0], bgfx::getTexture(fb->GetHandle()));
+		bgfx::submit(1, shader_->Program);
+	}
+	
 	bgfx::frame();
 }
 
 void DirectGraphics::Clear(bgfx::ViewId id) const
 {
+	if (id + 1 > views_.size())
+		return;
+	
 	bgfx::setViewClear(id, clearFlags_, 0x00000000, 1.0f, 0);	
 	bgfx::setViewRect(id, 0, 0, config_.RenderWidth, config_.RenderHeight);
 	bgfx::touch(id);
@@ -250,6 +326,9 @@ void DirectGraphics::Clear(bgfx::ViewId id) const
 
 void DirectGraphics::Clear(const bgfx::ViewId id, const uint16_t x, const uint16_t y, const uint16_t width, const uint16_t height) const
 {
+	if (id + 1 > views_.size())
+		return;
+	
 	bgfx::setViewClear(id, clearFlags_, 0x00000000, 1.0f);
 	bgfx::setViewRect(id, x, y, width, height);
 }
@@ -261,6 +340,9 @@ void DirectGraphics::UpdateState() const
 
 void DirectGraphics::SetRenderTarget(std::shared_ptr<FrameBuffer>& texture, bgfx::ViewId id)
 {
+	if (id + 1 > views_.size())
+		return;
+	
 	textureTarget_[id] = texture;
 	if (texture == nullptr)
 	{

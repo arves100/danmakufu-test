@@ -34,6 +34,8 @@ class ShaderManager : public DirectGraphicsListener {
 	friend Shader;
 
 public:
+	const std::string DEFAULT_SUBMIT_SHADER;
+	
 	ShaderManager();
 	virtual ~ShaderManager();
 	static ShaderManager* GetBase() { return thisBase_; }
@@ -120,6 +122,7 @@ private:
 class Shader
 {
 	friend ShaderManager;
+	friend DirectGraphics;
 
 public:
 	Shader();

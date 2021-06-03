@@ -15,6 +15,8 @@ static void ptrFree(void*, void* _userData)
 //ShaderManager
 **********************************************************/
 const std::string NAME_DEFAULT_SKINNED_MESH = "__NAME_DEFAULT_SKINNED_MESH__";
+const std::string DEFAULT_SUBMIT_SHADER = "__VIEW1_D3D9_SUBMIT_SHADER__";
+
 ShaderManager* ShaderManager::thisBase_ = nullptr;
 
 ShaderManager::ShaderManager() = default;
@@ -36,10 +38,11 @@ bool ShaderManager::Initialize()
 	DirectGraphics* graphics = DirectGraphics::GetBase();
 	graphics->AddDirectGraphicsListener(this);
 
-	/*auto shaderSkinedMesh = std::make_shared<Shader>();
-	std::string sourceSkinedMesh = HLSL_DEFAULT_SKINED_MESH;
-	shaderSkinedMesh->CreateFromText(sourceSkinedMesh);
-	AddShader(NAME_DEFAULT_SKINNED_MESH, shaderSkinedMesh);*/
+	//if (!_CreateFromFile(DEFAULT_SUBMIT_SHADER, "dhn_final", "dhn_final"))
+	//	return false;
+
+	//if (!_CreateFromFile(NAME_DEFAULT_SKINNED_MESH, "dhn_mqo", ""))
+	//	return false;
 
 	return true;
 }
@@ -327,11 +330,17 @@ void Shader::Release()
 	for (auto& s : mapParam_)
 	{
 		delete s.second;
+
+		if (mapParam_.size() == 0)
+			break;
 	}
 
 	for (auto& s : mapTex_)
 	{
 		delete s.second;
+
+		if (mapTex_.size() == 0)
+			break;
 	}
 
 	mapTex_.clear();
@@ -368,8 +377,7 @@ void Shader::Submit(bgfx::ViewId id)
 		bgfx::setUniform(uh->GetHandle(), uh->GetValue(), uh->GetValueNumber());
 	}
 
-	
-	bgfx::submit(id, data_->Program);	
+	DirectGraphics::GetBase()->Submit(id, data_->Program);
 }
 
 bool Shader::CreateFromFile(std::string name, std::string vsh, std::string fsh)

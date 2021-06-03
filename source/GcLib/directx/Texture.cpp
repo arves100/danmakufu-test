@@ -147,6 +147,8 @@ void FrameBuffer::Release()
 //TextureManager
 **********************************************************/
 const std::string TextureManager::TARGET_TRANSITION = "__RENDERTARGET_TRANSITION__";
+const std::string TextureManager::DEFAULT_FRAMEBUFFER = "__APPLICATION_DEFAULT_FRAMEBUFFER__";
+
 TextureManager* TextureManager::thisBase_ = nullptr;
 
 TextureManager::TextureManager() = default;
@@ -155,7 +157,7 @@ TextureManager::~TextureManager()
 {
 	DirectGraphics* graphics = DirectGraphics::GetBase();
 	graphics->RemoveDirectGraphicsListener(this);
-	this->Clear();
+	Clear();
 
 	FileManager::GetBase()->RemoveLoadThreadListener(this);
 
@@ -172,13 +174,20 @@ bool TextureManager::Initialize()
 	graphics->AddDirectGraphicsListener(this);
 	FileManager::GetBase()->AddLoadThreadListener(this);
 
-	auto texTransition = std::make_shared<FrameBuffer>();
+	auto tmp = std::make_shared<FrameBuffer>();
 
-	if (!texTransition->Create(TARGET_TRANSITION))
+	if (!tmp->Create(TARGET_TRANSITION))
 		return false;
 	
-	Add(TARGET_TRANSITION, texTransition);
+	Add(TARGET_TRANSITION, tmp);
 
+	tmp = std::make_shared<FrameBuffer>();
+
+	if (!tmp->Create(DEFAULT_FRAMEBUFFER))
+		return false;
+
+	Add(DEFAULT_FRAMEBUFFER, tmp);
+	
 	return true;
 }
 void TextureManager::Clear()
@@ -189,6 +198,9 @@ void TextureManager::Clear()
 	for (auto& data : mapFrameBufferData_)
 	{
 		_ReleaseFrameBufferData(data.first);
+
+		if (mapFrameBufferData_.size() == 0)
+			break;
 	}
 	
 	mapFrameBufferData_.clear();
@@ -197,6 +209,9 @@ void TextureManager::Clear()
 	for (auto& data : mapTextureData_)
 	{
 		_ReleaseTextureData(data.first);	
+
+		if (mapTextureData_.size() == 0)
+			break;
 	}
 	
 	mapTextureData_.clear();

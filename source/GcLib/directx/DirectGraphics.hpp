@@ -8,6 +8,7 @@ namespace directx {
 class DxCamera;
 class DxCamera2D;
 class FrameBuffer;
+struct ShaderData;
 	
 /**********************************************************
 //DirectGraphicsConfig
@@ -132,6 +133,12 @@ public:
 		
 	void UpdateState() const;
 
+	bgfx::ViewId AddView(std::string name);
+	void RemoveView(bgfx::ViewId id);
+
+	void Submit(bgfx::ViewId id, bgfx::ProgramHandle prog);
+	void RestoreViews();
+
 protected:
 
 	DirectGraphicsConfig config_;
@@ -139,7 +146,8 @@ protected:
 
 	std::unique_ptr<DxCamera> camera_;
 	std::unique_ptr<DxCamera2D> camera2D_;
-	std::unordered_map<bgfx::ViewId, std::shared_ptr<FrameBuffer>> textureTarget_;
+	std::unordered_map<uint16_t, std::shared_ptr<FrameBuffer>> textureTarget_;
+	std::shared_ptr<FrameBuffer> defaultFB_;
 
 	void _ReleaseDxResource();
 	void _RestoreDxResource();
@@ -153,6 +161,14 @@ protected:
 	bool init_;
 
 	glm::mat4 matProj_, matView_;
+
+	std::vector<bgfx::ViewId> views_;
+
+	// Work for the shader !
+	
+	std::shared_ptr<ShaderData> shader_;
+	bool useLight_;
+	bgfx::UniformHandle uniforms_[3];
 };
 
 // TODO: Migrate to an application specific part

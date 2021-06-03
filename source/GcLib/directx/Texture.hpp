@@ -85,8 +85,8 @@ class TextureManager : public DirectGraphicsListener, public gstd::FileManager::
 
 public:
 	static const std::string TARGET_TRANSITION;
+	static const std::string DEFAULT_FRAMEBUFFER;
 
-public:
 	TextureManager();
 	virtual ~TextureManager();
 	static TextureManager* GetBase() { return thisBase_; }
