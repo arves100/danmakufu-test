@@ -24,3 +24,10 @@ if (NOT DEFINED BX_INCLUDE_DIR OR NOT DEFINED BX_LIBRARY_DEBUG OR NOT DEFINED BX
 else()
 	message(STATUS "Found BX ${BX_INCLUDE_DIR} (debug: ${BX_LIBRARY_DEBUG} optimized: ${BX_LIBRARY_RELEASE})")
 endif()
+
+# Find bgfx shaderc
+if (NOT DEFINED BGFX_SHADERC)
+	message(FATAL_ERROR "Please set BGFX_SHADERC")
+else()
+	message(STATUS "Shader compiler ${BGFX_SHADERC}")
+endif()

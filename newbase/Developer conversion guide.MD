@@ -117,3 +117,7 @@ ShaderParameter uses bgfx UniformHandler types
 TextureParameter now exists! Use that for passing textures
 
 CreateFromText currently doesn't exist anymore, this may change later...
+
+You can add a new shader by placing it inside the source/Shaders folder, keep in mind you need to follow bgfx shader rules.
+
+Specify shadername.def and shadername.vs or shadername.fs or shadername.cs (based from the type of shaders you need)
