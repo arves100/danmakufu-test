@@ -58,7 +58,7 @@ protected:
 	void _ReleaseShaderData(std::string name);
 	bool _CreateFromFile(std::string name, std::string vsh, std::string fsh);
 	static std::string _GetTextSourceID(std::string& source);
-	bgfx::ShaderHandle _LoadShader(std::string path);
+	bgfx::ShaderHandle _LoadShader(std::string path, uint8_t type);
 
 private:
 	static ShaderManager* thisBase_;

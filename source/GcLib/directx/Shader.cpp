@@ -90,7 +90,7 @@ bool ShaderManager::_CreateFromFile(std::string name, std::string vsh, std::stri
 
 	if (!vsh.empty())
 	{
-		data->VertexShader = _LoadShader(vsh);
+		data->VertexShader = _LoadShader(vsh, 0);
 		if (!bgfx::isValid(data->VertexShader))
 		{
 			const std::wstring log = StringUtility::Format(L"Shader読み込み失敗(Vertex Shader Load Failed)：\r\n%S", vsh.c_str());
@@ -103,7 +103,7 @@ bool ShaderManager::_CreateFromFile(std::string name, std::string vsh, std::stri
 	
 	if (!fsh.empty())
 	{
-		data->FragmentationShader = _LoadShader(fsh);
+		data->FragmentationShader = _LoadShader(fsh, 1);
 		if (!bgfx::isValid(data->FragmentationShader))
 		{
 			const std::wstring log = StringUtility::Format(L"Shader読み込み失敗(Fragmentation Shader Load Failed)：\r\n%S", fsh.c_str());
@@ -128,9 +128,54 @@ bool ShaderManager::_CreateFromFile(std::string name, std::string vsh, std::stri
 	return true;
 }
 
-bgfx::ShaderHandle ShaderManager::_LoadShader(std::string path)
+bgfx::ShaderHandle ShaderManager::_LoadShader(std::string path, uint8_t type) /* internal function */
 {
-	const auto wpath = PathProperty::GetUnique(StringUtility::ConvertMultiToWide(path, CP_UTF8));
+	std::string sh_type; /* TODO: when things get replaced, replace wstring to string */
+	switch (type)
+	{
+	case 0: /* vertex shader */
+		sh_type = "vs";
+		break;
+	case 1: /* fragmentation shader */
+		sh_type = "fs";
+		break;
+	case 2: /* compute shader */
+		sh_type = "cs";
+		break;
+	default:
+		return BGFX_INVALID_HANDLE;
+	}
+
+	std::string render_name;
+	switch (bgfx::getRendererType())
+	{
+	case bgfx::RendererType::Direct3D9:
+		render_name = "hlsl3";
+		break;
+	case bgfx::RendererType::Direct3D11:
+	case bgfx::RendererType::Direct3D12:
+		render_name = "hlsl5";
+		break;
+	case bgfx::RendererType::Gnm:
+		render_name = "pssl";
+		break;
+	case bgfx::RendererType::Vulkan:
+		render_name = "spirv";
+		break;
+	case bgfx::RendererType::Metal:
+		render_name = "metal";
+		break;
+	case bgfx::RendererType::OpenGL:
+		render_name = "glsl";
+		break;
+	case bgfx::RendererType::OpenGLES:
+		render_name = "essl";
+		break;
+	default:
+		return BGFX_INVALID_HANDLE;
+	}
+
+	const auto wpath = PathProperty::GetUnique(StringUtility::Format(L"shaders/%s/%S.%S", StringUtility::ConvertMultiToWide(path, CP_UTF8), sh_type, render_name));
 
 	ref_count_ptr<FileReader> reader = FileManager::GetBase()->GetFileReader(wpath);
 	if (reader == nullptr || !reader->Open()) {
