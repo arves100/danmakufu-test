@@ -2,8 +2,8 @@
 REM Danmakufu shader maker
 REM Usage: (shaderc) (vs/fs/cs) (name) (in_dir) (out_dir) (bgfx_dir)
 
-MD "%~5"
-MD "%~5\%~3"
+IF NOT EXIST "%~5" MD "%~5"
+IF NOT EXIST "%~5\%~3" MD "%~5\%~3"
 CALL :execcomp %1 %2 %3 %4 %5 %6
 GOTO quit
 
@@ -19,7 +19,7 @@ IF "%2"=="5" SET ARGS=--platform linux -p spirv
 IF "%2"=="6" SET ARGS=--platform orbis -p pssl
 IF "%2"=="7" SET ARGS=--platform nacl
 "%~1" %ARGS% --type %3 -i "%~6\src" -i "%~6\examples\common" -f "%~4" -o "%~5" --varyingdef "%~7"
-EXIT /B
+EXIT /B %ERRORLEVEL%
 
 REM (shaderc) (vs/fs/cs) (in_name) (in_dir) (out_dir)
 :execcomp
@@ -31,6 +31,7 @@ CALL :comp %1 4 %2 "%~4\%~3.%~2" "%~5\%~3\%~2.metal" %6 "%~4\%~3.def"
 CALL :comp %1 5 %2 "%~4\%~3.%~2" "%~5\%~3\%~2.spirv" %6 "%~4\%~3.def"
 REM CALL :comp %1 6 %2 "%~4\%~3.%~2" "%~5\%~3\%~2.pssl" "%~4\%~3.def"
 REM CALL :comp %1 7 %2 "%~4\%~3.%2" "%~5\%~3\%~2.nacl" "%~4\%~3.def"
-EXIT /B
+EXIT /B %ERRORLEVEL%
 
 :quit
+EXIT /B %ERRORLEVEL%
