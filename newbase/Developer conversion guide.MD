@@ -87,7 +87,7 @@ You can have to load shaders from RenderObject, get/set doesn't exist anymore.
 
 shader_ is now unique pointer!
 
-Primitive type doesn't exist anymore, there doesn't seem to be a way to let bgfx know them.
+bgfx does not support direct drawing of different primitives, each primitive is converted to tristrip, API still works but you have to convert the names into bgfx ones.
 
 ## Shaders/ShaderManager/ShaderData
 
