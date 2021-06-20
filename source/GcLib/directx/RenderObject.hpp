@@ -343,7 +343,7 @@ public:
 	RenderObject() : posWeightCenter_(glm::vec3(0.0f, 0.0f, 0.0f)),
 		pVertexBuffer_(BGFX_INVALID_HANDLE), pIndexBuffer_(BGFX_INVALID_HANDLE),
 		position_(glm::vec3(0.0f, 0.0f, 0.0f)), angle_(glm::vec3(0.0f, 0.0f, 0.0f)), scale_(glm::vec3(1.0f, 1.0f, 1.0f)),
-		matRelative_(glm::mat4()), bCoordinate2D_(false), bRecreate_(true), posBias_(-0.5f)
+		matRelative_(glm::mat4()), bCoordinate2D_(false), typePrimitive_(bgfx::Topology::TriList), bRecreate_(true), posBias_(-0.5f)
 	{
 		matRelative_ = glm::identity<glm::mat4>();
 		T::get(pVertexDecl_);
@@ -359,6 +359,8 @@ public:
 	glm::vec3 GetWeightCenter() const { return posWeightCenter_; }
 
 	void SetRelativeMatrix(const glm::mat4 mat) { matRelative_ = mat; }
+
+	void SetPrimitiveType(const bgfx::Topology type) { typePrimitive_ = type; }
 
 	//頂点設定
 
@@ -511,14 +513,19 @@ protected:
 	glm::vec3 scale_; //拡大率
 	glm::mat4 matRelative_; //関係行列
 	bool bCoordinate2D_; //2D座標指定
+	bgfx::Topology typePrimitive_;
 
 	std::unique_ptr<Shader> shader_;
 	bool bRecreate_;
 	float posBias_;
 	std::string name_;
+	uint16_t* pConvertedIndices_;
 
 	void _ReleaseBuffers()
 	{
+		if (pConvertedIndices_)
+			delete[] pConvertedIndices_;
+
 		if (bgfx::isValid(pVertexBuffer_))
 			bgfx::destroy(pVertexBuffer_);
 		if (bgfx::isValid(pIndexBuffer_))
@@ -526,16 +533,22 @@ protected:
 
 		pVertexBuffer_ = BGFX_INVALID_HANDLE;
 		pIndexBuffer_ = BGFX_INVALID_HANDLE;
+		pConvertedIndices_ = nullptr;
 		bRecreate_ = true;
 	}
 	
 	void _RestoreBuffers()
 	{
 		_ReleaseBuffers();
+
+		const auto size = bgfx::topologyConvert(typePrimitive_, nullptr, 0, vertexIndices_.data(), vertexIndices_.size(), false);
+		pConvertedIndices_ = new uint16_t[size];
+		bgfx::topologyConvert(typePrimitive_, pConvertedIndices_, size, vertexIndices_.data(), vertexIndices_.size(), false);
+
 		const auto vb = bgfx::makeRef(&vertex_[0], vertex_.size() * pVertexDecl_.getStride());
 		pVertexBuffer_ = bgfx::createVertexBuffer(vb, pVertexDecl_);
 		bgfx::setName(pVertexBuffer_, name_.c_str());
-		const auto ib = bgfx::makeRef(&vertexIndices_[0], vertexIndices_.size() * sizeof(uint16_t));
+		const auto ib = bgfx::makeRef(pConvertedIndices_, size * sizeof(uint16_t));
 		pIndexBuffer_ = bgfx::createIndexBuffer(ib);
 		bgfx::setName(pIndexBuffer_, name_.c_str());
 		bRecreate_ = false;
