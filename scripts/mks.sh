@@ -5,8 +5,21 @@
 comp()
 {
 	#(shaderc) (n) (vs/fs/cs) (in) (out) (vd)
-	if $2==0   ; then ARGS=--platform windows -p vs_5_0 -O 3
-	elif $2==1 ; then ARGS=--platform windows -p vs_3_0 -O 3
+	
+	# ms specific flags ...
+	if $3=="vs" ; then 
+		D3DX11=-p vs_5_0 -O 3
+		D3DX9= -p vs_3_0 -O 3
+	elif $3=="fs" ; then
+		D3DX11=-p ps_5_0 -O 3
+		D3DX9= -p ps_3_0 -O 3
+	elif %3=="cs" ; then
+		D3DX11=-p cs_5_0 -O 1
+		D3DX9=
+	fi
+	
+	if $2==0   ; then ARGS=--platform windows $D3DX11
+	elif $2==1 ; then ARGS=--platform windows $D3DX9
 	elif $2==2 ; then ARGS=--platform linux -p 120
 	elif $2==3 ; then ARGS=--platform android
 	elif $2==4 ; then ARGS=--platform osx -p metal
