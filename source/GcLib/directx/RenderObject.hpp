@@ -5,201 +5,13 @@
 #include "DxUtility.hpp"
 #include "Shader.hpp"
 #include "Texture.hpp"
+#include "VertexDecl.hpp"
 
 namespace directx {
 
 class RenderObjectBase;
 class RenderManager;
 
-struct VERTEX_LTA
-{
-	// Lighted (L), Textured (T), Tangent (A)
-	// used on testmode bump
-	float x, y, z;
-	uint32_t normal, tangent;
-	int16_t u, v;
-
-	static void get(bgfx::VertexLayout& vl)
-	{
-		vl.begin()
-			.add(bgfx::Attrib::Position, 3, bgfx::AttribType::Float)
-			.add(bgfx::Attrib::Normal, 4, bgfx::AttribType::Uint8, true, true)
-			.add(bgfx::Attrib::Tangent, 4, bgfx::AttribType::Uint8, true, true)
-			.add(bgfx::Attrib::TexCoord0, 2, bgfx::AttribType::Int16, true, true)
-		.end();
-	}
-};
-
-/**********************************************************
-//Vertex declarations
-**********************************************************/
-struct VERTEX_TL {
-	// light (L) -> color
-	// t -> transform? 
-	float x, y, z, w;
-	uint32_t color; // r g b a
-
-	static void get(bgfx::VertexLayout& vl)
-	{
-		vl.begin()
-			.add(bgfx::Attrib::Position, 4, bgfx::AttribType::Float)
-			.add(bgfx::Attrib::Color0, 4, bgfx::AttribType::Uint8)
-			.end();
-	}
-};
-
-struct VERTEX_TLX {
-	float x, y, z, w;
-	uint32_t color; // r g b a
-	int16_t u, v;
-
-	static void get(bgfx::VertexLayout& vl)
-	{
-		vl.begin()
-			.add(bgfx::Attrib::Position, 34, bgfx::AttribType::Float)
-			.add(bgfx::Attrib::Color0, 4, bgfx::AttribType::Uint8)
-			.add(bgfx::Attrib::TexCoord0, 2, bgfx::AttribType::Int16)
-			.end();
-	}
-};
-
-struct VERTEX_L {
-	float x, y, z;
-	uint32_t color; // r g b a
-
-	static void get(bgfx::VertexLayout& vl)
-	{
-		vl.begin()
-			.add(bgfx::Attrib::Position, 3, bgfx::AttribType::Float)
-			.add(bgfx::Attrib::Color0, 4, bgfx::AttribType::Uint8)
-			.end();
-	}
-};
-
-struct VERTEX_LX {
-	float x, y, z;
-	uint32_t color; // r g b a
-	int16_t u, v;
-
-	static void get(bgfx::VertexLayout& vl)
-	{
-		vl.begin()
-			.add(bgfx::Attrib::Position, 3, bgfx::AttribType::Float)
-			.add(bgfx::Attrib::Color0, 4, bgfx::AttribType::Uint8)
-			.add(bgfx::Attrib::TexCoord0, 2, bgfx::AttribType::Int16)
-			.end();
-	}
-};
-
-struct VERTEX_N {
-	//未ライティング
-	
-	float x, y, z;
-	float nx, ny, nz;
-
-	static void get(bgfx::VertexLayout& vl)
-	{
-		vl.begin()
-			.add(bgfx::Attrib::Position, 3, bgfx::AttribType::Float)
-			.add(bgfx::Attrib::Normal, 3, bgfx::AttribType::Float)
-			.end();
-	}
-};
-
-
-struct VERTEX_NX {
-	//未ライティング、テクスチャ有り
-
-	float x, y, z;
-	float nx, ny, nz;
-	int16_t u, v;
-
-	static void get(bgfx::VertexLayout& vl)
-	{
-		vl.begin()
-			.add(bgfx::Attrib::Position, 3, bgfx::AttribType::Float)
-			.add(bgfx::Attrib::Normal, 3, bgfx::AttribType::Float)
-			.add(bgfx::Attrib::TexCoord0, 2, bgfx::AttribType::Int16)
-			.end();
-	}
-};
-
-struct VERTEX_NXG {
-	float x, y, z;
-	float blend[3]; // D3DFVF_XYZB3 -> position 6?
-	float nx, ny, nz;
-	int16_t u, v;
-
-	static void get(bgfx::VertexLayout& vl)
-	{
-		vl.begin()
-			.add(bgfx::Attrib::Position, 6, bgfx::AttribType::Float)
-			.add(bgfx::Attrib::Normal, 3, bgfx::AttribType::Float)
-			.add(bgfx::Attrib::TexCoord0, 2, bgfx::AttribType::Int16)
-			.end();
-	}
-};
-
-#if 0
-struct VERTEX_B1NX {
-	//未ライティング、テクスチャ有り、頂点ブレンド1
-	VERTEX_B1NX() {}
-	VERTEX_B1NX(D3DXVECTOR3& pos, DWORD bi, D3DXVECTOR3& n, D3DXVECTOR2& tc)
-		: position(pos)
-		, normal(n)
-		, texcoord(tc)
-	{
-		blendIndex = bi;
-	}
-	D3DXVECTOR3 position;
-	DWORD blendIndex;
-	D3DXVECTOR3 normal;
-	D3DXVECTOR2 texcoord;
-	enum { fvf = (D3DFVF_XYZB1 | D3DFVF_LASTBETA_UBYTE4 | D3DFVF_NORMAL | D3DFVF_TEX1) };
-};
-
-struct VERTEX_B2NX {
-	//未ライティング、テクスチャ有り、頂点ブレンド2
-	VERTEX_B2NX() {}
-	VERTEX_B2NX(D3DXVECTOR3& pos, float rate, BYTE index1, BYTE index2, D3DXVECTOR3& n, D3DXVECTOR2& tc)
-		: position(pos)
-		, normal(n)
-		, texcoord(tc)
-	{
-		blendRate = rate;
-		gstd::BitAccess::SetByte(blendIndex, 0, index1);
-		gstd::BitAccess::SetByte(blendIndex, 8, index2);
-	}
-	D3DXVECTOR3 position;
-	float blendRate;
-	DWORD blendIndex;
-	D3DXVECTOR3 normal;
-	D3DXVECTOR2 texcoord;
-	enum { fvf = (D3DFVF_XYZB2 | D3DFVF_LASTBETA_UBYTE4 | D3DFVF_NORMAL | D3DFVF_TEX1) };
-};
-
-struct VERTEX_B4NX {
-	//未ライティング、テクスチャ有り、頂点ブレンド4
-	VERTEX_B4NX() {}
-	VERTEX_B4NX(D3DXVECTOR3& pos, float rate[3], BYTE index[4], D3DXVECTOR3& n, D3DXVECTOR2& tc)
-		: position(pos)
-		, normal(n)
-		, texcoord(tc)
-	{
-		for (int iRate = 0; iRate < 3; iRate++)
-			blendRate[iRate] = rate[iRate];
-		for (int iIndex = 0; iIndex < 4; iIndex++)
-			gstd::BitAccess::SetByte(blendIndex, 8 * iIndex, index[iIndex]);
-	}
-	D3DXVECTOR3 position;
-	float blendRate[3];
-	DWORD blendIndex;
-	D3DXVECTOR3 normal;
-	D3DXVECTOR2 texcoord;
-	enum { fvf = (D3DFVF_XYZB4 | D3DFVF_LASTBETA_UBYTE4 | D3DFVF_NORMAL | D3DFVF_TEX1) };
-};
-#endif
-	
 class RenderStateFunction;
 class RenderBlock;
 
@@ -467,7 +279,7 @@ public:
 
 	Shader* GetShader() const { return shader_.get(); }
 
-	void Submit(bgfx::ViewId id = 0)
+	virtual void Submit(bgfx::ViewId id = 0)
 	{
 		if (bRecreate_)
 			_RestoreBuffers();
@@ -639,145 +451,6 @@ protected:
 	}
 };
 
-#define RO_IMPL_VERTEX3 \
-	void SetVertexPosition(size_t index, float x, float y, float z = 1.0f) \
-	{ \
-		auto vertex = GetVertex(index); \
-		if (vertex == nullptr) \
-			return; \
-		vertex->x = x + posBias_; \
-		vertex->y = y + posBias_; \
-		vertex->z = z; \
-	}
-
-#define RO_IMPL_VERTEX4 \
-	void SetVertexPosition(size_t index, float x, float y, float z = 1.0f, float w = 1.0f) \
-	{ \
-		auto vertex = GetVertex(index); \
-		if (vertex == nullptr) \
-			return; \
-		vertex->x = x + posBias_; \
-		vertex->y = y + posBias_; \
-		vertex->z = z; \
-		vertex->w = w; \
-	}
-
-#define RO_IMPL_UV \
-	void SetVertexUV(size_t index, float u, float v) \
-	{ \
-		auto vertex = GetVertex(index); \
-		if (vertex == nullptr) \
-			return; \
-		vertex->u = u; \
-		vertex->v = v; \
-	}
-
-#define RO_IMPL_TANGENT \
-	void SetVertexTangent(size_t index, uint8_t x, uint8_t y, uint8_t z, uint8_t w) \
-	{ \
-		auto vertex = GetVertex(index); \
-		if (vertex == nullptr) \
-			return; \
-		vertex->tangent = encodeNormalRgba8(x, y, z, w); \
-	} \
-	void SetVertexTangent(size_t index, uint32_t n) \
-	{ \
-		auto vertex = GetVertex(index); \
-		if (vertex == nullptr) \
-			return; \
-		vertex->tangent = n; \
-	}
-
-#define RO_IMPL_NORMAL4 \
-	void SetVertexNormal(size_t index, uint8_t x, uint8_t y, uint8_t z, uint8_t w) \
-	{ \
-		auto vertex = GetVertex(index); \
-		if (vertex == nullptr) \
-			return; \
-		vertex->normal = encodeNormalRgba8(x, y, z, w); \
-	} \
-	void SetVertexNormal(size_t index, uint32_t n) \
-	{ \
-		auto vertex = GetVertex(index); \
-		if (vertex == nullptr) \
-			return; \
-		vertex->normal = n; \
-	}
-
-#define RO_IMPL_NORMAL3 \
-	void SetVertexNormal(size_t index, float x, float y, float z) \
-	{ \
-		auto vertex = GetVertex(index); \
-		if (vertex == nullptr) \
-			return; \
-		vertex->nx = x; \
-		vertex->ny = y; \
-		vertex->nz = z; \
-	}
-
-#define RO_IMPL_BLEND3 \
-	void SetVertexBlend(size_t index, float x, float y, float z) \
-	{ \
-		auto vertex = GetVertex(index); \
-		if (vertex == nullptr) \
-			return; \
-		vertex->blend[0] = x; \
-		vertex->blend[1] = y; \
-		vertex->blend[2] = z; \
-	}
-
-#define RO_IMPL_RGBA \
-	void SetVertexColor(size_t index, uint32_t color) \
-	{ \
-		auto vertex = GetVertex(index); \
-		if (vertex == nullptr) \
-			return; \
-		vertex->color = color; \
-	} \
-	void SetVertexColorRGB(size_t index, uint8_t r, uint8_t g, uint8_t b) \
-	{ \
-		auto vertex = GetVertex(index); \
-		if (vertex == nullptr) \
-			return; \
-		auto& color = vertex->color; \
-		color = ColorAccess::SetColorR(color, r); \
-		color = ColorAccess::SetColorG(color, g); \
-		color = ColorAccess::SetColorB(color, b); \
-	} \
-	void SetVertexColorARGB(size_t index, uint8_t a, uint8_t r, uint8_t g, uint8_t b) \
-	{ \
-		auto vertex = GetVertex(index); \
-		if (vertex == nullptr) \
-			return; \
-		vertex->color = COLOR_ARGB(a,r,g,b); \
-	} \
-	void SetVertexAlpha(size_t index, uint8_t a) \
-	{ \
-		auto vertex = GetVertex(index); \
-		if (vertex == nullptr) \
-			return; \
-		auto& color = vertex->color; \
-		color = ColorAccess::SetColorA(color, a); \
-	} \
-	void SetColorRGB(uint32_t color) \
-	{ \
-		auto r = ColorAccess::GetColorR(color); \
-		auto g = ColorAccess::GetColorG(color); \
-		auto b = ColorAccess::GetColorB(color); \
-		for (auto iVert = 0; iVert < vertex_.size(); iVert++) \
-		{ \
-			SetVertexColorRGB(iVert, r, g, b); \
-		} \
-	} \
-	void SetAlpha(uint8_t alpha) \
-	{ \
-		for (auto iVert = 0; iVert < vertex_.size(); iVert++) \
-		{ \
-			SetVertexAlpha(iVert, alpha); \
-		} \
-	}
-
-
 class RenderObjectLTA : public RenderObject<VERTEX_LTA> {
 public:
 	RO_IMPL_VERTEX3
@@ -807,7 +480,7 @@ public:
 class RenderObjectNXG : public RenderObject<VERTEX_NXG> {
 public:
 	RO_IMPL_VERTEX3
-	RO_IMPL_BLEND3
+	RO_IMPL_WEIGHT3
 	RO_IMPL_NORMAL3
 	RO_IMPL_UV
 };
@@ -855,56 +528,96 @@ public:
 //法線有り、テクスチャ有り
 **********************************************************/
 class RenderObjectNX : public RenderObject<VERTEX_NX> {
+public:
 	RenderObjectNX();
 
 	RO_IMPL_VERTEX3
 	RO_IMPL_NORMAL3
 	RO_IMPL_UV
+
+	void Submit(bgfx::ViewId id = 0) override;
+	void SetColor(const uint32_t color) { color_ = color; }
+
+protected:
+	uint32_t color_;
 };
 
-/*
-	CUSTOM:
-	NX
-	BNX
-	B2NX
-	B4NX
-*/
+class RenderObjectB1NX : public RenderObject<VERTEX_B1NX> {
+public:
+	RO_IMPL_VERTEX3
+	RO_IMPL_INDICES
+	RO_IMPL_NORMAL3
+	RO_IMPL_UV
+};
 
-#if 0
+/**********************************************************
+//RenderObjectB2NX
+//頂点ブレンド2
+//法線有り
+//テクスチャ有り
+**********************************************************/
+class RenderObjectB2NX : public RenderObject<VERTEX_B2NX> {
+public:
+	RO_IMPL_VERTEX3
+	RO_IMPL_WEIGHT1
+	RO_IMPL_INDICES
+	RO_IMPL_NORMAL3
+	RO_IMPL_UV
+
+	virtual void CalculateWeightCenter();
+	void SetVertexBlend(size_t index, size_t pos, uint8_t indexBlend, float rate);
+};
+
+/**********************************************************
+//RenderObjectB4NX
+//頂点ブレンド4
+//法線有り
+//テクスチャ有り
+**********************************************************/
+class RenderObjectB4NX : public RenderObject<VERTEX_B4NX> {
+public:
+	RO_IMPL_VERTEX3
+	RO_IMPL_WEIGHT3
+	RO_IMPL_INDICES
+	RO_IMPL_NORMAL3
+	RO_IMPL_UV
+
+	virtual void CalculateWeightCenter();
+	void SetVertexBlend(size_t index, size_t pos, uint8_t indexBlend, float rate);
+};
+
 /**********************************************************
 //RenderObjectBNX
 //頂点ブレンド
 //法線有り
 //テクスチャ有り
 **********************************************************/
-class RenderObjectBNX : public RenderObject {
+class RenderObjectBNX : public RenderObject<VERTEX_BNX> {
 public:
-	struct Vertex {
-		D3DXVECTOR3 position;
-		D3DXVECTOR4 blendRate;
-		D3DXVECTOR4 blendIndex;
-		D3DXVECTOR3 normal;
-		D3DXVECTOR2 texcoord;
-	};
+	RO_IMPL_VERTEX3
+	RO_IMPL_NORMAL3
+	RO_IMPL_UV
 
-public:
 	RenderObjectBNX();
-	~RenderObjectBNX();
-	virtual void InitializeVertexBuffer();
-	virtual void Render();
+
+
+	virtual void InitializeVertexBuffer(); // ?
+	virtual void Render(); // -> Submit
 
 	//描画用設定
-	void SetMatrix(gstd::ref_count_ptr<Matrices> matrix) { matrix_ = matrix; }
-	void SetColor(D3DCOLOR color) { color_ = color; }
+	void SetMatrix(gstd::ref_count_ptr<Matrices> matrix) { matrix_ = matrix; } // Matrices ??
+	void SetColor(const uint32_t color) { color_ = color; }
 
 protected:
 	gstd::ref_count_ptr<Matrices> matrix_;
-	D3DCOLOR color_;
+	uint32_t color_;
 	D3DMATERIAL9 materialBNX_;
+
 	virtual void _CreateVertexDeclaration();
 	virtual void _CopyVertexBufferOnInitialize() = 0;
 };
 
+#if 0
 class RenderObjectBNXBlock : public RenderBlock {
 public:
 	void SetMatrix(gstd::ref_count_ptr<Matrices> matrix) { matrix_ = matrix; }
@@ -916,61 +629,11 @@ protected:
 	D3DCOLOR color_;
 };
 
-/**********************************************************
-//RenderObjectB2NX
-//頂点ブレンド2
-//法線有り
-//テクスチャ有り
-**********************************************************/
-class RenderObjectB2NX : public RenderObjectBNX {
-public:
-	RenderObjectB2NX();
-	~RenderObjectB2NX();
-
-	virtual void CalculateWeightCenter();
-
-	//頂点設定
-	VERTEX_B2NX* GetVertex(int index);
-	void SetVertex(int index, VERTEX_B2NX& vertex);
-	void SetVertexPosition(int index, float x, float y, float z);
-	void SetVertexUV(int index, float u, float v);
-	void SetVertexBlend(int index, int pos, BYTE indexBlend, float rate);
-	void SetVertexNormal(int index, float x, float y, float z);
-
-protected:
-	virtual void _CopyVertexBufferOnInitialize();
-};
-
 class RenderObjectB2NXBlock : public RenderObjectBNXBlock {
 public:
 	RenderObjectB2NXBlock();
 	virtual ~RenderObjectB2NXBlock();
 	virtual void Render();
-};
-
-/**********************************************************
-//RenderObjectB4NX
-//頂点ブレンド4
-//法線有り
-//テクスチャ有り
-**********************************************************/
-class RenderObjectB4NX : public RenderObjectBNX {
-public:
-	RenderObjectB4NX();
-	~RenderObjectB4NX();
-
-	virtual void CalculateWeightCenter();
-
-	//頂点設定
-	VERTEX_B4NX* GetVertex(int index);
-	void SetVertex(int index, VERTEX_B4NX& vertex);
-	void SetVertexPosition(int index, float x, float y, float z);
-	void SetVertexUV(int index, float u, float v);
-	void SetVertexBlend(int index, int pos, BYTE indexBlend, float rate);
-	void SetVertexNormal(int index, float x, float y, float z);
-
-protected:
-	virtual void _CopyVertexBufferOnInitialize();
 };
 
 class RenderObjectB4NXBlock : public RenderObjectBNXBlock {

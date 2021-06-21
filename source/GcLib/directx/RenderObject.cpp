@@ -277,32 +277,6 @@ RenderObjectLX::RenderObjectLX()
 
 }
 
-/*void RenderObjectLX::Render()
-{
-	IDirect3DDevice9* device = DirectGraphics::GetBase()->GetDevice();
-	ref_count_ptr<Texture>& texture = texture_[0];
-	if (texture != NULL)
-		device->SetTexture(0, texture->GetD3DTexture());
-	else
-		device->SetTexture(0, NULL);
-
-	D3DXMATRIX mat = _CreateWorldTransformMaxtrix();
-	device->SetTransform(D3DTS_WORLD, &mat);
-
-	device->SetFVF(VERTEX_LX::fvf);
-
-	BeginShader();
-	if (vertexIndices_.size() == 0) {
-		device->DrawPrimitiveUP(typePrimitive_, _GetPrimitiveCount(), vertex_.GetPointer(), strideVertexStreamZero_);
-	} else {
-		device->DrawIndexedPrimitiveUP(typePrimitive_, 0,
-			GetVertexCount(), _GetPrimitiveCount(),
-			&vertexIndices_[0], D3DFMT_INDEX16,
-			vertex_.GetPointer(), strideVertexStreamZero_);
-	}
-	EndShader();
-}*/
-
 void RenderObjectLX::SetVertexCount(const size_t count)
 {
 	RenderObject::SetVertexCount(count);
@@ -320,59 +294,42 @@ RenderObjectNX::RenderObjectNX()
 
 }
 
-/*void RenderObjectNX::Render()
+void RenderObjectNX::Submit(bgfx::ViewId id)
 {
-	IDirect3DDevice9* device = DirectGraphics::GetBase()->GetDevice();
-	ref_count_ptr<Texture>& texture = texture_[0];
-	if (texture != NULL)
-		device->SetTexture(0, texture->GetD3DTexture());
-	else
-		device->SetTexture(0, NULL);
+	// shader submit
 
-	DWORD bFogEnable = FALSE;
-	D3DXMATRIX matView;
-	D3DXMATRIX matProj;
+	bool bFogEnable = false;
+	glm::mat4 matView;
+	glm::mat4 matProj;
+	auto device = DirectGraphics::GetBase();
+
 	if (bCoordinate2D_) {
-		device->GetTransform(D3DTS_VIEW, &matView);
-		device->GetTransform(D3DTS_PROJECTION, &matProj);
-		device->GetRenderState(D3DRS_FOGENABLE, &bFogEnable);
-		device->SetRenderState(D3DRS_FOGENABLE, FALSE);
+		matProj = device->GetProjMatrix();
+		matView = device->GetViewMatrix();
+		bFogEnable = device->IsFogEnable();
+		device->SetFogEnable(false);
 		_SetCoordinate2dDeviceMatrix();
 	}
 
-	D3DXMATRIX mat = _CreateWorldTransformMaxtrix();
-	device->SetTransform(D3DTS_WORLD, &mat);
+	auto mat = _CreateWorldTransformMatrix();
+	//device->SetWorldMatrix(mat); // Cat...
 
-	device->SetFVF(VERTEX_NX::fvf);
-	BeginShader();
-	if (vertexIndices_.size() == 0) {
-		device->DrawPrimitiveUP(typePrimitive_, _GetPrimitiveCount(), vertex_.GetPointer(), strideVertexStreamZero_);
-	} else {
-		device->DrawIndexedPrimitiveUP(typePrimitive_, 0,
-			GetVertexCount(), _GetPrimitiveCount(),
-			&vertexIndices_[0], D3DFMT_INDEX16,
-			vertex_.GetPointer(), strideVertexStreamZero_);
-	}
-	EndShader();
+	RenderObject::Submit(id);
 
 	if (bCoordinate2D_) {
-		device->SetTransform(D3DTS_VIEW, &matView);
-		device->SetTransform(D3DTS_PROJECTION, &matProj);
-		device->SetRenderState(D3DRS_FOGENABLE, bFogEnable);
+		device->SetViewAndProjMatrix(matView, matProj);
+		device->SetFogEnable(bFogEnable);
 	}
-}*/
+}
 
-
-#if 0
 /**********************************************************
 //RenderObjectBNX
 **********************************************************/
 RenderObjectBNX::RenderObjectBNX()
 {
 	_SetTextureStageCount(1);
-	color_ = D3DCOLOR_ARGB(255, 255, 255, 255);
+	color_ = COLOR_ARGB(255, 255, 255, 255);
 
-	_CreateVertexDeclaration();
 	materialBNX_.Diffuse.a = 1.0f;
 	materialBNX_.Diffuse.r = 1.0f;
 	materialBNX_.Diffuse.g = 1.0f;
@@ -390,46 +347,7 @@ RenderObjectBNX::RenderObjectBNX()
 	materialBNX_.Emissive.g = 1.0f;
 	materialBNX_.Emissive.b = 1.0f;
 }
-RenderObjectBNX::~RenderObjectBNX()
-{
-}
-void RenderObjectBNX::_CreateVertexDeclaration()
-{
-	if (pVertexDecl_ != NULL)
-		return;
-	IDirect3DDevice9* device = DirectGraphics::GetBase()->GetDevice();
-	D3DVERTEXELEMENT9 element[] = {
-		{ 0, 0, D3DDECLTYPE_FLOAT3, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITION, 0 },
-		{ 0, 12, D3DDECLTYPE_FLOAT4, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_BLENDWEIGHT, 0 },
-		{ 0, 28, D3DDECLTYPE_FLOAT4, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_BLENDINDICES, 0 },
-		{ 0, 44, D3DDECLTYPE_FLOAT3, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_NORMAL, 0 },
-		{ 0, 56, D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 0 },
-		D3DDECL_END() // 配列の終わり
-	};
-	device->CreateVertexDeclaration(element, &pVertexDecl_);
-}
-void RenderObjectBNX::InitializeVertexBuffer()
-{
-	int countVertex = GetVertexCount();
-	IDirect3DDevice9* device = DirectGraphics::GetBase()->GetDevice();
-	device->CreateVertexBuffer(countVertex * sizeof(Vertex), 0, 0, D3DPOOL_MANAGED, &pVertexBuffer_, NULL);
 
-	//コピー
-	_CopyVertexBufferOnInitialize();
-
-	int countIndex = vertexIndices_.size();
-	if (countIndex != 0) {
-		device->CreateIndexBuffer(sizeof(short) * countIndex,
-			D3DUSAGE_WRITEONLY, D3DFMT_INDEX16, D3DPOOL_MANAGED, &pIndexBuffer_, NULL);
-
-		BYTE* bufIndex;
-		HRESULT hrLockIndex = pIndexBuffer_->Lock(0, 0, reinterpret_cast<void**>(&bufIndex), 0);
-		if (!FAILED(hrLockIndex)) {
-			memcpy(bufIndex, &vertexIndices_[0], sizeof(short) * countIndex);
-			pIndexBuffer_->Unlock();
-		}
-	}
-}
 void RenderObjectBNX::Render()
 {
 	IDirect3DDevice9* device = DirectGraphics::GetBase()->GetDevice();
@@ -561,13 +479,6 @@ void RenderObjectBNX::Render()
 /**********************************************************
 //RenderObjectB2NX
 **********************************************************/
-RenderObjectB2NX::RenderObjectB2NX()
-{
-	strideVertexStreamZero_ = sizeof(VERTEX_B2NX);
-}
-RenderObjectB2NX::~RenderObjectB2NX()
-{
-}
 void RenderObjectB2NX::_CopyVertexBufferOnInitialize()
 {
 	int countVertex = GetVertexCount();
@@ -614,58 +525,19 @@ void RenderObjectB2NX::CalculateWeightCenter()
 	posWeightCenter_.y = (float)yTotal;
 	posWeightCenter_.z = (float)zTotal;
 }
-VERTEX_B2NX* RenderObjectB2NX::GetVertex(int index)
-{
-	int pos = index * strideVertexStreamZero_;
-	if (pos >= vertex_.GetSize())
-		return NULL;
-	return (VERTEX_B2NX*)vertex_.GetPointer(pos);
-}
-void RenderObjectB2NX::SetVertex(int index, VERTEX_B2NX& vertex)
-{
-	int pos = index * strideVertexStreamZero_;
-	if (pos >= vertex_.GetSize())
-		return;
-	memcpy(vertex_.GetPointer(pos), &vertex, strideVertexStreamZero_);
-}
-void RenderObjectB2NX::SetVertexPosition(int index, float x, float y, float z)
+
+void RenderObjectB2NX::SetVertexBlend(size_t index, size_t pos, uint8_t indexBlend, float rate)
 {
 	VERTEX_B2NX* vertex = GetVertex(index);
-	if (vertex == NULL)
+	if (vertex == nullptr)
 		return;
 
-	float bias = -0.5f;
-	vertex->position.x = x + bias;
-	vertex->position.y = y + bias;
-	vertex->position.z = z;
-}
-void RenderObjectB2NX::SetVertexUV(int index, float u, float v)
-{
-	VERTEX_B2NX* vertex = GetVertex(index);
-	if (vertex == NULL)
-		return;
-	vertex->texcoord.x = u;
-	vertex->texcoord.y = v;
-}
-void RenderObjectB2NX::SetVertexBlend(int index, int pos, BYTE indexBlend, float rate)
-{
-	VERTEX_B2NX* vertex = GetVertex(index);
-	if (vertex == NULL)
-		return;
-	BitAccess::SetByte(vertex->blendIndex, pos * 8, indexBlend);
+	BitAccess::SetByte(vertex->indices, pos * 8, indexBlend);
 	if (pos == 0)
-		vertex->blendRate = rate;
-}
-void RenderObjectB2NX::SetVertexNormal(int index, float x, float y, float z)
-{
-	VERTEX_B2NX* vertex = GetVertex(index);
-	if (vertex == NULL)
-		return;
-	vertex->normal.x = x;
-	vertex->normal.y = y;
-	vertex->normal.z = z;
+		vertex->weight = rate;
 }
 
+#if 0
 //RenderObjectB2NXBlock
 RenderObjectB2NXBlock::RenderObjectB2NXBlock()
 {
