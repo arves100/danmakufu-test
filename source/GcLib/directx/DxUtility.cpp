@@ -3,71 +3,73 @@
 using namespace gstd;
 using namespace directx;
 
-#if 0
+#define BIT_ALPHA 24
+#define BIT_RED 16
+#define BIT_GREEN 8
+#define BIT_BLUE 0
 
 /**********************************************************
 //ColorAccess
 **********************************************************/
-int ColorAccess::GetColorA(D3DCOLOR& color)
+uint8_t ColorAccess::GetColorA(uint32_t& color)
 {
 	return gstd::BitAccess::GetByte(color, BIT_ALPHA);
 }
-D3DCOLOR& ColorAccess::SetColorA(D3DCOLOR& color, int alpha)
+uint32_t& ColorAccess::SetColorA(uint32_t& color, uint8_t alpha)
 {
 	if (alpha > 255)
 		alpha = 255;
 	if (alpha < 0)
 		alpha = 0;
-	return gstd::BitAccess::SetByte(color, BIT_ALPHA, (unsigned char)alpha);
+	return gstd::BitAccess::SetByte(color, BIT_ALPHA, alpha);
 }
-int ColorAccess::GetColorR(D3DCOLOR color)
+uint8_t ColorAccess::GetColorR(uint32_t color)
 {
 	return gstd::BitAccess::GetByte(color, BIT_RED);
 }
-D3DCOLOR& ColorAccess::SetColorR(D3DCOLOR& color, int red)
+uint32_t& ColorAccess::SetColorR(uint32_t& color, uint8_t red)
 {
 	if (red > 255)
 		red = 255;
 	if (red < 0)
 		red = 0;
-	return gstd::BitAccess::SetByte(color, BIT_RED, (unsigned char)red);
+	return gstd::BitAccess::SetByte(color, BIT_RED, red);
 }
-int ColorAccess::GetColorG(D3DCOLOR& color)
+uint8_t ColorAccess::GetColorG(uint32_t& color)
 {
 	return gstd::BitAccess::GetByte(color, BIT_GREEN);
 }
-D3DCOLOR& ColorAccess::SetColorG(D3DCOLOR& color, int green)
+uint32_t& ColorAccess::SetColorG(uint32_t& color, uint8_t green)
 {
 	if (green > 255)
 		green = 255;
 	if (green < 0)
 		green = 0;
-	return gstd::BitAccess::SetByte(color, BIT_GREEN, (unsigned char)green);
+	return gstd::BitAccess::SetByte(color, BIT_GREEN, green);
 }
-int ColorAccess::GetColorB(D3DCOLOR& color)
+uint8_t ColorAccess::GetColorB(uint32_t& color)
 {
 	return gstd::BitAccess::GetByte(color, BIT_BLUE);
 }
-D3DCOLOR& ColorAccess::SetColorB(D3DCOLOR& color, int blue)
+uint32_t& ColorAccess::SetColorB(uint32_t& color, uint8_t blue)
 {
 	if (blue > 255)
 		blue = 255;
 	if (blue < 0)
 		blue = 0;
-	return gstd::BitAccess::SetByte(color, BIT_BLUE, (unsigned char)blue);
+	return gstd::BitAccess::SetByte(color, BIT_BLUE, blue);
 }
-D3DCOLORVALUE ColorAccess::SetColor(D3DCOLORVALUE value, D3DCOLOR color)
+
+uint32_t& ColorAccess::ApplyAlpha(uint32_t& color, double alpha)
 {
-	float a = (float)GetColorA(color) / 255.0f;
-	float r = (float)GetColorR(color) / 255.0f;
-	float g = (float)GetColorG(color) / 255.0f;
-	float b = (float)GetColorB(color) / 255.0f;
-	value.r *= r;
-	value.g *= g;
-	value.b *= b;
-	value.a *= a;
-	return value;
+	color = SetColorA(color, GetColorA(color) * alpha);
+	color = SetColorR(color, GetColorR(color) * alpha);
+	color = SetColorG(color, GetColorG(color) * alpha);
+	color = SetColorB(color, GetColorB(color) * alpha);
+	return color;
 }
+
+#if 0
 D3DMATERIAL9 ColorAccess::SetColor(D3DMATERIAL9 mat, D3DCOLOR color)
 {
 	float a = (float)GetColorA(color) / 255.0f;
@@ -92,14 +94,7 @@ D3DMATERIAL9 ColorAccess::SetColor(D3DMATERIAL9 mat, D3DCOLOR color)
 	mat.Emissive.a *= a;
 	return mat;
 }
-D3DCOLOR& ColorAccess::ApplyAlpha(D3DCOLOR& color, double alpha)
-{
-	color = SetColorA(color, GetColorA(color) * alpha);
-	color = SetColorR(color, GetColorR(color) * alpha);
-	color = SetColorG(color, GetColorG(color) * alpha);
-	color = SetColorB(color, GetColorB(color) * alpha);
-	return color;
-}
+
 D3DCOLOR& ColorAccess::SetColorHSV(D3DCOLOR& color, int hue, int saturation, int value)
 {
 	float f;

@@ -5,34 +5,26 @@
 #include <bx/pixelformat.h>
 
 namespace directx {
-#if 0
+
 /**********************************************************
 //ColorAccess
 **********************************************************/
 class ColorAccess {
 public:
-	enum {
-		BIT_ALPHA = 24,
-		BIT_RED = 16,
-		BIT_GREEN = 8,
-		BIT_BLUE = 0,
-	};
-	static int GetColorA(D3DCOLOR& color);
-	static D3DCOLOR& SetColorA(D3DCOLOR& color, int alpha);
-	static int GetColorR(D3DCOLOR color);
-	static D3DCOLOR& SetColorR(D3DCOLOR& color, int red);
-	static int GetColorG(D3DCOLOR& color);
-	static D3DCOLOR& SetColorG(D3DCOLOR& color, int green);
-	static int GetColorB(D3DCOLOR& color);
-	static D3DCOLOR& SetColorB(D3DCOLOR& color, int blue);
+	static uint8_t GetColorA(uint32_t& color);
+	static uint32_t& SetColorA(uint32_t& color, uint8_t alpha);
+	static uint8_t GetColorR(uint32_t color);
+	static uint32_t& SetColorR(uint32_t& color, uint8_t red);
+	static uint8_t GetColorG(uint32_t& color);
+	static uint32_t& SetColorG(uint32_t& color, uint8_t green);
+	static uint8_t GetColorB(uint32_t& color);
+	static uint32_t& SetColorB(uint32_t& color, uint8_t blue);
 
-	static D3DCOLORVALUE SetColor(D3DCOLORVALUE value, D3DCOLOR color);
-	static D3DMATERIAL9 SetColor(D3DMATERIAL9 mat, D3DCOLOR color);
-	static D3DCOLOR& ApplyAlpha(D3DCOLOR& color, double alpha);
+	static uint32_t& ApplyAlpha(uint32_t& color, double alpha);
 
-	static D3DCOLOR& SetColorHSV(D3DCOLOR& color, int hue, int saturation, int value);
 };
 
+#if 0
 /**********************************************************
 //衝突判定用図形
 **********************************************************/
@@ -223,6 +215,9 @@ private:
 	bx::AllocatorI* alloc;
 	static DxAllocator* instance_;
 };
+
+#define COLOR_RGB(r,g,b) (uint32_t)((r << 0x18) | (g << 0x10) | (b << 8) | 0xFF)
+#define COLOR_ARGB(a,r,g,b) (uint32_t)((r << 0x18) | (g << 0x10) | (b << 8) | a)
 
 // https://github.com/bkaradzic/bgfx/blob/d01f86a6a9cac2e7c97c13983887f0ca4994318a/examples/common/bgfx_utils.h
 inline uint32_t encodeNormalRgba8(float _x, float _y = 0.0f, float _z = 0.0f, float _w = 0.0f)
