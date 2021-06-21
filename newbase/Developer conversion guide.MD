@@ -32,6 +32,7 @@ NOTE: DInput will mostly receive a refactor anyway, I'd prefer seeing a virtual 
 - UpdateState is now PUBLIC, you have to MANULLY update the state before submitting meshes
 - SetZBufferEnable -> SetDepthTest
 - Viewport concepts are now removed, please use multiple view instead
+- D3DCOLOR_ARGB and D3DCOLOR_RGB are not COLOR_ARGB and COLOR_RGB (defined in DxUtility)
 
 ### RenderObjects
 Vertex declaractions (ex FVF) uses BGFX vertexlayout now, please switch to the new code.
