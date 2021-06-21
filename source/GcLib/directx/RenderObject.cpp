@@ -164,6 +164,7 @@ void RenderStateFunction::SetTextureFilter(DWORD mode, int stage)
 	args->WriteInteger(stage);
 	mapFuncRenderState_[RenderStateFunction::FUNC_TEXTURE_FILTER] = args;
 }
+#endif
 
 /**********************************************************
 //RenderObjectTLX
@@ -172,28 +173,11 @@ void RenderStateFunction::SetTextureFilter(DWORD mode, int stage)
 RenderObjectTLX::RenderObjectTLX()
 {
 	_SetTextureStageCount(1);
-	strideVertexStreamZero_ = sizeof(VERTEX_TLX);
 	bPermitCamera_ = true;
 }
-RenderObjectTLX::~RenderObjectTLX()
-{
-}
-void RenderObjectTLX::_CreateVertexDeclaration()
-{
-	if (pVertexDecl_ != NULL)
-		return;
 
-	//D3DFVF_XYZRHW|D3DFVF_DIFFUSE|D3DFVF_TEX1
-	IDirect3DDevice9* device = DirectGraphics::GetBase()->GetDevice();
-	D3DVERTEXELEMENT9 element[] = {
-		{ 0, 0, D3DDECLTYPE_FLOAT4, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITIONT, 0 },
-		{ 0, 16, D3DDECLTYPE_D3DCOLOR, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_COLOR, 0 },
-		{ 0, 20, D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 0 },
-		D3DDECL_END() // 配列の終わり
-	};
-	device->CreateVertexDeclaration(element, &pVertexDecl_);
-}
-void RenderObjectTLX::Render()
+
+/*void RenderObjectTLX::Render()
 {
 	DirectGraphics* graphics = DirectGraphics::GetBase();
 	DxCamera2D* camera = graphics->GetCamera2D().GetPointer();
@@ -274,94 +258,15 @@ void RenderObjectTLX::Render()
 		}
 		EndShader();
 	}
-}
-void RenderObjectTLX::SetVertexCount(int count)
+}*/
+
+void RenderObjectTLX::SetVertexCount(const size_t count)
 {
 	RenderObject::SetVertexCount(count);
-	SetColorRGB(D3DCOLOR_ARGB(255, 255, 255, 255));
+	SetColorRGB(COLOR_ARGB(255, 255, 255, 255));
 	SetAlpha(255);
 }
-VERTEX_TLX* RenderObjectTLX::GetVertex(int index)
-{
-	int pos = index * strideVertexStreamZero_;
-	if (pos >= vertex_.GetSize())
-		return NULL;
-	return (VERTEX_TLX*)vertex_.GetPointer(pos);
-}
-void RenderObjectTLX::SetVertex(int index, VERTEX_TLX& vertex)
-{
-	int pos = index * strideVertexStreamZero_;
-	if (pos >= vertex_.GetSize())
-		return;
-	memcpy(vertex_.GetPointer(pos), &vertex, strideVertexStreamZero_);
-}
-void RenderObjectTLX::SetVertexPosition(int index, float x, float y, float z, float w)
-{
-	VERTEX_TLX* vertex = GetVertex(index);
-	if (vertex == NULL)
-		return;
 
-	float bias = -0.5f;
-	vertex->position.x = x + bias;
-	vertex->position.y = y + bias;
-	vertex->position.z = z;
-	vertex->position.w = w;
-}
-void RenderObjectTLX::SetVertexUV(int index, float u, float v)
-{
-	VERTEX_TLX* vertex = GetVertex(index);
-	if (vertex == NULL)
-		return;
-	vertex->texcoord.x = u;
-	vertex->texcoord.y = v;
-}
-void RenderObjectTLX::SetVertexColor(int index, D3DCOLOR color)
-{
-	VERTEX_TLX* vertex = GetVertex(index);
-	if (vertex == NULL)
-		return;
-	vertex->diffuse_color = color;
-}
-void RenderObjectTLX::SetVertexColorARGB(int index, int a, int r, int g, int b)
-{
-	VERTEX_TLX* vertex = GetVertex(index);
-	if (vertex == NULL)
-		return;
-	vertex->diffuse_color = D3DCOLOR_ARGB(a, r, g, b);
-}
-void RenderObjectTLX::SetVertexAlpha(int index, int alpha)
-{
-	VERTEX_TLX* vertex = GetVertex(index);
-	if (vertex == NULL)
-		return;
-	D3DCOLOR& color = vertex->diffuse_color;
-	color = ColorAccess::SetColorA(color, alpha);
-}
-void RenderObjectTLX::SetVertexColorRGB(int index, int r, int g, int b)
-{
-	VERTEX_TLX* vertex = GetVertex(index);
-	if (vertex == NULL)
-		return;
-	D3DCOLOR& color = vertex->diffuse_color;
-	color = ColorAccess::SetColorR(color, r);
-	color = ColorAccess::SetColorG(color, g);
-	color = ColorAccess::SetColorB(color, b);
-}
-void RenderObjectTLX::SetColorRGB(D3DCOLOR color)
-{
-	int r = ColorAccess::GetColorR(color);
-	int g = ColorAccess::GetColorG(color);
-	int b = ColorAccess::GetColorB(color);
-	for (int iVert = 0; iVert < vertex_.GetSize(); iVert++) {
-		SetVertexColorRGB(iVert, r, g, b);
-	}
-}
-void RenderObjectTLX::SetAlpha(int alpha)
-{
-	for (int iVert = 0; iVert < vertex_.GetSize(); iVert++) {
-		SetVertexAlpha(iVert, alpha);
-	}
-}
 /**********************************************************
 //RenderObjectLX
 //ライティング済み、テクスチャ有り
@@ -369,27 +274,10 @@ void RenderObjectTLX::SetAlpha(int alpha)
 RenderObjectLX::RenderObjectLX()
 {
 	_SetTextureStageCount(1);
-	strideVertexStreamZero_ = sizeof(VERTEX_LX);
-}
-RenderObjectLX::~RenderObjectLX()
-{
-}
-void RenderObjectLX::_CreateVertexDeclaration()
-{
-	if (pVertexDecl_ != NULL)
-		return;
 
-	//D3DFVF_XYZ|D3DFVF_DIFFUSE|D3DFVF_TEX1
-	IDirect3DDevice9* device = DirectGraphics::GetBase()->GetDevice();
-	D3DVERTEXELEMENT9 element[] = {
-		{ 0, 0, D3DDECLTYPE_FLOAT3, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITION, 0 },
-		{ 0, 12, D3DDECLTYPE_D3DCOLOR, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_COLOR, 0 },
-		{ 0, 16, D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 0 },
-		D3DDECL_END() // 配列の終わり
-	};
-	device->CreateVertexDeclaration(element, &pVertexDecl_);
 }
-void RenderObjectLX::Render()
+
+/*void RenderObjectLX::Render()
 {
 	IDirect3DDevice9* device = DirectGraphics::GetBase()->GetDevice();
 	ref_count_ptr<Texture>& texture = texture_[0];
@@ -413,120 +301,26 @@ void RenderObjectLX::Render()
 			vertex_.GetPointer(), strideVertexStreamZero_);
 	}
 	EndShader();
-}
-void RenderObjectLX::SetVertexCount(int count)
+}*/
+
+void RenderObjectLX::SetVertexCount(const size_t count)
 {
 	RenderObject::SetVertexCount(count);
-	SetColorRGB(D3DCOLOR_ARGB(255, 255, 255, 255));
+	SetColorRGB(COLOR_ARGB(255, 255, 255, 255));
 	SetAlpha(255);
 }
-VERTEX_LX* RenderObjectLX::GetVertex(int index)
-{
-	int pos = index * strideVertexStreamZero_;
-	if (pos >= vertex_.GetSize())
-		return NULL;
-	return (VERTEX_LX*)vertex_.GetPointer(pos);
-}
-void RenderObjectLX::SetVertex(int index, VERTEX_LX& vertex)
-{
-	int pos = index * strideVertexStreamZero_;
-	if (pos >= vertex_.GetSize())
-		return;
-	memcpy(vertex_.GetPointer(pos), &vertex, strideVertexStreamZero_);
-}
-void RenderObjectLX::SetVertexPosition(int index, float x, float y, float z)
-{
-	VERTEX_LX* vertex = GetVertex(index);
-	if (vertex == NULL)
-		return;
 
-	float bias = -0.5f;
-	vertex->position.x = x + bias;
-	vertex->position.y = y + bias;
-	vertex->position.z = z;
-}
-void RenderObjectLX::SetVertexUV(int index, float u, float v)
-{
-	VERTEX_LX* vertex = GetVertex(index);
-	if (vertex == NULL)
-		return;
-	vertex->texcoord.x = u;
-	vertex->texcoord.y = v;
-}
-void RenderObjectLX::SetVertexColor(int index, D3DCOLOR color)
-{
-	VERTEX_LX* vertex = GetVertex(index);
-	if (vertex == NULL)
-		return;
-	vertex->diffuse_color = color;
-}
-void RenderObjectLX::SetVertexColorARGB(int index, int a, int r, int g, int b)
-{
-	VERTEX_LX* vertex = GetVertex(index);
-	if (vertex == NULL)
-		return;
-	vertex->diffuse_color = D3DCOLOR_ARGB(a, r, g, b);
-}
-void RenderObjectLX::SetVertexAlpha(int index, int alpha)
-{
-	VERTEX_LX* vertex = GetVertex(index);
-	if (vertex == NULL)
-		return;
-	D3DCOLOR& color = vertex->diffuse_color;
-	color = ColorAccess::SetColorA(color, alpha);
-}
-void RenderObjectLX::SetVertexColorRGB(int index, int r, int g, int b)
-{
-	VERTEX_LX* vertex = GetVertex(index);
-	if (vertex == NULL)
-		return;
-	D3DCOLOR& color = vertex->diffuse_color;
-	color = ColorAccess::SetColorR(color, r);
-	color = ColorAccess::SetColorG(color, g);
-	color = ColorAccess::SetColorB(color, b);
-}
-void RenderObjectLX::SetColorRGB(D3DCOLOR color)
-{
-	int r = ColorAccess::GetColorR(color);
-	int g = ColorAccess::GetColorG(color);
-	int b = ColorAccess::GetColorB(color);
-	for (int iVert = 0; iVert < vertex_.GetSize(); iVert++) {
-		SetVertexColorRGB(iVert, r, g, b);
-	}
-}
-void RenderObjectLX::SetAlpha(int alpha)
-{
-	for (int iVert = 0; iVert < vertex_.GetSize(); iVert++) {
-		SetVertexAlpha(iVert, alpha);
-	}
-}
+
 /**********************************************************
 //RenderObjectNX
 **********************************************************/
 RenderObjectNX::RenderObjectNX()
 {
 	_SetTextureStageCount(1);
-	strideVertexStreamZero_ = sizeof(VERTEX_NX);
-}
-RenderObjectNX::~RenderObjectNX()
-{
-}
-void RenderObjectNX::_CreateVertexDeclaration()
-{
-	if (pVertexDecl_ != NULL)
-		return;
 
-	//D3DFVF_XYZ|D3DFVF_NORMAL|D3DFVF_TEX1
-	IDirect3DDevice9* device = DirectGraphics::GetBase()->GetDevice();
-	D3DVERTEXELEMENT9 element[] = {
-		{ 0, 0, D3DDECLTYPE_FLOAT3, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITION, 0 },
-		{ 0, 12, D3DDECLTYPE_FLOAT3, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_NORMAL, 0 },
-		{ 0, 24, D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 0 },
-		D3DDECL_END() // 配列の終わり
-	};
-	device->CreateVertexDeclaration(element, &pVertexDecl_);
 }
-void RenderObjectNX::Render()
+
+/*void RenderObjectNX::Render()
 {
 	IDirect3DDevice9* device = DirectGraphics::GetBase()->GetDevice();
 	ref_count_ptr<Texture>& texture = texture_[0];
@@ -566,50 +360,10 @@ void RenderObjectNX::Render()
 		device->SetTransform(D3DTS_PROJECTION, &matProj);
 		device->SetRenderState(D3DRS_FOGENABLE, bFogEnable);
 	}
-}
-VERTEX_NX* RenderObjectNX::GetVertex(int index)
-{
-	int pos = index * strideVertexStreamZero_;
-	if (pos >= vertex_.GetSize())
-		return NULL;
-	return (VERTEX_NX*)vertex_.GetPointer(pos);
-}
-void RenderObjectNX::SetVertex(int index, VERTEX_NX& vertex)
-{
-	int pos = index * strideVertexStreamZero_;
-	if (pos >= vertex_.GetSize())
-		return;
-	memcpy(vertex_.GetPointer(pos), &vertex, strideVertexStreamZero_);
-}
-void RenderObjectNX::SetVertexPosition(int index, float x, float y, float z)
-{
-	VERTEX_NX* vertex = GetVertex(index);
-	if (vertex == NULL)
-		return;
+}*/
 
-	float bias = -0.5f;
-	vertex->position.x = x + bias;
-	vertex->position.y = y + bias;
-	vertex->position.z = z;
-}
-void RenderObjectNX::SetVertexUV(int index, float u, float v)
-{
-	VERTEX_NX* vertex = GetVertex(index);
-	if (vertex == NULL)
-		return;
-	vertex->texcoord.x = u;
-	vertex->texcoord.y = v;
-}
-void RenderObjectNX::SetVertexNormal(int index, float x, float y, float z)
-{
-	VERTEX_NX* vertex = GetVertex(index);
-	if (vertex == NULL)
-		return;
-	vertex->normal.x = x;
-	vertex->normal.y = y;
-	vertex->normal.z = z;
-}
 
+#if 0
 /**********************************************************
 //RenderObjectBNX
 **********************************************************/

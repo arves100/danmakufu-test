@@ -364,7 +364,7 @@ public:
 
 	//頂点設定
 
-	void SetVertexCount(const size_t count)
+	virtual void SetVertexCount(const size_t count)
 	{
 		vertex_.reserve(count);
 		vertex_.resize(count);
@@ -513,7 +513,7 @@ protected:
 	glm::vec3 scale_; //拡大率
 	glm::mat4 matRelative_; //関係行列
 	bool bCoordinate2D_; //2D座標指定
-	bgfx::Topology typePrimitive_;
+	bgfx::Topology::Enum typePrimitive_;
 
 	std::unique_ptr<Shader> shader_;
 	bool bRecreate_;
@@ -688,7 +688,7 @@ protected:
 		vertex->tangent = n; \
 	}
 
-#define RO_IMPL_NORMAL \
+#define RO_IMPL_NORMAL4 \
 	void SetVertexNormal(size_t index, uint8_t x, uint8_t y, uint8_t z, uint8_t w) \
 	{ \
 		auto vertex = GetVertex(index); \
@@ -704,47 +704,134 @@ protected:
 		vertex->normal = n; \
 	}
 
+#define RO_IMPL_NORMAL3 \
+	void SetVertexNormal(size_t index, float x, float y, float z) \
+	{ \
+		auto vertex = GetVertex(index); \
+		if (vertex == nullptr) \
+			return; \
+		vertex->nx = x; \
+		vertex->ny = y; \
+		vertex->nz = z; \
+	}
+
+#define RO_IMPL_BLEND3 \
+	void SetVertexBlend(size_t index, float x, float y, float z) \
+	{ \
+		auto vertex = GetVertex(index); \
+		if (vertex == nullptr) \
+			return; \
+		vertex->blend[0] = x; \
+		vertex->blend[1] = y; \
+		vertex->blend[2] = z; \
+	}
+
+#define RO_IMPL_RGBA \
+	void SetVertexColor(size_t index, uint32_t color) \
+	{ \
+		auto vertex = GetVertex(index); \
+		if (vertex == nullptr) \
+			return; \
+		vertex->color = color; \
+	} \
+	void SetVertexColorRGB(size_t index, uint8_t r, uint8_t g, uint8_t b) \
+	{ \
+		auto vertex = GetVertex(index); \
+		if (vertex == nullptr) \
+			return; \
+		auto& color = vertex->color; \
+		color = ColorAccess::SetColorR(color, r); \
+		color = ColorAccess::SetColorG(color, g); \
+		color = ColorAccess::SetColorB(color, b); \
+	} \
+	void SetVertexColorARGB(size_t index, uint8_t a, uint8_t r, uint8_t g, uint8_t b) \
+	{ \
+		auto vertex = GetVertex(index); \
+		if (vertex == nullptr) \
+			return; \
+		vertex->color = COLOR_ARGB(a,r,g,b); \
+	} \
+	void SetVertexAlpha(size_t index, uint8_t a) \
+	{ \
+		auto vertex = GetVertex(index); \
+		if (vertex == nullptr) \
+			return; \
+		auto& color = vertex->color; \
+		color = ColorAccess::SetColorA(color, a); \
+	} \
+	void SetColorRGB(uint32_t color) \
+	{ \
+		auto r = ColorAccess::GetColorR(color); \
+		auto g = ColorAccess::GetColorG(color); \
+		auto b = ColorAccess::GetColorB(color); \
+		for (auto iVert = 0; iVert < vertex_.size(); iVert++) \
+		{ \
+			SetVertexColorRGB(iVert, r, g, b); \
+		} \
+	} \
+	void SetAlpha(uint8_t alpha) \
+	{ \
+		for (auto iVert = 0; iVert < vertex_.size(); iVert++) \
+		{ \
+			SetVertexAlpha(iVert, alpha); \
+		} \
+	}
+
+
 class RenderObjectLTA : public RenderObject<VERTEX_LTA> {
 public:
 	RO_IMPL_VERTEX3
 	RO_IMPL_UV
 	RO_IMPL_TANGENT
-	RO_IMPL_NORMAL
+	RO_IMPL_NORMAL4
 };
-#if 0
+
+class RenderObjectTL : public RenderObject<VERTEX_TL> {
+public:
+	RO_IMPL_VERTEX4
+	RO_IMPL_RGBA
+};
+
+class RenderObjectL : public RenderObject<VERTEX_L> {
+public:
+	RO_IMPL_VERTEX3
+	RO_IMPL_RGBA
+};
+
+class RenderObjectN : public RenderObject<VERTEX_N> {
+public:
+	RO_IMPL_VERTEX3
+	RO_IMPL_NORMAL3
+};
+
+class RenderObjectNXG : public RenderObject<VERTEX_NXG> {
+public:
+	RO_IMPL_VERTEX3
+	RO_IMPL_BLEND3
+	RO_IMPL_NORMAL3
+	RO_IMPL_UV
+};
+
 /**********************************************************
 //RenderObjectTLX
 //座標3D変換済み、ライティング済み、テクスチャ有り
 //2D自由変形スプライト用
 **********************************************************/
-class RenderObjectTLX : public RenderObject {
+class RenderObjectTLX : public RenderObject<VERTEX_TLX> {
 public:
 	RenderObjectTLX();
-	~RenderObjectTLX();
-	virtual void Render();
-	virtual void SetVertexCount(int count);
 
-	//頂点設定
-	VERTEX_TLX* GetVertex(int index);
-	void SetVertex(int index, VERTEX_TLX& vertex);
-	void SetVertexPosition(int index, float x, float y, float z = 1.0f, float w = 1.0f);
-	void SetVertexUV(int index, float u, float v);
-	void SetVertexColor(int index, D3DCOLOR color);
-	void SetVertexColorARGB(int index, int a, int r, int g, int b);
-	void SetVertexAlpha(int index, int alpha);
-	void SetVertexColorRGB(int index, int r, int g, int b);
-	void SetColorRGB(D3DCOLOR color);
-	void SetAlpha(int alpha);
+	RO_IMPL_VERTEX4
+	RO_IMPL_RGBA
+	RO_IMPL_UV
 
-	//カメラ
+	void SetVertexCount(const size_t count) override;
+
 	bool IsPermitCamera() { return bPermitCamera_; }
 	void SetPermitCamera(bool bPermit) { bPermitCamera_ = bPermit; }
 
 protected:
 	bool bPermitCamera_;
-	gstd::ByteBuffer vertCopy_;
-
-	virtual void _CreateVertexDeclaration();
 };
 
 /**********************************************************
@@ -752,52 +839,38 @@ protected:
 //ライティング済み、テクスチャ有り
 //3Dエフェクト用
 **********************************************************/
-class RenderObjectLX : public RenderObject {
+class RenderObjectLX : public RenderObject<VERTEX_LX> {
 public:
 	RenderObjectLX();
-	~RenderObjectLX();
-	virtual void Render();
-	virtual void SetVertexCount(int count);
 
-	//頂点設定
-	VERTEX_LX* GetVertex(int index);
-	void SetVertex(int index, VERTEX_LX& vertex);
-	void SetVertexPosition(int index, float x, float y, float z);
-	void SetVertexUV(int index, float u, float v);
-	void SetVertexColor(int index, D3DCOLOR color);
-	void SetVertexColorARGB(int index, int a, int r, int g, int b);
-	void SetVertexAlpha(int index, int alpha);
-	void SetVertexColorRGB(int index, int r, int g, int b);
-	void SetColorRGB(D3DCOLOR color);
-	void SetAlpha(int alpha);
+	RO_IMPL_VERTEX3
+	RO_IMPL_RGBA
+	RO_IMPL_UV
 
-protected:
-	virtual void _CreateVertexDeclaration();
+	void SetVertexCount(const size_t count) override;
 };
 
 /**********************************************************
 //RenderObjectNX
 //法線有り、テクスチャ有り
 **********************************************************/
-class RenderObjectNX : public RenderObject {
-public:
+class RenderObjectNX : public RenderObject<VERTEX_NX> {
 	RenderObjectNX();
-	~RenderObjectNX();
-	virtual void Render();
 
-	//頂点設定
-	VERTEX_NX* GetVertex(int index);
-	void SetVertex(int index, VERTEX_NX& vertex);
-	void SetVertexPosition(int index, float x, float y, float z);
-	void SetVertexUV(int index, float u, float v);
-	void SetVertexNormal(int index, float x, float y, float z);
-	void SetColor(D3DCOLOR color) { color_ = color; }
-
-protected:
-	D3DCOLOR color_;
-	virtual void _CreateVertexDeclaration();
+	RO_IMPL_VERTEX3
+	RO_IMPL_NORMAL3
+	RO_IMPL_UV
 };
 
+/*
+	CUSTOM:
+	NX
+	BNX
+	B2NX
+	B4NX
+*/
+
+#if 0
 /**********************************************************
 //RenderObjectBNX
 //頂点ブレンド
