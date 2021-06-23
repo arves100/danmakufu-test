@@ -159,6 +159,7 @@ public:
 	{
 		matRelative_ = glm::identity<glm::mat4>();
 		T::get(pVertexDecl_);
+
 		shader_ = std::make_unique<Shader>();
 	}
 	
@@ -312,7 +313,6 @@ public:
 protected:
 	std::vector<T> vertex_; //頂点
 	std::vector<uint16_t> vertexIndices_;
-	std::vector<std::unique_ptr<Texture>> texture_; //テクスチャ
 	glm::vec3 posWeightCenter_; //重心
 
 	//シェーダ用
@@ -352,6 +352,9 @@ protected:
 	void _RestoreBuffers()
 	{
 		_ReleaseBuffers();
+
+		if (!shader_->IsLoad())
+			shader_->CreateFromFile(_GetDefaultShaderName(), false);
 
 		const auto size = bgfx::topologyConvert(typePrimitive_, nullptr, 0, vertexIndices_.data(), vertexIndices_.size(), false);
 		pConvertedIndices_ = new uint16_t[size];
@@ -449,6 +452,8 @@ protected:
 
 		graphics->SetViewAndProjMatrix(viewMat, persMat);
 	}
+
+	virtual const char* _GetDefaultShaderName() const { return nullptr; }
 };
 
 class RenderObjectLTA : public RenderObject<VERTEX_LTA> {
@@ -457,24 +462,36 @@ public:
 	RO_IMPL_UV
 	RO_IMPL_TANGENT
 	RO_IMPL_NORMAL4
+
+protected:
+	const char* _GetDefaultShaderName() const override { return "renderobject/lta"; }
 };
 
 class RenderObjectTL : public RenderObject<VERTEX_TL> {
 public:
 	RO_IMPL_VERTEX4
 	RO_IMPL_RGBA
+
+protected:
+	const char* _GetDefaultShaderName() const override { return "renderobject/tl"; }
 };
 
 class RenderObjectL : public RenderObject<VERTEX_L> {
 public:
 	RO_IMPL_VERTEX3
 	RO_IMPL_RGBA
+
+protected:
+	const char* _GetDefaultShaderName() const override { return "renderobject/l"; }
 };
 
 class RenderObjectN : public RenderObject<VERTEX_N> {
 public:
 	RO_IMPL_VERTEX3
 	RO_IMPL_NORMAL3
+
+protected:
+	const char* _GetDefaultShaderName() const override;
 };
 
 class RenderObjectNXG : public RenderObject<VERTEX_NXG> {
@@ -483,6 +500,9 @@ public:
 	RO_IMPL_WEIGHT3
 	RO_IMPL_NORMAL3
 	RO_IMPL_UV
+
+protected:
+	const char* _GetDefaultShaderName() const override { return "renderobject/nxg"; }
 };
 
 /**********************************************************
@@ -503,7 +523,10 @@ public:
 	bool IsPermitCamera() { return bPermitCamera_; }
 	void SetPermitCamera(bool bPermit) { bPermitCamera_ = bPermit; }
 
+	void Submit(bgfx::ViewId id = 0) override;
+
 protected:
+	const char* _GetDefaultShaderName() const override { return "renderobject/tlx"; }
 	bool bPermitCamera_;
 };
 
@@ -521,6 +544,9 @@ public:
 	RO_IMPL_UV
 
 	void SetVertexCount(const size_t count) override;
+
+protected:
+	const char* _GetDefaultShaderName() const override { return "renderobject/lx"; }
 };
 
 /**********************************************************
@@ -540,6 +566,7 @@ public:
 
 protected:
 	uint32_t color_;
+	const char* _GetDefaultShaderName() const override { return "renderobject/nx"; }
 };
 
 class RenderObjectB1NX : public RenderObject<VERTEX_B1NX> {
@@ -548,6 +575,9 @@ public:
 	RO_IMPL_INDICES
 	RO_IMPL_NORMAL3
 	RO_IMPL_UV
+
+protected:
+	const char* _GetDefaultShaderName() const override { return "renderobject/b1nx"; }
 };
 
 /**********************************************************
@@ -566,6 +596,9 @@ public:
 
 	virtual void CalculateWeightCenter();
 	void SetVertexBlend(size_t index, size_t pos, uint8_t indexBlend, float rate);
+	
+protected:
+	const char* _GetDefaultShaderName() const override { return "renderobject/b2nx"; }
 };
 
 /**********************************************************
@@ -584,6 +617,9 @@ public:
 
 	virtual void CalculateWeightCenter();
 	void SetVertexBlend(size_t index, size_t pos, uint8_t indexBlend, float rate);
+		
+protected:
+	const char* _GetDefaultShaderName() const override { return "renderobject/b4nx"; }
 };
 
 /**********************************************************
@@ -605,16 +641,16 @@ public:
 	virtual void Render(); // -> Submit
 
 	//描画用設定
-	void SetMatrix(gstd::ref_count_ptr<Matrices> matrix) { matrix_ = matrix; } // Matrices ??
-	void SetColor(const uint32_t color) { color_ = color; }
+	/*void SetMatrix(gstd::ref_count_ptr<Matrices> matrix) { matrix_ = matrix; } // Matrices ??
+	void SetColor(const uint32_t color) { color_ = color; }*/
 
 protected:
-	gstd::ref_count_ptr<Matrices> matrix_;
-	uint32_t color_;
-	D3DMATERIAL9 materialBNX_;
+	//gstd::ref_count_ptr<Matrices> matrix_;
+	glm::vec4 color_;
+	//D3DMATERIAL9 materialBNX_;
 
-	virtual void _CreateVertexDeclaration();
-	virtual void _CopyVertexBufferOnInitialize() = 0;
+	//virtual void _CopyVertexBufferOnInitialize() = 0;
+	const char* _GetDefaultShaderName() const override { return "renderobject/bnx"; }
 };
 
 #if 0

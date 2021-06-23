@@ -176,89 +176,46 @@ RenderObjectTLX::RenderObjectTLX()
 	bPermitCamera_ = true;
 }
 
-
-/*void RenderObjectTLX::Render()
+void RenderObjectTLX::Submit(bgfx::ViewId id)
 {
 	DirectGraphics* graphics = DirectGraphics::GetBase();
-	DxCamera2D* camera = graphics->GetCamera2D().GetPointer();
-	IDirect3DDevice9* device = graphics->GetDevice();
-	ref_count_ptr<Texture>& texture = texture_[0];
-	if (texture != NULL)
-		device->SetTexture(0, texture->GetD3DTexture());
-	else
-		device->SetTexture(0, NULL);
-	device->SetFVF(VERTEX_TLX::fvf);
+	DxCamera2D* camera = graphics->GetCamera2D();
 
 	//座標変換
 	bool bPos = position_.x != 0.0f || position_.y != 0.0f || position_.z != 0.0f;
 	bool bAngle = angle_.x != 0.0f || angle_.y != 0.0f || angle_.z != 0.0f;
 	bool bScale = scale_.x != 1.0f || scale_.y != 1.0f || scale_.z != 1.0f;
 	bool bCamera = camera->IsEnable() && bPermitCamera_;
+
+	glm::mat4 mat = glm::identity<glm::mat4>();
+
 	if (bPos || bAngle || bScale || bCamera) {
 		//座標変換有りなら、座標3D変換済みなため自前で変換をかける
-		D3DXMATRIX mat;
-		D3DXMatrixIdentity(&mat);
 		if (bScale) {
-			D3DXMATRIX matScale;
-			D3DXMatrixScaling(&matScale, scale_.x, scale_.y, scale_.z);
+			glm::mat4 matScale;
+			matScale = glm::scale(matScale, glm::vec3(scale_.x, scale_.y, scale_.z));
 			mat = mat * matScale;
 		}
 		if (bAngle) {
-			D3DXMATRIX matRot;
-			D3DXMatrixRotationYawPitchRoll(&matRot, D3DXToRadian(angle_.y), D3DXToRadian(angle_.x), D3DXToRadian(angle_.z));
+			glm::mat4 matRot = glm::yawPitchRoll(glm::radians(angle_.y), glm::radians(angle_.x), glm::radians(angle_.z));
 			mat = mat * matRot;
 		}
 		if (bPos) {
-			D3DXMATRIX matTrans;
-			D3DXMatrixTranslation(&matTrans, position_.x, position_.y, position_.z);
+			glm::mat4 matTrans;
+			matTrans = glm::translate(matTrans, glm::vec3(position_.x, position_.y, position_.z));
 			mat = mat * matTrans;
 		}
 
 		if (bCamera) {
-			D3DXMATRIX matCamera = camera->GetMatrix();
+			auto matCamera = camera->GetMatrix();
 			mat = mat * matCamera;
 		}
-
-		//頂点情報のコピーをとる
-		vertCopy_.Copy(vertex_);
-
-		//各頂点と行列の積を計算する
-		int countVertex = GetVertexCount();
-		for (int iVert = 0; iVert < countVertex; iVert++) {
-			int pos = iVert * strideVertexStreamZero_;
-			VERTEX_TLX* vert = (VERTEX_TLX*)vertCopy_.GetPointer(pos);
-			D3DXVec3TransformCoord((D3DXVECTOR3*)&vert->position, (D3DXVECTOR3*)&vert->position, &mat);
-		}
-
-		//描画
-		BeginShader();
-		int oldSamplerState = 0;
-		if (vertexIndices_.size() == 0) {
-			device->DrawPrimitiveUP(typePrimitive_, _GetPrimitiveCount(), vertCopy_.GetPointer(), strideVertexStreamZero_);
-		} else {
-			device->DrawIndexedPrimitiveUP(typePrimitive_, 0,
-				GetVertexCount(), _GetPrimitiveCount(),
-				&vertexIndices_[0], D3DFMT_INDEX16,
-				vertCopy_.GetPointer(), strideVertexStreamZero_);
-		}
-		EndShader();
-
-		//頂点情報を元に戻す
-		// memcpy(vertex_.GetPointer(), vertCopy_.GetPointer(), vertex_.GetSize());
-	} else {
-		//座標変換無しならそのまま描画
-		BeginShader();
-		if (vertexIndices_.size() == 0) {
-			device->DrawPrimitiveUP(typePrimitive_, _GetPrimitiveCount(), vertex_.GetPointer(), strideVertexStreamZero_);
-		} else {
-			device->DrawIndexedPrimitiveUP(typePrimitive_, 0,
-				GetVertexCount(), _GetPrimitiveCount(),
-				&vertexIndices_[0], D3DFMT_INDEX16,
-				vertex_.GetPointer(), strideVertexStreamZero_);
-		}
-		EndShader();
 	}
-}*/
+
+	// what should be done: transform(vertex->position, u_camera_matrix)
+	shader_->AddParameter("u_camera_matrix", bgfx::UniformType::Mat4, &mat, sizeof(mat));
+	RenderObject::Submit(id);
+}
 
 void RenderObjectTLX::SetVertexCount(const size_t count)
 {
@@ -312,7 +269,9 @@ void RenderObjectNX::Submit(bgfx::ViewId id)
 	}
 
 	auto mat = _CreateWorldTransformMatrix();
-	//device->SetWorldMatrix(mat); // Cat...
+
+	// world matrix -> vs
+	shader_->AddParameter("u_world_matrix", bgfx::UniformType::Mat4, &mat, sizeof(mat));
 
 	RenderObject::Submit(id);
 
@@ -328,9 +287,9 @@ void RenderObjectNX::Submit(bgfx::ViewId id)
 RenderObjectBNX::RenderObjectBNX()
 {
 	_SetTextureStageCount(1);
-	color_ = COLOR_ARGB(255, 255, 255, 255);
+	color_ = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
 
-	materialBNX_.Diffuse.a = 1.0f;
+	/*materialBNX_.Diffuse.a = 1.0f;
 	materialBNX_.Diffuse.r = 1.0f;
 	materialBNX_.Diffuse.g = 1.0f;
 	materialBNX_.Diffuse.b = 1.0f;
@@ -345,10 +304,10 @@ RenderObjectBNX::RenderObjectBNX()
 	materialBNX_.Emissive.a = 1.0f;
 	materialBNX_.Emissive.r = 1.0f;
 	materialBNX_.Emissive.g = 1.0f;
-	materialBNX_.Emissive.b = 1.0f;
+	materialBNX_.Emissive.b = 1.0f;*/
 }
 
-void RenderObjectBNX::Render()
+/*void RenderObjectBNX::Render()
 {
 	IDirect3DDevice9* device = DirectGraphics::GetBase()->GetDevice();
 	ref_count_ptr<Texture>& texture = texture_[0];
@@ -474,12 +433,12 @@ void RenderObjectBNX::Render()
 		device->SetTransform(D3DTS_PROJECTION, &matProj);
 		device->SetRenderState(D3DRS_FOGENABLE, bFogEnable);
 	}
-}
+}*/
 
 /**********************************************************
 //RenderObjectB2NX
 **********************************************************/
-void RenderObjectB2NX::_CopyVertexBufferOnInitialize()
+/*void RenderObjectB2NX::_CopyVertexBufferOnInitialize()
 {
 	int countVertex = GetVertexCount();
 	Vertex* bufVertex;
@@ -504,26 +463,26 @@ void RenderObjectB2NX::_CopyVertexBufferOnInitialize()
 		}
 		pVertexBuffer_->Unlock();
 	}
-}
+}*/
 
 void RenderObjectB2NX::CalculateWeightCenter()
 {
 	double xTotal = 0;
 	double yTotal = 0;
 	double zTotal = 0;
-	int countVert = GetVertexCount();
-	for (int iVert = 0; iVert < countVert; iVert++) {
+	auto countVert = GetVertexCount();
+	for (auto iVert = 0; iVert < countVert; iVert++) {
 		VERTEX_B2NX* vertex = GetVertex(iVert);
-		xTotal += vertex->position.x;
-		yTotal += vertex->position.y;
-		zTotal += vertex->position.z;
+		xTotal += vertex->x;
+		yTotal += vertex->y;
+		zTotal += vertex->z;
 	}
 	xTotal /= countVert;
 	yTotal /= countVert;
 	zTotal /= countVert;
-	posWeightCenter_.x = (float)xTotal;
-	posWeightCenter_.y = (float)yTotal;
-	posWeightCenter_.z = (float)zTotal;
+	posWeightCenter_.x = static_cast<float>(xTotal);
+	posWeightCenter_.y = static_cast<float>(yTotal);
+	posWeightCenter_.z = static_cast<float>(zTotal);
 }
 
 void RenderObjectB2NX::SetVertexBlend(size_t index, size_t pos, uint8_t indexBlend, float rate)
@@ -551,17 +510,20 @@ void RenderObjectB2NXBlock::Render()
 	obj->SetMatrix(matrix_);
 	RenderBlock::Render();
 }
+#endif
 
 /**********************************************************
 //RenderObjectB4NX
 **********************************************************/
 RenderObjectB4NX::RenderObjectB4NX()
 {
-	strideVertexStreamZero_ = sizeof(VERTEX_B4NX);
+
 }
 RenderObjectB4NX::~RenderObjectB4NX()
 {
 }
+
+#if 0
 void RenderObjectB4NX::_CopyVertexBufferOnInitialize()
 {
 	int countVertex = GetVertexCount();
@@ -593,78 +555,39 @@ void RenderObjectB4NX::_CopyVertexBufferOnInitialize()
 		pVertexBuffer_->Unlock();
 	}
 }
+#endif
 
 void RenderObjectB4NX::CalculateWeightCenter()
 {
 	double xTotal = 0;
 	double yTotal = 0;
 	double zTotal = 0;
-	int countVert = GetVertexCount();
-	for (int iVert = 0; iVert < countVert; iVert++) {
-		VERTEX_B4NX* vertex = GetVertex(iVert);
-		xTotal += vertex->position.x;
-		yTotal += vertex->position.y;
-		zTotal += vertex->position.z;
+	auto countVert = GetVertexCount();
+	for (auto iVert = 0; iVert < countVert; iVert++) {
+		auto vertex = GetVertex(iVert);
+		xTotal += vertex->x;
+		yTotal += vertex->y;
+		zTotal += vertex->z;
 	}
 	xTotal /= countVert;
 	yTotal /= countVert;
 	zTotal /= countVert;
-	posWeightCenter_.x = (float)xTotal;
-	posWeightCenter_.y = (float)yTotal;
-	posWeightCenter_.z = (float)zTotal;
+	posWeightCenter_.x = static_cast<float>(xTotal);
+	posWeightCenter_.y = static_cast<float>(yTotal);
+	posWeightCenter_.z = static_cast<float>(zTotal);
 }
-VERTEX_B4NX* RenderObjectB4NX::GetVertex(int index)
-{
-	int pos = index * strideVertexStreamZero_;
-	if (pos >= vertex_.GetSize())
-		return NULL;
-	return (VERTEX_B4NX*)vertex_.GetPointer(pos);
-}
-void RenderObjectB4NX::SetVertex(int index, VERTEX_B4NX& vertex)
-{
-	int pos = index * strideVertexStreamZero_;
-	if (pos >= vertex_.GetSize())
-		return;
-	memcpy(vertex_.GetPointer(pos), &vertex, strideVertexStreamZero_);
-}
-void RenderObjectB4NX::SetVertexPosition(int index, float x, float y, float z)
-{
-	VERTEX_B4NX* vertex = GetVertex(index);
-	if (vertex == NULL)
-		return;
 
-	float bias = -0.5f;
-	vertex->position.x = x + bias;
-	vertex->position.y = y + bias;
-	vertex->position.z = z;
-}
-void RenderObjectB4NX::SetVertexUV(int index, float u, float v)
+void RenderObjectB4NX::SetVertexBlend(size_t index, size_t pos, uint8_t indexBlend, float rate)
 {
 	VERTEX_B4NX* vertex = GetVertex(index);
-	if (vertex == NULL)
+	if (!vertex)
 		return;
-	vertex->texcoord.x = u;
-	vertex->texcoord.y = v;
-}
-void RenderObjectB4NX::SetVertexBlend(int index, int pos, BYTE indexBlend, float rate)
-{
-	VERTEX_B4NX* vertex = GetVertex(index);
-	if (vertex == NULL)
-		return;
-	BitAccess::SetByte(vertex->blendIndex, pos * 8, indexBlend);
+	BitAccess::SetByte(vertex->indices, pos * 8, indexBlend);
 	if (pos <= 2)
-		vertex->blendRate[pos] = rate;
-}
-void RenderObjectB4NX::SetVertexNormal(int index, float x, float y, float z)
-{
-	VERTEX_B4NX* vertex = GetVertex(index);
-	if (vertex == NULL)
-		return;
-	vertex->normal.x = x;
-	vertex->normal.y = y;
-	vertex->normal.z = z;
+		vertex->weight[pos] = rate;
 }
 
+#if 0
 //RenderObjectB4NXBlock
 RenderObjectB4NXBlock::RenderObjectB4NXBlock()
 {
