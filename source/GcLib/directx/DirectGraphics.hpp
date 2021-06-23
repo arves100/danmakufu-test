@@ -78,6 +78,13 @@ public:
 		Ccw,
 	};
 
+	enum class ShadeMode
+	{
+		Flat,
+		Gouraud,
+		Phong,
+	};
+
 	DirectGraphics();
 	virtual ~DirectGraphics();
 	static DirectGraphics* GetBase() { return thisBase_; }
@@ -108,7 +115,7 @@ public:
 	//レンダリングステートラッパ
 	void SetSpecularEnable(bool bEnable); //スペキュラ
 	void SetCullingMode(CullingMode mode); //カリング
-	void SetShadingMode(DWORD mode); //シェーディング
+	void SetShadingMode(ShadeMode mode); //シェーディング
 	void SetDepthTest(bool bEnable); //Zバッファ参照
 	void SetZWriteEnable(bool bEnable); //Zバッファ書き込み
 	void SetAlphaTest(bool bEnable, DWORD ref = 0);
@@ -170,9 +177,9 @@ protected:
 	
 	std::shared_ptr<ShaderData> shader_;
 	glm::vec4 sh_options_;
-	bgfx::UniformHandle uniforms_[5];
-	glm::vec4 sh_light_direction;
-	glm::vec4 sh_light_ambient, sh_light_diffuse;
+	bgfx::UniformHandle uniforms_[6];
+	glm::vec4 sh_dirlight_diffuse, sh_dirlight_ambient, sh_dirlight_direction;
+	glm::vec4 sh_amblight;
 };
 
 // TODO: Migrate to an application specific part

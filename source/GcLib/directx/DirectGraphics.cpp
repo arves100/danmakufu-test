@@ -6,16 +6,28 @@
 using namespace gstd;
 using namespace directx;
 
-#define SHADER_OPTION_LIGHT 0 << 1
+/* Shader options x */
+#define SOX_LIGHT 1 << 1
+#define SOX_FOG 1 << 2
+#define SOX_SPECULAR 1 << 3
+
+/* Shader options y */
+#define SOY_SHADEMODE_FLAT 1 << 0
+#define SOY_SHADEMODE_GOURAUD 1 << 1
+#define SOY_SHADEMODE_PHONG 1 << 2
+#define SOY_SHADEMODE_FLAG 7
 
 /**********************************************************
 //DirectGraphics
 **********************************************************/
 DirectGraphics* DirectGraphics::thisBase_ = nullptr;
 
+//192, 192, 192
+
 DirectGraphics::DirectGraphics() : states_(BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A), resetFlags_(0), blendFactor_(0),
 	clearFlags_(BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH), init_(false), matProj_(), matView_(), sh_options_(0.0f, 0.0f, 0.0f, 0.0f),
-	sh_light_direction(0.0f), sh_light_ambient(0.5f, 0.5f, 0.5f, 1.0f), sh_light_diffuse(0.5f, 0.5f, 0.5f, 1.0f)
+	sh_dirlight_direction(0.0f), sh_dirlight_ambient(0.5f, 0.5f, 0.5f, 1.0f), sh_dirlight_diffuse(0.5f, 0.5f, 0.5f, 1.0f),
+	sh_amblight(0.75f, 0.75f, 0.75f, 1.0f)
 {
 	camera_ = std::make_unique<DxCamera>();
 	camera2D_ = std::make_unique<DxCamera2D>();
@@ -146,10 +158,11 @@ bool DirectGraphics::Initialize(DirectGraphicsConfig& config, void* nwh, void* n
 
 	uniforms_[0] = bgfx::createUniform("s_viewtex", bgfx::UniformType::Sampler);
 	uniforms_[1] = bgfx::createUniform("u_options", bgfx::UniformType::Vec4);
-	uniforms_[2] = bgfx::createUniform("u_light_ambient", bgfx::UniformType::Vec4);
-	uniforms_[3] = bgfx::createUniform("u_light_diffuse", bgfx::UniformType::Vec4);
-	uniforms_[4] = bgfx::createUniform("u_light_direction", bgfx::UniformType::Vec4);
-	
+	uniforms_[2] = bgfx::createUniform("u_dl_ambient", bgfx::UniformType::Vec4);
+	uniforms_[3] = bgfx::createUniform("u_dl_diffuse", bgfx::UniformType::Vec4);
+	uniforms_[4] = bgfx::createUniform("u_dl_direction", bgfx::UniformType::Vec4);
+	uniforms_[5] = bgfx::createUniform("u_al", bgfx::UniformType::Vec4);
+
 	Logger::WriteTop(L"DirectGraphics：初期化完了");
 	return true;
 }
@@ -235,17 +248,14 @@ void DirectGraphics::_InitializeDeviceState()
 {
 	SetCullingMode(CullingMode::None);
 
+	SetDirectionalLight(glm::vec3(-1.0f, -1.0f, -1.0f));
+
+	SetBlendMode(BlendMode::Alpha); // TODO: might get migrated into something else (like RenderObject)
+
+	SetShadingMode(ShadeMode::Gouraud);
+
 #if 0
-	//pDevice_->SetRenderState(D3DRS_SHADEMODE, D3DSHADE_GOURAUD); // TODO
 	//pDevice_->SetRenderState(D3DRS_AMBIENT, RGB(192, 192, 192)); // TODO: Migrate it to a shader
-
-	D3DVECTOR dir;
-	dir.x = -1;
-	dir.y = -1;
-	dir.z = -1;
-	SetDirectionalLight(dir);
-
-	SetBlendMode(BlendMode::Alpha);
 
 	//αテスト
 	SetAlphaTest(true, 0);
@@ -338,10 +348,11 @@ void DirectGraphics::EndScene() const
 		
 		bgfx::setTexture(0, uniforms_[0], bgfx::getTexture(fb->GetHandle())); // s_viewtex
 		bgfx::setUniform(uniforms_[1], &sh_options_[0]); // u_options
-		bgfx::setUniform(uniforms_[2], &sh_light_ambient[0]); // u_light_ambient
-		bgfx::setUniform(uniforms_[3], &sh_light_diffuse[0]); // u_light_diffuse
-		bgfx::setUniform(uniforms_[4], &sh_light_direction[0]); // u_light_direction
-		
+		bgfx::setUniform(uniforms_[2], &sh_dirlight_ambient[0]); // u_dl_ambient
+		bgfx::setUniform(uniforms_[3], &sh_dirlight_diffuse[0]); // u_dl_diffuse
+		bgfx::setUniform(uniforms_[4], &sh_dirlight_direction[0]); // u_dl_direction
+		bgfx::setUniform(uniforms_[5], &sh_amblight[0]); // u_al
+
 		bgfx::submit(1, shader_->Program);
 	}
 	
@@ -392,7 +403,14 @@ void DirectGraphics::SetRenderTarget(std::shared_ptr<FrameBuffer>& texture, bgfx
 
 void DirectGraphics::SetSpecularEnable(bool bEnable)
 {
-	//pDevice_->SetRenderState(D3DRS_SPECULARENABLE, bEnable); // TODO: Migrate to a shader
+	auto option = static_cast<uint32_t>(sh_options_.x);
+
+	if (bEnable)
+		option |= SOX_SPECULAR;
+	else
+		option &= ~SOX_SPECULAR;
+
+	sh_options_.x = static_cast<float>(option);
 }
 
 void DirectGraphics::SetCullingMode(CullingMode mode)
@@ -413,9 +431,26 @@ void DirectGraphics::SetCullingMode(CullingMode mode)
 	}
 }
 
-void DirectGraphics::SetShadingMode(DWORD mode)
+void DirectGraphics::SetShadingMode(ShadeMode mode)
 {
-	//pDevice_->SetRenderState(D3DRS_SHADEMODE, mode); // TODO: ?
+	auto m = static_cast<int32_t>(sh_options_.y);
+
+	m &= ~SOY_SHADEMODE_FLAG;
+
+	switch (mode)
+	{
+	case ShadeMode::Flat:
+		m |= SOY_SHADEMODE_FLAT;
+		break;
+	case ShadeMode::Gouraud:
+		m |= SOY_SHADEMODE_GOURAUD;
+		break;
+	case ShadeMode::Phong:
+		m |= SOY_SHADEMODE_PHONG;
+		break;
+	}
+
+	sh_options_.y = static_cast<float>(m);
 }
 
 void DirectGraphics::SetDepthTest(bool bEnable)
@@ -526,17 +561,19 @@ void DirectGraphics::SetBlendMode(BlendMode mode, int stage)
 
 void DirectGraphics::SetFogEnable(bool bEnable)
 {
-	// TODO: DEPRECATED!!!
-	//pDevice_->SetRenderState(D3DRS_FOGENABLE, bEnable ? TRUE : FALSE);
+	auto option = static_cast<uint32_t>(sh_options_.x);
+
+	if (bEnable)
+		option |= SOX_FOG;
+	else
+		option &= ~SOX_FOG;
+
+	sh_options_.x = static_cast<float>(option);
 }
 
 bool DirectGraphics::IsFogEnable() const
 {
-	/*DWORD fog = FALSE;
-	pDevice_->GetRenderState(D3DRS_FOGENABLE, &fog);
-	bool res = fog == TRUE;
-	return res;*/
-	return false; // TODO: DEPRECATED!! Please move to a shader
+	return static_cast<uint32_t>(sh_options_.x) & SOX_FOG;
 }
 
 void DirectGraphics::SetVertexFog(bool bEnable, D3DCOLOR color, float start, float end)
@@ -599,7 +636,7 @@ DirectGraphics::TextureFilterMode DirectGraphics::GetTextureFilter(int stage) co
 
 void DirectGraphics::SetDirectionalLight(glm::vec3 v)
 {
-	sh_light_direction = glm::vec4(v, 0.0f);
+	sh_dirlight_direction = glm::vec4(v, 0.0f);
 }
 
 float DirectGraphics::GetScreenWidthRatio() const
@@ -957,8 +994,12 @@ glm::mat4 DxCamera2D::GetMatrix() const
 
 void DirectGraphics::SetLightingEnable(bool b)
 {
+	auto m = static_cast<uint32_t>(sh_options_.x);
+
 	if (b)
-		sh_options_.x = static_cast<uint32_t>(sh_options_.x) | SHADER_OPTION_LIGHT;
+		m |= SOX_LIGHT;
 	else
-		sh_options_.x = static_cast<uint32_t>(sh_options_.x)  & ~SHADER_OPTION_LIGHT;
+		m &= ~SOX_LIGHT;
+
+	sh_options_.x = static_cast<float>(m);
 }
