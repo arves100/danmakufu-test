@@ -14,8 +14,8 @@ static void ptrFree(void*, void* _userData)
 /**********************************************************
 //ShaderManager
 **********************************************************/
-const std::string NAME_DEFAULT_SKINNED_MESH = "__NAME_DEFAULT_SKINNED_MESH__";
-const std::string DEFAULT_SUBMIT_SHADER = "__VIEW1_SUBMIT_SHADER__";
+const std::string NAME_DEFAULT_SKINNED_MESH = "internal/default_skin";
+const std::string DEFAULT_SUBMIT_SHADER = "internal/view1";
 
 ShaderManager* ShaderManager::thisBase_ = nullptr;
 
@@ -41,8 +41,10 @@ bool ShaderManager::Initialize()
 	if (!_CreateFromFile(DEFAULT_SUBMIT_SHADER, false))
 		return false;
 
-	//if (!_CreateFromFile(NAME_DEFAULT_SKINNED_MESH, "dhn_mqo", ""))
-	//	return false;
+#if 0 // TODO
+	if (!_CreateFromFile(NAME_DEFAULT_SKINNED_MESH, false))
+		return false;
+#endif
 
 	return true;
 }
