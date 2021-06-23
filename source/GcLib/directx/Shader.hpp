@@ -19,10 +19,10 @@ struct ShaderData;
 **********************************************************/
 struct ShaderData
 {
-	ShaderData() : VertexShader(BGFX_INVALID_HANDLE), FragmentationShader(BGFX_INVALID_HANDLE), Program(BGFX_INVALID_HANDLE) {}
+	ShaderData() : Shader1(BGFX_INVALID_HANDLE), Shader2(BGFX_INVALID_HANDLE), Program(BGFX_INVALID_HANDLE) {}
 
-	bgfx::ShaderHandle VertexShader;
-	bgfx::ShaderHandle FragmentationShader;
+	bgfx::ShaderHandle Shader1; // vs o cs
+	bgfx::ShaderHandle Shader2; // fs
 	bgfx::ProgramHandle Program;
 	std::string Name;
 };
@@ -45,7 +45,7 @@ public:
 
 	bool IsDataExists(std::string name);
 	bool GetShaderData(std::string name, std::shared_ptr<ShaderData>& shader);
-	bool CreateFromFile(std::string name, std::string vsh, std::string fsh, std::shared_ptr<ShaderData>& shader); //読み込みます。ShaderDataは保持しますが、Shaderは保持しません。
+	bool CreateFromFile(std::string name, bool isComputeShader, std::shared_ptr<ShaderData>& shader); //読み込みます。ShaderDataは保持しますが、Shaderは保持しません。
 
 	std::wstring GetLastError();
 
@@ -56,7 +56,7 @@ protected:
 	std::wstring lastError_;
 
 	void _ReleaseShaderData(std::string name);
-	bool _CreateFromFile(std::string name, std::string vsh, std::string fsh);
+	bool _CreateFromFile(std::string name, bool isComputeShader);
 	static std::string _GetTextSourceID(std::string& source);
 	bgfx::ShaderHandle _LoadShader(std::string path, uint8_t type);
 
@@ -132,7 +132,7 @@ public:
 
 	void Submit(bgfx::ViewId id = 0);
 
-	bool CreateFromFile(std::string name, std::string vsh, std::string fsh);
+	bool CreateFromFile(std::string name, bool isComputeShader);
 	bool IsLoad() const { return data_ != nullptr && bgfx::isValid(data_->Program); }
 
 	bool AddParameter(std::string name, bgfx::UniformType::Enum type, const void* data, size_t dataSize, int16_t vn = 1);

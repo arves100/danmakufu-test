@@ -15,7 +15,7 @@ static void ptrFree(void*, void* _userData)
 //ShaderManager
 **********************************************************/
 const std::string NAME_DEFAULT_SKINNED_MESH = "__NAME_DEFAULT_SKINNED_MESH__";
-const std::string DEFAULT_SUBMIT_SHADER = "__VIEW1_D3D9_SUBMIT_SHADER__";
+const std::string DEFAULT_SUBMIT_SHADER = "__VIEW1_SUBMIT_SHADER__";
 
 ShaderManager* ShaderManager::thisBase_ = nullptr;
 
@@ -38,7 +38,7 @@ bool ShaderManager::Initialize()
 	DirectGraphics* graphics = DirectGraphics::GetBase();
 	graphics->AddDirectGraphicsListener(this);
 
-	if (!_CreateFromFile(DEFAULT_SUBMIT_SHADER, "", "dhn_final"))
+	if (!_CreateFromFile(DEFAULT_SUBMIT_SHADER, false))
 		return false;
 
 	//if (!_CreateFromFile(NAME_DEFAULT_SKINNED_MESH, "dhn_mqo", ""))
@@ -69,17 +69,17 @@ void ShaderManager::_ReleaseShaderData(std::string name)
 		if (bgfx::isValid(ptr->Program))
 			bgfx::destroy(ptr->Program);
 		
-		if (bgfx::isValid(ptr->VertexShader))
-			bgfx::destroy(ptr->VertexShader);
+		if (bgfx::isValid(ptr->Shader1))
+			bgfx::destroy(ptr->Shader1);
 
-		if (bgfx::isValid(ptr->FragmentationShader))
-			bgfx::destroy(ptr->FragmentationShader);
+		if (bgfx::isValid(ptr->Shader2))
+			bgfx::destroy(ptr->Shader2);
 
 		mapShaderData_.erase(name);
 	}
 }
 
-bool ShaderManager::_CreateFromFile(std::string name, std::string vsh, std::string fsh)
+bool ShaderManager::_CreateFromFile(std::string name, bool isComputeShader)
 {
 	lastError_ = L"";
 	if (IsDataExists(name)) {
@@ -88,33 +88,44 @@ bool ShaderManager::_CreateFromFile(std::string name, std::string vsh, std::stri
 
 	auto data = std::make_shared<ShaderData>();
 
-	if (!vsh.empty())
+	if (isComputeShader)
 	{
-		data->VertexShader = _LoadShader(vsh, 0);
-		if (!bgfx::isValid(data->VertexShader))
+		data->Shader1 = _LoadShader(name, 2);
+		if (!bgfx::isValid(data->Shader1))
 		{
-			const std::wstring log = StringUtility::Format(L"Shader読み込み失敗(Vertex Shader Load Failed)：\r\n%S", vsh.c_str());
+			const std::wstring log = StringUtility::Format(L"Shader読み込み失敗(Compute Shader Load Failed)：\r\n%S", name.c_str());
 			Logger::WriteTop(log);
 			lastError_ = log;
 			return false;
 		}
-		bgfx::setName(data->VertexShader, name.c_str());
-	}
-	
-	if (!fsh.empty())
-	{
-		data->FragmentationShader = _LoadShader(fsh, 1);
-		if (!bgfx::isValid(data->FragmentationShader))
-		{
-			const std::wstring log = StringUtility::Format(L"Shader読み込み失敗(Fragmentation Shader Load Failed)：\r\n%S", fsh.c_str());
-			Logger::WriteTop(log);
-			lastError_ = log;
-			return false;
-		}
-		bgfx::setName(data->FragmentationShader, name.c_str());
-	}
+		bgfx::setName(data->Shader1, (name + "_CS").c_str());
 
-	data->Program = bgfx::createProgram(data->VertexShader, data->FragmentationShader, false);
+		data->Program = bgfx::createProgram(data->Shader1, false);
+	}
+	else
+	{
+		data->Shader1 = _LoadShader(name, 0);
+		if (!bgfx::isValid(data->Shader1))
+		{
+			const std::wstring log = StringUtility::Format(L"Shader読み込み失敗(Vertex Shader Load Failed)：\r\n%S", name.c_str());
+			Logger::WriteTop(log);
+			lastError_ = log;
+			return false;
+		}
+		bgfx::setName(data->Shader1, (name + "_VS").c_str());
+
+		data->Shader2 = _LoadShader(name, 1);
+		if (!bgfx::isValid(data->Shader2))
+		{
+			const std::wstring log = StringUtility::Format(L"Shader読み込み失敗(Fragmentation Shader Load Failed)：\r\n%S", name.c_str());
+			Logger::WriteTop(log);
+			lastError_ = log;
+			return false;
+		}
+		bgfx::setName(data->Shader2, (name + "_FS").c_str());
+
+		data->Program = bgfx::createProgram(data->Shader1, data->Shader2, false);
+	}
 
 	if (!bgfx::isValid(data->Program))
 		return false; // invalid program??
@@ -175,7 +186,9 @@ bgfx::ShaderHandle ShaderManager::_LoadShader(std::string path, uint8_t type) /*
 		return BGFX_INVALID_HANDLE;
 	}
 
-	const auto wpath = PathProperty::GetUnique(StringUtility::Format(L"shaders/%s/%S.%S", StringUtility::ConvertMultiToWide(path, CP_UTF8), sh_type, render_name));
+	// TODO: make a file format for compressing all this shaders
+
+	const auto wpath = PathProperty::GetUnique(StringUtility::Format(L"shaders/%s/%S_%S.bin", render_name, StringUtility::ConvertMultiToWide(path, CP_UTF8), sh_type));
 
 	ref_count_ptr<FileReader> reader = FileManager::GetBase()->GetFileReader(wpath);
 	if (reader == nullptr || !reader->Open()) {
@@ -221,10 +234,10 @@ bool ShaderManager::GetShaderData(std::string name, std::shared_ptr<ShaderData>&
 	return false;
 }
 
-bool ShaderManager::CreateFromFile(std::string name, std::string vsh, std::string fsh, std::shared_ptr<ShaderData>& shader)
+bool ShaderManager::CreateFromFile(std::string name, bool isComputeShader, std::shared_ptr<ShaderData>& shader)
 {
 	Lock lock(lock_);
-	if (_CreateFromFile(name, vsh, fsh)) {
+	if (_CreateFromFile(name, isComputeShader)) {
 		shader = mapShaderData_[name];
 		return true;
 	}
@@ -425,14 +438,14 @@ void Shader::Submit(bgfx::ViewId id)
 	DirectGraphics::GetBase()->Submit(id, data_->Program);
 }
 
-bool Shader::CreateFromFile(std::string name, std::string vsh, std::string fsh)
+bool Shader::CreateFromFile(std::string name, bool isComputeShader)
 {
 	Lock lock(ShaderManager::GetBase()->GetLock());
 	if (data_ != nullptr)
 		Release();
 
 	ShaderManager* manager = ShaderManager::GetBase();
-	return manager->CreateFromFile(name, vsh, fsh, data_);
+	return manager->CreateFromFile(name, isComputeShader, data_);
 }
 
 ShaderParameter* Shader::GetParameter(std::string name)
