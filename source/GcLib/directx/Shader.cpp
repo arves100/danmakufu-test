@@ -143,46 +143,46 @@ bool ShaderManager::_CreateFromFile(std::string name, bool isComputeShader)
 
 bgfx::ShaderHandle ShaderManager::_LoadShader(std::string path, uint8_t type) /* internal function */
 {
-	std::string sh_type; /* TODO: when things get replaced, replace wstring to string */
+	std::wstring sh_type; /* TODO: when things get replaced, replace wstring to string */
 	switch (type)
 	{
 	case 0: /* vertex shader */
-		sh_type = "vs";
+		sh_type = L"vs";
 		break;
 	case 1: /* fragmentation shader */
-		sh_type = "fs";
+		sh_type = L"fs";
 		break;
 	case 2: /* compute shader */
-		sh_type = "cs";
+		sh_type = L"cs";
 		break;
 	default:
 		return BGFX_INVALID_HANDLE;
 	}
 
-	std::string render_name;
+	std::wstring render_name;
 	switch (bgfx::getRendererType())
 	{
 	case bgfx::RendererType::Direct3D9:
-		render_name = "hlsl3";
+		render_name = L"hlsl3";
 		break;
 	case bgfx::RendererType::Direct3D11:
 	case bgfx::RendererType::Direct3D12:
-		render_name = "hlsl5";
+		render_name = L"hlsl5";
 		break;
 	case bgfx::RendererType::Gnm:
-		render_name = "pssl";
+		render_name = L"pssl";
 		break;
 	case bgfx::RendererType::Vulkan:
-		render_name = "spirv";
+		render_name = L"spirv";
 		break;
 	case bgfx::RendererType::Metal:
-		render_name = "metal";
+		render_name = L"metal";
 		break;
 	case bgfx::RendererType::OpenGL:
-		render_name = "glsl";
+		render_name = L"glsl";
 		break;
 	case bgfx::RendererType::OpenGLES:
-		render_name = "essl";
+		render_name = L"essl";
 		break;
 	default:
 		return BGFX_INVALID_HANDLE;
@@ -190,7 +190,7 @@ bgfx::ShaderHandle ShaderManager::_LoadShader(std::string path, uint8_t type) /*
 
 	// TODO: make a file format for compressing all this shaders
 
-	const auto wpath = PathProperty::GetUnique(StringUtility::Format(L"shaders/%s/%S_%S.bin", render_name, StringUtility::ConvertMultiToWide(path, CP_UTF8), sh_type));
+	const auto wpath = PathProperty::GetUnique(StringUtility::Format(L"shaders/%s/%s_%s.bin", render_name.c_str(), StringUtility::ConvertMultiToWide(path, CP_UTF8).c_str(), sh_type.c_str()));
 
 	ref_count_ptr<FileReader> reader = FileManager::GetBase()->GetFileReader(wpath);
 	if (reader == nullptr || !reader->Open()) {
@@ -477,7 +477,7 @@ bool Shader::AddTexture(uint8_t stage, bgfx::TextureHandle handle)
 {
 	const auto& p = mapTex_.find(stage);
 
-	if (p != mapTex_.end())
+	if (p == mapTex_.end())
 	{
 		auto param = new TextureParameter();
 
@@ -488,12 +488,11 @@ bool Shader::AddTexture(uint8_t stage, bgfx::TextureHandle handle)
 		}
 
 		mapTex_[stage] = param;
-		return true;
 	}
 	else
-	{
 		p->second->tex_ = handle;
-	}
+
+	return true;
 }
 
 std::string Shader::_GetTextureNameFromStage(uint8_t stage)
