@@ -269,11 +269,8 @@ public:
 	bool IsCoordinate2D() const { return bCoordinate2D_; }
 	void SetCoordinate2D(const bool b) { bCoordinate2D_ = b; }
 	
-	bool Initialize(std::string name, std::string vsh, std::string fsh = "")
+	bool Initialize(std::string name)
 	{
-		if (!shader_->CreateFromFile(name, vsh, fsh))
-			return false;
-
 		name_ = name;
 		return true;
 	}
