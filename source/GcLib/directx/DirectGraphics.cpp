@@ -51,6 +51,9 @@ bool DirectGraphics::Initialize(void* nwh, void* ndt)
 
 void DirectGraphics::Shutdown()
 {
+	if (bgfx::isValid(uniforms_[5]))
+		bgfx::destroy(uniforms_[5]);
+	
 	if (bgfx::isValid(uniforms_[4]))
 		bgfx::destroy(uniforms_[4]);
 	
@@ -171,6 +174,7 @@ void DirectGraphics::RestoreViews()
 {
 	views_.clear();
 	
+#if 0 // TODO: No render shader for now
 	// Drawing will work like this
 	// We draw everything to view 0 (connected to the default fb)
 	// We compute DirectGraphic specific shader work in view1 with the data of view0
@@ -188,6 +192,11 @@ void DirectGraphics::RestoreViews()
 	Clear(1);
 
 	bgfx::setViewOrder(0, static_cast<uint16_t>(views_.size()), &views_[0]);
+#else
+	views_.push_back(0);
+	bgfx::setViewName(0, "Draw view");
+	Clear(0);
+#endif
 }
 
 void DirectGraphics::_ReleaseDxResource()
@@ -254,15 +263,11 @@ void DirectGraphics::_InitializeDeviceState()
 
 	SetShadingMode(ShadeMode::Gouraud);
 
-#if 0
-	//pDevice_->SetRenderState(D3DRS_AMBIENT, RGB(192, 192, 192)); // TODO: Migrate it to a shader
-
 	//αテスト
 	SetAlphaTest(true, 0);
 
 	//Filter
 	SetTextureFilter(TextureFilterMode::Linear);
-#endif
 
 	//Zテスト
 	SetZWriteEnable(false);
@@ -340,6 +345,7 @@ void DirectGraphics::BeginScene(bool bClear)
 
 void DirectGraphics::EndScene() const
 {
+#if 0 // TODO
 	// Perform view1 drawing
 	{
 		const auto index = views_[1];
@@ -355,7 +361,8 @@ void DirectGraphics::EndScene() const
 
 		bgfx::submit(1, shader_->Program);
 	}
-	
+#endif
+
 	bgfx::frame();
 }
 
@@ -595,7 +602,7 @@ void DirectGraphics::SetPixelFog(bool bEnable, D3DCOLOR color, float start, floa
 void DirectGraphics::SetTextureFilter(TextureFilterMode mode, int stage)
 {
 	/*
-	// TODO: ?
+	// TODO: Linear sampling
 	switch (mode) {
 	case MODE_TEXTURE_FILTER_NONE:
 		pDevice_->SetSamplerState(stage, D3DSAMP_MINFILTER, D3DTEXF_NONE);
@@ -615,7 +622,7 @@ void DirectGraphics::SetTextureFilter(TextureFilterMode mode, int stage)
 DirectGraphics::TextureFilterMode DirectGraphics::GetTextureFilter(int stage) const
 {
 	/*
-	// TODO: ?
+	// TODO: Linear sampling
 	int res = MODE_TEXTURE_FILTER_NONE;
 	DWORD mode;
 	pDevice_->GetSamplerState(stage, D3DSAMP_MINFILTER, &mode);
@@ -631,6 +638,7 @@ DirectGraphics::TextureFilterMode DirectGraphics::GetTextureFilter(int stage) co
 		break;
 	}
 	return res;*/
+
 	return TextureFilterMode::None; // TODO
 }
 
