@@ -1,3 +1,5 @@
+#if 0
+
 #include "DirectSound.hpp"
 
 #include <SDL_syswm.h>
@@ -1565,3 +1567,5 @@ bool SoundStreamingPlayerMp3::Seek(double time)
 
 	return true;
 }
+
+#endif

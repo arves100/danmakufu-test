@@ -1,3 +1,5 @@
+#if 0
+
 #include "TransitionEffect.hpp"
 
 using namespace gstd;
@@ -77,3 +79,5 @@ void TransitionEffectTask::Render()
 	if (effect_ != NULL)
 		effect_->Render();
 }
+
+#endif

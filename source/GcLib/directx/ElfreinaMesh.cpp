@@ -1,3 +1,5 @@
+#if 0
+
 #include "ElfreinaMesh.hpp"
 #include "DirectGraphics.hpp"
 #include "DxUtility.hpp"
@@ -1025,3 +1027,5 @@ D3DXMATRIX ElfreinaMesh::GetAnimationMatrix(std::wstring nameAnime, double time,
 	}
 	return res;
 }
+
+#endif

@@ -1,3 +1,5 @@
+#if 0
+
 #include "MetasequoiaMesh.hpp"
 #include "DirectGraphics.hpp"
 #include "DxUtility.hpp"
@@ -422,3 +424,5 @@ std::vector<DxTriangle> MetasequoiaMesh::CreateIntersectionTriangles()
 	}
 	return res;
 }
+
+#endif

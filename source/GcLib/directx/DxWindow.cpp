@@ -1,3 +1,5 @@
+#if 0
+
 #include "DxWindow.hpp"
 #include "DirectGraphics.hpp"
 #include "DirectInput.hpp"
@@ -661,3 +663,5 @@ void DxMessageBox::UpdateWindowRect()
 	RECT rect = { rcWnd.left, rcWnd.top, rcWnd.right, rcWnd.top + textHeight + buttonHeight + margin * 3 };
 	SetWindowRect(rect);
 }
+
+#endif

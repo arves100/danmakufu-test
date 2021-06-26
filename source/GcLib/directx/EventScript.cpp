@@ -1,3 +1,5 @@
+#if 0
+
 #include "EventScript.hpp"
 #include "DirectGraphics.hpp"
 #include "DirectInput.hpp"
@@ -3385,3 +3387,5 @@ gstd::value DxScriptForEvent::Func_IsSkip(gstd::script_machine* machine, int arg
 
 	return gstd::value(machine->get_engine()->get_boolean_type(), key->IsSkip() || key->IsNext());
 }
+
+#endif

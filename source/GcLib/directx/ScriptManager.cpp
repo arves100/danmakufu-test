@@ -1,3 +1,5 @@
+#if 0
+
 #include "ScriptManager.hpp"
 
 using namespace gstd;
@@ -497,3 +499,5 @@ gstd::value ManagedScript::Func_NotifyEventAll(script_machine* machine, int argc
 	scriptManager->RequestEventAll(type, listArg);
 	return value();
 }
+
+#endif
