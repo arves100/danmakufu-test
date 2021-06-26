@@ -1,3 +1,5 @@
+#if 0
+
 #include "DxScript.hpp"
 #include "DirectGraphics.hpp"
 #include "DirectInput.hpp"
@@ -4570,3 +4572,5 @@ gstd::value DxScript::Func_ObjFileB_ReadString(gstd::script_machine* machine, in
 	}
 	return value(machine->get_engine()->get_string_type(), res);
 }
+
+#endif

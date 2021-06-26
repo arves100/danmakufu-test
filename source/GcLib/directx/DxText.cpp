@@ -1,3 +1,5 @@
+#if 0
+
 #include "DxText.hpp"
 #include "DirectGraphics.hpp"
 #include "DxUtility.hpp"
@@ -1573,3 +1575,5 @@ void DxTextStepper::SetSource(std::wstring text)
 	source_ = text;
 	// text_ = "";
 }
+
+#endif
