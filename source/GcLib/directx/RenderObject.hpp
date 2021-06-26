@@ -155,12 +155,16 @@ public:
 	RenderObject() : posWeightCenter_(glm::vec3(0.0f, 0.0f, 0.0f)),
 		pVertexBuffer_(BGFX_INVALID_HANDLE), pIndexBuffer_(BGFX_INVALID_HANDLE),
 		position_(glm::vec3(0.0f, 0.0f, 0.0f)), angle_(glm::vec3(0.0f, 0.0f, 0.0f)), scale_(glm::vec3(1.0f, 1.0f, 1.0f)),
-		matRelative_(glm::mat4()), bCoordinate2D_(false), typePrimitive_(bgfx::Topology::TriList), bRecreate_(true), posBias_(-0.5f)
+		matRelative_(glm::mat4()), bCoordinate2D_(false), typePrimitive_(bgfx::Topology::TriList), bRecreate_(true), posBias_(-0.5f), pConvertedIndices_(nullptr)
 	{
 		matRelative_ = glm::identity<glm::mat4>();
 		T::get(pVertexDecl_);
 
 		shader_ = std::make_unique<Shader>();
+
+		// 2 texture stages
+		texture_.reserve(2);
+		texture_.resize(2);
 	}
 	
 	virtual ~RenderObject()
@@ -339,6 +343,7 @@ public:
 		{
 			if (stage >= texture_.size())
 				return;
+
 			texture_[stage] = texture;
 		}
 	}
