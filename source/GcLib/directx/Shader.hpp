@@ -71,6 +71,8 @@ private:
 class ShaderParameter
 {
 public:
+	friend Shader;
+
 	ShaderParameter();
 	virtual ~ShaderParameter();
 	
@@ -97,6 +99,8 @@ private:
 class TextureParameter
 {
 public:
+	friend Shader;
+
 	TextureParameter();
 	virtual ~TextureParameter();
 	
@@ -138,12 +142,14 @@ public:
 	bool AddParameter(std::string name, bgfx::UniformType::Enum type, const void* data, size_t dataSize, int16_t vn = 1);
 	ShaderParameter* GetParameter(std::string name);
 
-	bool AddTexture(std::string name, uint8_t stage, bgfx::TextureHandle handle);
+	bool AddTexture(uint8_t stage, bgfx::TextureHandle handle);
 
 protected:
 	std::shared_ptr<ShaderData> data_;
 	std::unordered_map<std::string, ShaderParameter*> mapParam_;
 	std::unordered_map<uint16_t, TextureParameter*> mapTex_;
+
+	std::string _GetTextureNameFromStage(uint8_t stage);
 };
 
 } // namespace directx

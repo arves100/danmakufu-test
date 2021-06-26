@@ -38,10 +38,10 @@ bool ShaderManager::Initialize()
 	DirectGraphics* graphics = DirectGraphics::GetBase();
 	graphics->AddDirectGraphicsListener(this);
 
+#if 0 // TODO
 	if (!_CreateFromFile(DEFAULT_SUBMIT_SHADER, false))
 		return false;
 
-#if 0 // TODO
 	if (!_CreateFromFile(NAME_DEFAULT_SKINNED_MESH, false))
 		return false;
 #endif
@@ -473,16 +473,40 @@ bool Shader::AddParameter(std::string name, bgfx::UniformType::Enum type, const 
 	return true;
 }
 
-bool Shader::AddTexture(std::string name, uint8_t stage, bgfx::TextureHandle handle)
+bool Shader::AddTexture(uint8_t stage, bgfx::TextureHandle handle)
 {
-	auto param = new TextureParameter();
+	const auto& p = mapTex_.find(stage);
 
-	if (!param->Initialize(name, stage, handle))
+	if (p != mapTex_.end())
 	{
-		delete param;
-		return false;
+		auto param = new TextureParameter();
+
+		if (!param->Initialize(_GetTextureNameFromStage(stage), stage, handle))
+		{
+			delete param;
+			return false;
+		}
+
+		mapTex_[stage] = param;
+		return true;
+	}
+	else
+	{
+		p->second->tex_ = handle;
+	}
+}
+
+std::string Shader::_GetTextureNameFromStage(uint8_t stage)
+{
+	switch (stage)
+	{
+	case 0:
+		return "s_texDiffuse";
+	case 1:
+		return "s_texNormal";
+	default:
+		break;
 	}
 
-	mapTex_[stage] = param;
-	return true;
+	return "s_texUnk_" + std::to_string(stage);
 }
