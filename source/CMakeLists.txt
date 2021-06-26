@@ -1,5 +1,5 @@
 #add_subdirectory(FileArchiver)
 add_subdirectory(Shaders)
 add_subdirectory(GcLib)
-add_subdirectory(TouhouDanmakufu)
+#add_subdirectory(TouhouDanmakufu)
 add_subdirectory(Testmode)
