@@ -221,6 +221,7 @@ public:
 		pos_.y = y;
 		pos_.z = z;
 	}
+	void SetFocus(glm::vec3 f) { pos_ = f; }
 	void SetFocusX(const float x) { pos_.x = x; }
 	void SetFocusY(const float y) { pos_.y = y; }
 	void SetFocusZ(const float z) { pos_.z = z; }
