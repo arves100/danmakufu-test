@@ -842,10 +842,6 @@ glm::mat4 DxCamera::GetMatrixLookAtLH() const
 		posTo = mat * posTo;
 	}
 
-	vCameraUp = glm::vec4(0.0f, 1.0f, 0.0f, 0.0f);
-	posTo = glm::vec4(0.0f, 0.0f, 0.0f, 0.0f);
-	posCamera = glm::vec3(0.0f, 0.0f, -7.0f);
-
 	return glm::lookAtLH(posCamera, glm::vec3(posTo), glm::vec3(vCameraUp));
 }
 
@@ -872,10 +868,10 @@ void DxCamera::SetProjectionMatrix(float width, float height, float posNear, flo
 {
 	matProjection_ = glm::perspectiveFovLH(glm::radians(fov), width, height, posNear, posFar);
 	
-	if (clipNear_ < 1)
-		clipNear_ = 1;
-	if (clipFar_ < 1)
-		clipFar_ = 1;
+	if (clipNear_ < 1.0f)
+		clipNear_ = 1.0f;
+	if (clipFar_ < 1.0f)
+		clipFar_ = 1.0f;
 	
 	clipNear_ = posNear;
 	clipFar_ = posFar;
