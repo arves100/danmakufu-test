@@ -164,28 +164,18 @@ public:
 	//衝突判定：直線：三角
 	static bool IsIntersected(DxLine3D& line, std::vector<DxTriangle>& triangles, std::vector<D3DXVECTOR3>& out);
 };
-
-struct RECT_D {
-	double left;
-	double top;
-	double right;
-	double bottom;
-};
-
-inline RECT_D GetRectD(RECT rect)
-{
-	RECT_D res = { (double)rect.left, (double)rect.top, (double)rect.right, (double)rect.bottom };
-	return res;
-}
-
-inline void SetRectD(RECT_D* rect, double left, double top, double right, double bottom)
-{
-	rect->left = left;
-	rect->top = top;
-	rect->right = right;
-	rect->bottom = bottom;
-}
 #endif
+
+struct RECT_F
+{
+	float left;
+	float top;
+	float right;
+	float bottom;
+
+	RECT_F() : left(0.0f), top(0.0f), right(0.0f), bottom(0.0f) {}
+	RECT_F(float left, float top, float right, float bottom) : left(left), top(top), right(right), bottom(bottom) {}
+};
 
 class DxAllocator
 {
