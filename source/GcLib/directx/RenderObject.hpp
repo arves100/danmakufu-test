@@ -173,7 +173,7 @@ public:
 
 	void SetRelativeMatrix(const glm::mat4 mat) { matRelative_ = mat; }
 
-	void SetPrimitiveType(const bgfx::Topology type) { typePrimitive_ = type; }
+	void SetPrimitiveType(const bgfx::Topology::Enum type) { typePrimitive_ = type; }
 
 	//頂点設定
 
@@ -287,6 +287,9 @@ public:
 
 		const auto mtx = _CreateWorldTransformMatrix();
 		bgfx::setTransform(&mtx[0]);
+
+		for (auto i = 0; i < texture_.size(); i++)
+			shader_->AddTexture(static_cast<uint8_t>(i), texture_[i]->GetHandle());
 		
 		bgfx::setVertexBuffer(0, pVertexBuffer_);
 		bgfx::setIndexBuffer(pIndexBuffer_);
@@ -310,6 +313,39 @@ public:
 		vertex_[pos] = vertex;
 	}
 
+	bool GetTexture(uint8_t pos, std::shared_ptr<Texture>& ptr)
+	{
+		if (texture_.size() < pos)
+			return false;
+
+		ptr = texture_[pos];
+		return true;
+	}
+
+	void SetTexture(Texture* texture, uint8_t stage)
+	{
+		if (texture == nullptr)
+			texture_[stage] = nullptr;
+		else
+		{
+			if (stage >= texture_.size())
+				return;
+			texture_[stage] = new Texture(texture);
+		}
+	}
+
+	void SetTexture(std::shared_ptr<Texture>& texture, uint8_t stage)
+	{
+		if (texture == nullptr)
+			texture_[stage] = nullptr;
+		else
+		{
+			if (stage >= texture_.size())
+				return;
+			texture_[stage] = texture;
+		}
+	}
+
 protected:
 	std::vector<T> vertex_; //頂点
 	std::vector<uint16_t> vertexIndices_;
@@ -326,6 +362,8 @@ protected:
 	glm::mat4 matRelative_; //関係行列
 	bool bCoordinate2D_; //2D座標指定
 	bgfx::Topology::Enum typePrimitive_;
+
+	std::vector<std::shared_ptr<Texture>> texture_;
 
 	std::unique_ptr<Shader> shader_;
 	bool bRecreate_;
@@ -356,14 +394,18 @@ protected:
 		if (!shader_->IsLoad())
 			shader_->CreateFromFile(_GetDefaultShaderName(), false);
 
+#if 0 // eh?
 		const auto size = bgfx::topologyConvert(typePrimitive_, nullptr, 0, vertexIndices_.data(), vertexIndices_.size(), false);
 		pConvertedIndices_ = new uint16_t[size];
 		bgfx::topologyConvert(typePrimitive_, pConvertedIndices_, size, vertexIndices_.data(), vertexIndices_.size(), false);
+#else
+
+#endif
 
 		const auto vb = bgfx::makeRef(&vertex_[0], vertex_.size() * pVertexDecl_.getStride());
 		pVertexBuffer_ = bgfx::createVertexBuffer(vb, pVertexDecl_);
 		bgfx::setName(pVertexBuffer_, name_.c_str());
-		const auto ib = bgfx::makeRef(pConvertedIndices_, size * sizeof(uint16_t));
+		const auto ib = bgfx::makeRef(vertexIndices_.data(), vertexIndices_.size() * sizeof(uint16_t));
 		pIndexBuffer_ = bgfx::createIndexBuffer(ib);
 		bgfx::setName(pIndexBuffer_, name_.c_str());
 		bRecreate_ = false;
@@ -615,6 +657,9 @@ public:
 	RO_IMPL_NORMAL3
 	RO_IMPL_UV
 
+	RenderObjectB4NX();
+	~RenderObjectB4NX();
+
 	virtual void CalculateWeightCenter();
 	void SetVertexBlend(size_t index, size_t pos, uint8_t indexBlend, float rate);
 		
@@ -678,6 +723,7 @@ public:
 	virtual ~RenderObjectB4NXBlock();
 	virtual void Render();
 };
+#endif
 
 /**********************************************************
 //Sprite2D
@@ -687,15 +733,18 @@ class Sprite2D : public RenderObjectTLX {
 public:
 	Sprite2D();
 	~Sprite2D();
-	void Copy(Sprite2D* src);
-	void SetSourceRect(RECT_D& rcSrc);
-	void SetDestinationRect(RECT_D& rcDest);
-	void SetDestinationCenter();
-	void SetVertex(RECT_D& rcSrc, RECT_D& rcDest, D3DCOLOR color = D3DCOLOR_ARGB(255, 255, 255, 255));
 
-	RECT_D GetDestinationRect();
+	void SetSourceRect(RECT_F& rcSrc);
+	void SetDestinationRect(RECT_F& rcDest);
+	void SetDestinationCenter();
+	void SetVertex(RECT_F& rcSrc, RECT_F& rcDest, uint32_t color = COLOR_ARGB(255, 255, 255, 255));
+
+	RECT_F GetDestinationRect();
+
+	Sprite2D& operator=(Sprite2D o);
 };
 
+#if 0
 /**********************************************************
 //SpriteList2D
 //矩形スプライトリスト

@@ -3,8 +3,10 @@
 #include "DirectGraphics.hpp"
 #include "Shader.hpp"
 
-//#include "ElfreinaMesh.hpp"
-//#include "MetasequoiaMesh.hpp"
+#if 0
+#include "ElfreinaMesh.hpp"
+#include "MetasequoiaMesh.hpp"
+#endif
 
 using namespace gstd;
 using namespace directx;
@@ -212,7 +214,7 @@ void RenderObjectTLX::Submit(bgfx::ViewId id)
 		}
 	}
 
-	// what should be done: transform(vertex->position, u_camera_matrix)
+	// what should be done: vertex->position = vertex->position * u_camera_matrix
 	shader_->AddParameter("u_camera_matrix", bgfx::UniformType::Mat4, &mat, sizeof(mat));
 	RenderObject::Submit(id);
 }
@@ -601,6 +603,7 @@ void RenderObjectB4NXBlock::Render()
 	obj->SetMatrix(matrix_);
 	RenderBlock::Render();
 }
+#endif
 
 /**********************************************************
 //Sprite2D
@@ -609,43 +612,47 @@ void RenderObjectB4NXBlock::Render()
 Sprite2D::Sprite2D()
 {
 	SetVertexCount(4); //左上、右上、左下、右下
-	SetPrimitiveType(D3DPT_TRIANGLESTRIP);
+	SetPrimitiveType(bgfx::Topology::TriStrip);
 }
+
 Sprite2D::~Sprite2D()
 {
 }
-void Sprite2D::Copy(Sprite2D* src)
+
+Sprite2D& Sprite2D::operator=(Sprite2D o)
 {
-	typePrimitive_ = src->typePrimitive_;
-	strideVertexStreamZero_ = src->strideVertexStreamZero_;
-	vertex_.Copy(src->vertex_);
-	vertexIndices_ = src->vertexIndices_;
-	for (int iTex = 0; iTex < texture_.size(); iTex++) {
-		texture_[iTex] = src->texture_[iTex];
-	}
+	typePrimitive_ = o.typePrimitive_;
 
-	posWeightCenter_ = src->posWeightCenter_;
+	vertex_ = o.vertex_;
+	vertexIndices_ = o.vertexIndices_;
+	texture_ = o.texture_;
 
-	position_ = src->position_;
-	angle_ = src->angle_;
-	scale_ = src->scale_;
-	matRelative_ = src->matRelative_;
+	posWeightCenter_ = o.posWeightCenter_;
+
+	position_ = o.position_;
+	angle_ = o.angle_;
+	scale_ = o.scale_;
+	matRelative_ = o.matRelative_;
+	return *this;
 }
-void Sprite2D::SetSourceRect(RECT_D& rcSrc)
+
+void Sprite2D::SetSourceRect(RECT_F& rcSrc)
 {
-	ref_count_ptr<Texture>& texture = texture_[0];
-	if (texture == NULL)
+	auto& texture = texture_[0]; // diffuse
+	if (!texture)
 		return;
-	int width = texture->GetWidth();
-	int height = texture->GetHeight();
+
+	auto width = static_cast<float>(texture->GetWidth());
+	auto height = static_cast<float>(texture->GetHeight());
 
 	//テクスチャUV
-	SetVertexUV(0, (float)rcSrc.left / (float)width, (float)rcSrc.top / (float)height);
-	SetVertexUV(1, (float)rcSrc.right / (float)width, (float)rcSrc.top / (float)height);
-	SetVertexUV(2, (float)rcSrc.left / (float)width, (float)rcSrc.bottom / (float)height);
-	SetVertexUV(3, (float)rcSrc.right / (float)width, (float)rcSrc.bottom / (float)height);
+	SetVertexUV(0, rcSrc.left / width, rcSrc.top / height);
+	SetVertexUV(1, rcSrc.right / width, rcSrc.top / height);
+	SetVertexUV(2, rcSrc.left / width, rcSrc.bottom / height);
+	SetVertexUV(3, rcSrc.right / width, rcSrc.bottom / height);
 }
-void Sprite2D::SetDestinationRect(RECT_D& rcDest)
+
+void Sprite2D::SetDestinationRect(RECT_F& rcDest)
 {
 	//頂点位置
 	SetVertexPosition(0, rcDest.left, rcDest.top);
@@ -653,46 +660,42 @@ void Sprite2D::SetDestinationRect(RECT_D& rcDest)
 	SetVertexPosition(2, rcDest.left, rcDest.bottom);
 	SetVertexPosition(3, rcDest.right, rcDest.bottom);
 }
+
 void Sprite2D::SetDestinationCenter()
 {
-	ref_count_ptr<Texture>& texture = texture_[0];
-	if (texture == NULL || GetVertexCount() < 4)
+	auto& texture = texture_[0];
+	if (texture == nullptr || GetVertexCount() < 4)
 		return;
-	int width = texture->GetWidth();
-	int height = texture->GetHeight();
+	auto width = texture->GetWidth();
+	auto height = texture->GetHeight();
 
-	VERTEX_TLX* vertLT = GetVertex(0); //左上
-	VERTEX_TLX* vertRB = GetVertex(3); //右下
+	auto vertLT = GetVertex(0); //左上
+	auto vertRB = GetVertex(3); //右下
 
-	int vWidth = vertRB->texcoord.x * width - vertLT->texcoord.x * width;
-	int vHeight = vertRB->texcoord.y * height - vertLT->texcoord.y * height;
-	RECT_D rcDest = { -vWidth / 2., -vHeight / 2., vWidth / 2., vHeight / 2. };
+	auto vWidth = vertRB->u * width - vertLT->u * width;
+	auto vHeight = vertRB->v * height - vertLT->v * height;
+	RECT_F rcDest = { -vWidth / 2.0f, -vHeight / 2.0f, vWidth / 2.0f, vHeight / 2.0f };
 
 	SetDestinationRect(rcDest);
 }
-void Sprite2D::SetVertex(RECT_D& rcSrc, RECT_D& rcDest, D3DCOLOR color)
+
+void Sprite2D::SetVertex(RECT_F& rcSrc, RECT_F& rcDest, uint32_t color)
 {
 	SetSourceRect(rcSrc);
 	SetDestinationRect(rcDest);
 	SetColorRGB(color);
 	SetAlpha(ColorAccess::GetColorA(color));
 }
-RECT_D Sprite2D::GetDestinationRect()
-{
-	float bias = -0.5f;
 
-	RECT_D rect;
+RECT_F Sprite2D::GetDestinationRect()
+{
 	VERTEX_TLX* vertexLeftTop = GetVertex(0);
 	VERTEX_TLX* vertexRightBottom = GetVertex(3);
 
-	rect.left = vertexLeftTop->position.x - bias;
-	rect.top = vertexLeftTop->position.y - bias;
-	rect.right = vertexRightBottom->position.x - bias;
-	rect.bottom = vertexRightBottom->position.y - bias;
-
-	return rect;
+	return { vertexLeftTop->x - posBias_, vertexLeftTop->y - posBias_, vertexRightBottom->x - posBias_, vertexRightBottom->y - posBias_ };
 }
 
+#if 0
 /**********************************************************
 //SpriteList2D
 **********************************************************/
