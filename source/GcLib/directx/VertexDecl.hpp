@@ -43,7 +43,7 @@ struct VERTEX_TL {
 	{
 		vl.begin()
 			.add(bgfx::Attrib::Position, 4, bgfx::AttribType::Float)
-			.add(bgfx::Attrib::Color0, 4, bgfx::AttribType::Uint8)
+			.add(bgfx::Attrib::Color0, 4, bgfx::AttribType::Uint8, true, true)
 			.end();
 	}
 };
@@ -52,7 +52,7 @@ struct VERTEX_TL {
 struct VERTEX_TLX {
 	float x, y, z, w;
 	uint32_t color; // r g b a
-	int16_t u, v;
+	float u, v;
 
 	VERTEX_TLX() = default;
 	VERTEX_TLX(glm::vec4 pos, uint32_t color, glm::vec2 uv) : x(pos.x), y(pos.y), z(pos.z), w(pos.w), color(color), u(uv.x), v(uv.y) {}
@@ -60,9 +60,9 @@ struct VERTEX_TLX {
 	static void get(bgfx::VertexLayout& vl)
 	{
 		vl.begin()
-			.add(bgfx::Attrib::Position, 34, bgfx::AttribType::Float)
-			.add(bgfx::Attrib::Color0, 4, bgfx::AttribType::Uint8)
-			.add(bgfx::Attrib::TexCoord1, 2, bgfx::AttribType::Int16)
+			.add(bgfx::Attrib::Position, 4, bgfx::AttribType::Float)
+			.add(bgfx::Attrib::Color0, 4, bgfx::AttribType::Uint8, true, true)
+			.add(bgfx::Attrib::TexCoord1, 2, bgfx::AttribType::Float)
 			.end();
 	}
 };
@@ -79,7 +79,7 @@ struct VERTEX_L {
 	{
 		vl.begin()
 			.add(bgfx::Attrib::Position, 3, bgfx::AttribType::Float)
-			.add(bgfx::Attrib::Color0, 4, bgfx::AttribType::Uint8)
+			.add(bgfx::Attrib::Color0, 4, bgfx::AttribType::Uint8, true, true)
 			.end();
 	}
 };
@@ -88,7 +88,7 @@ struct VERTEX_L {
 struct VERTEX_LX {
 	float x, y, z;
 	uint32_t color; // r g b a
-	int16_t u, v;
+	float u, v;
 
 	VERTEX_LX() = default;
 	VERTEX_LX(glm::vec3 pos, uint32_t color, glm::vec2 uv) : x(pos.x), y(pos.y), z(pos.z), color(color), u(uv.x), v(uv.y) {}
@@ -97,8 +97,8 @@ struct VERTEX_LX {
 	{
 		vl.begin()
 			.add(bgfx::Attrib::Position, 3, bgfx::AttribType::Float)
-			.add(bgfx::Attrib::Color0, 4, bgfx::AttribType::Uint8)
-			.add(bgfx::Attrib::TexCoord1, 2, bgfx::AttribType::Int16)
+			.add(bgfx::Attrib::Color0, 4, bgfx::AttribType::Uint8, true, true)
+			.add(bgfx::Attrib::TexCoord1, 2, bgfx::AttribType::Float)
 			.end();
 	}
 };
@@ -128,7 +128,7 @@ struct VERTEX_NX {
 
 	float x, y, z;
 	float nx, ny, nz;
-	int16_t u, v;
+	float u, v;
 	
 	VERTEX_NX() = default;
 	VERTEX_NX(glm::vec3 pos, glm::vec3 n, glm::vec2 uv) : x(pos.x), y(pos.y), z(pos.z), nx(n.x), ny(n.y), nz(n.z), u(uv.x), v(uv.y) {}
@@ -138,7 +138,7 @@ struct VERTEX_NX {
 		vl.begin()
 			.add(bgfx::Attrib::Position, 3, bgfx::AttribType::Float)
 			.add(bgfx::Attrib::Normal, 3, bgfx::AttribType::Float)
-			.add(bgfx::Attrib::TexCoord1, 2, bgfx::AttribType::Int16)
+			.add(bgfx::Attrib::TexCoord1, 2, bgfx::AttribType::Float)
 			.end();
 	}
 };
@@ -148,7 +148,7 @@ struct VERTEX_NXG {
 	float x, y, z;
 	float weight[3]; // blend
 	float nx, ny, nz;
-	int16_t u, v;
+	float u, v;
 
 	VERTEX_NXG() = default;
 	VERTEX_NXG(glm::vec3 pos, glm::vec3 n, glm::vec2 uv) : x(pos.x), y(pos.y), z(pos.z), nx(n.x), ny(n.y), nz(n.z), u(uv.x), v(uv.y) {}
@@ -159,7 +159,7 @@ struct VERTEX_NXG {
 			.add(bgfx::Attrib::Position, 3, bgfx::AttribType::Float) // a_position
 			.add(bgfx::Attrib::Weight, 3, bgfx::AttribType::Float) // a_weight
 			.add(bgfx::Attrib::Normal, 3, bgfx::AttribType::Float) // a_normal
-			.add(bgfx::Attrib::TexCoord1, 2, bgfx::AttribType::Int16) // a_texcoord1
+			.add(bgfx::Attrib::TexCoord1, 2, bgfx::AttribType::Float) // a_texcoord1
 			.end();
 	}
 };
@@ -178,7 +178,7 @@ struct VERTEX_B1NX {
 	{
 		vl.begin()
 			.add(bgfx::Attrib::Position, 3, bgfx::AttribType::Float)
-			.add(bgfx::Attrib::Indices, 4, bgfx::AttribType::Uint8) // a_indices
+			.add(bgfx::Attrib::Indices, 4, bgfx::AttribType::Uint8, true, true) // a_indices
 			.add(bgfx::Attrib::Normal, 3, bgfx::AttribType::Float)
 			.add(bgfx::Attrib::TexCoord1, 2, bgfx::AttribType::Float)
 			.end();
@@ -205,7 +205,7 @@ struct VERTEX_B2NX {
 		vl.begin()
 			.add(bgfx::Attrib::Position, 3, bgfx::AttribType::Float)
 			.add(bgfx::Attrib::Weight, 1, bgfx::AttribType::Float)
-			.add(bgfx::Attrib::Indices, 4, bgfx::AttribType::Uint8) // a_indices
+			.add(bgfx::Attrib::Indices, 4, bgfx::AttribType::Uint8, true, true) // a_indices
 			.add(bgfx::Attrib::Normal, 3, bgfx::AttribType::Float)
 			.add(bgfx::Attrib::TexCoord1, 2, bgfx::AttribType::Float)
 			.end();
@@ -234,7 +234,7 @@ struct VERTEX_B4NX {
 		vl.begin()
 			.add(bgfx::Attrib::Position, 3, bgfx::AttribType::Float)
 			.add(bgfx::Attrib::Weight, 3, bgfx::AttribType::Float)
-			.add(bgfx::Attrib::Indices, 4, bgfx::AttribType::Uint8) // a_indices
+			.add(bgfx::Attrib::Indices, 4, bgfx::AttribType::Uint8, true, true) // a_indices
 			.add(bgfx::Attrib::Normal, 3, bgfx::AttribType::Float)
 			.add(bgfx::Attrib::TexCoord1, 2, bgfx::AttribType::Float)
 			.end();
