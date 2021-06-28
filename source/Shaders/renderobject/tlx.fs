@@ -7,9 +7,9 @@ $input v_texcoord1, v_color0
 #include "common.sh"
 
 SAMPLER2D(s_texDiffuse, 0);
-SAMPLER2D(s_texNormal, 1);
+//SAMPLER2D(s_texNormal, 1);
 
 void main()
 {
-	gl_FragColor = v_color0 * texture2D(s_texDiffuse, v_texcoord1);
+	gl_FragColor = texture2D(s_texDiffuse, v_texcoord1);
 }
