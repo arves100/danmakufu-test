@@ -80,6 +80,9 @@ Use CMake to generate the project, make sure to define the following variables: 
 This project is a fork of [WishMakers0's Danmakufu Woo](https://github.com/WishMakers0/Danmakufu-Woo-Edition),
 which is a modified version of the open source [mkm's Danmakufu ph3 [.1 pre6] ](https://touhougc.web.fc2.com/products/th_dnh_ph3.html).
 
+## License
 The old repositories (both Woo edition and the original one) are released under NYSL Version 0.9982:
 - [Japanese text of NYSL](http://www.kmonos.net/nysl/)
 - [English text of NYSL](http://www.kmonos.net/nysl/index.en.html)
+
+The new changes, and this repo, is relicensed under Mozilla Public License 2.0
