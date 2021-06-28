@@ -85,4 +85,4 @@ The old repositories (both Woo edition and the original one) are released under 
 - [Japanese text of NYSL](http://www.kmonos.net/nysl/)
 - [English text of NYSL](http://www.kmonos.net/nysl/index.en.html)
 
-The new changes, and this repo, is relicensed under Mozilla Public License 2.0
+The new changes made in this repo are licensed under Mozilla Public License 2.0
