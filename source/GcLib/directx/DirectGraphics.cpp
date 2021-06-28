@@ -267,7 +267,7 @@ void DirectGraphics::_InitializeDeviceState()
 	SetAlphaTest(true, 0);
 
 	//Filter
-	SetTextureFilter(TextureFilterMode::Linear);
+	SetTextureFilter(TextureFilterMode::Anisotropic);
 
 	//Zテスト
 	SetZWriteEnable(false);
@@ -625,45 +625,25 @@ void DirectGraphics::SetPixelFog(bool bEnable, D3DCOLOR color, float start, floa
 {
 }
 
-void DirectGraphics::SetTextureFilter(TextureFilterMode mode, int stage)
+void DirectGraphics::SetTextureFilter(TextureFilterMode mode)
 {
-	/*
-	// TODO: Linear sampling
 	switch (mode) {
-	case MODE_TEXTURE_FILTER_NONE:
-		pDevice_->SetSamplerState(stage, D3DSAMP_MINFILTER, D3DTEXF_NONE);
-		pDevice_->SetSamplerState(stage, D3DSAMP_MAGFILTER, D3DTEXF_NONE);
+	case TextureFilterMode::None:
+		samplerFlags_ = 0;
 		break;
-	case MODE_TEXTURE_FILTER_POINT:
-		pDevice_->SetSamplerState(stage, D3DSAMP_MINFILTER, D3DTEXF_POINT);
-		pDevice_->SetSamplerState(stage, D3DSAMP_MAGFILTER, D3DTEXF_POINT);
+	case TextureFilterMode::Point:
+		samplerFlags_ = BGFX_SAMPLER_MIN_POINT | BGFX_SAMPLER_MAG_POINT;
 		break;
-	case MODE_TEXTURE_FILTER_LINEAR:
-		pDevice_->SetSamplerState(stage, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
-		pDevice_->SetSamplerState(stage, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
+	case TextureFilterMode::Anisotropic:
+		samplerFlags_ = BGFX_SAMPLER_MIN_ANISOTROPIC | BGFX_SAMPLER_MAG_ANISOTROPIC;
 		break;
-	}*/
+	}
 }
 
 DirectGraphics::TextureFilterMode DirectGraphics::GetTextureFilter(int stage) const
 {
-	/*
-	// TODO: Linear sampling
-	int res = MODE_TEXTURE_FILTER_NONE;
-	DWORD mode;
-	pDevice_->GetSamplerState(stage, D3DSAMP_MINFILTER, &mode);
-	switch (mode) {
-	case D3DTEXF_NONE:
-		res = MODE_TEXTURE_FILTER_NONE;
-		break;
-	case D3DTEXF_POINT:
-		res = MODE_TEXTURE_FILTER_POINT;
-		break;
-	case D3DTEXF_LINEAR:
-		res = MODE_TEXTURE_FILTER_LINEAR;
-		break;
-	}
-	return res;*/
+	if (samplerFlags_ & BGFX_SAMPLER_MIN_POINT)
+		return TextureFilterMode::Point;
 
 	return TextureFilterMode::None; // TODO
 }

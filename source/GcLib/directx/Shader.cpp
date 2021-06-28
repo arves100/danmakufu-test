@@ -425,10 +425,12 @@ void Shader::Release()
 
 void Shader::Submit(bgfx::ViewId id)
 {
+	auto graph = DirectGraphics::GetBase();
+
 	for (auto& s : mapTex_)
 	{
 		auto& uh = s.second;
-		bgfx::setTexture(uh->GetStage(), uh->GetHandle(), uh->GetTexture());
+		bgfx::setTexture(uh->GetStage(), uh->GetHandle(), uh->GetTexture(), graph->GetSamplerFlags());
 	}
 
 	for (auto& s : mapParam_)

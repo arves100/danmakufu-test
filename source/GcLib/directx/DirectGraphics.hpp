@@ -68,7 +68,8 @@ public:
 	{
 		None, //フィルタなし
 		Point, //補間なし
-		Linear, //線形補間
+		//Linear, //線形補間
+		Anisotropic,
 	};
 
 	enum class CullingMode
@@ -136,7 +137,7 @@ public:
 	bool IsFogEnable() const;
 	void SetVertexFog(bool bEnable, D3DCOLOR color, float start, float end);
 	void SetPixelFog(bool bEnable, D3DCOLOR color, float start, float end);
-	void SetTextureFilter(TextureFilterMode mode, int stage = 0);
+	void SetTextureFilter(TextureFilterMode mode);
 	TextureFilterMode GetTextureFilter(int stage = 0) const;
 
 	void SetDirectionalLight(glm::vec3 v);
@@ -159,6 +160,8 @@ public:
 	void RestoreViews();
 
 	void SetLightingEnable(bool b);
+
+	uint32_t GetSamplerFlags() const { return samplerFlags_; }
 
 protected:
 
@@ -192,6 +195,7 @@ protected:
 	bgfx::UniformHandle uniforms_[6];
 	glm::vec4 sh_dirlight_diffuse, sh_dirlight_ambient, sh_dirlight_direction;
 	glm::vec4 sh_amblight;
+	uint32_t samplerFlags_;
 };
 
 // TODO: Migrate to an application specific part
