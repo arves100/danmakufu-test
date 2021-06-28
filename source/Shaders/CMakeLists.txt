@@ -1,7 +1,7 @@
 include(make_shader)
 
 # internal shaders
-make_shader_vf(view1 internal)
+#make_shader_vf(view1 internal)
 #make_shader_vf(default_skin internal)
 
 # renderobject
