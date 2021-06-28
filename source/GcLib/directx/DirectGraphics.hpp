@@ -85,6 +85,18 @@ public:
 		Phong,
 	};
 
+	enum class DepthMode
+	{
+		None,
+		Less,
+		LessEqual,
+		Equal,
+		GreaterEqual,
+		NotEqual,
+		Never,
+		Always,
+	};
+
 	DirectGraphics();
 	virtual ~DirectGraphics();
 	static DirectGraphics* GetBase() { return thisBase_; }
@@ -116,7 +128,7 @@ public:
 	void SetSpecularEnable(bool bEnable); //スペキュラ
 	void SetCullingMode(CullingMode mode); //カリング
 	void SetShadingMode(ShadeMode mode); //シェーディング
-	void SetDepthTest(bool bEnable); //Zバッファ参照
+	void SetDepthTest(DepthMode mode); //Was ZBuffer before
 	void SetZWriteEnable(bool bEnable); //Zバッファ書き込み
 	void SetAlphaTest(bool bEnable, DWORD ref = 0);
 	void SetBlendMode(BlendMode mode, int stage = 0);

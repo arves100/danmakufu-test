@@ -93,7 +93,7 @@ bool DirectGraphics::Initialize(DirectGraphicsConfig& config, void* nwh, void* n
 
 #ifdef _DEBUG
 	init.debug = true;
-	init.profile = false;
+	init.profile = true;
 #else
 	init.debug = false;
 	init.profile = false;
@@ -271,7 +271,9 @@ void DirectGraphics::_InitializeDeviceState()
 
 	//Zテスト
 	SetZWriteEnable(false);
-	SetDepthTest(false);
+	SetDepthTest(DepthMode::None);
+
+	UpdateState();
 }
 
 bgfx::ViewId DirectGraphics::AddView(std::string name)
@@ -460,12 +462,36 @@ void DirectGraphics::SetShadingMode(ShadeMode mode)
 	sh_options_.y = static_cast<float>(m);
 }
 
-void DirectGraphics::SetDepthTest(bool bEnable)
+void DirectGraphics::SetDepthTest(DepthMode mode)
 {
-	if (bEnable)
+	states_ &= ~BGFX_STATE_DEPTH_TEST_MASK;
+
+	switch (mode)
+	{
+	case DepthMode::Always:
+		states_ |= BGFX_STATE_DEPTH_TEST_ALWAYS;
+		break;
+	case DepthMode::Equal:
+		states_ |= BGFX_STATE_DEPTH_TEST_EQUAL;
+		break;
+	case DepthMode::Less:
 		states_ |= BGFX_STATE_DEPTH_TEST_LESS;
-	else
-		states_ &= ~BGFX_STATE_DEPTH_TEST_LESS;
+		break;
+	case DepthMode::GreaterEqual:
+		states_ |= BGFX_STATE_DEPTH_TEST_GEQUAL;
+		break;
+	case DepthMode::LessEqual:
+		states_ |= BGFX_STATE_DEPTH_TEST_LEQUAL;
+		break;
+	case DepthMode::Never:
+		states_ |= BGFX_STATE_DEPTH_TEST_NEVER;
+		break;
+	case DepthMode::NotEqual:
+		states_ |= BGFX_STATE_DEPTH_TEST_NOTEQUAL;
+		break;
+	default:
+		break;
+	}
 }
 
 void DirectGraphics::SetZWriteEnable(bool bEnable)
