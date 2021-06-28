@@ -461,15 +461,24 @@ ShaderParameter* Shader::GetParameter(std::string name)
 
 bool Shader::AddParameter(std::string name, bgfx::UniformType::Enum type, const void* data, size_t dataSize, int16_t vn)
 {
-	auto param = new ShaderParameter();
+	const auto& p = mapParam_.find(name);
 
-	if (!param->Initialize(name, type, data, dataSize, vn))
+	if (p == mapParam_.end())
 	{
-		delete param;
-		return false;
-	}
+		auto param = new ShaderParameter();
 
-	mapParam_[name] = param;
+		if (!param->Initialize(name, type, data, dataSize, vn))
+		{
+			delete param;
+			return false;
+		}
+
+		mapParam_[name] = param;
+	}
+	else
+	{
+		p->second->Set(data, dataSize, vn);
+	}
 	return true;
 }
 
