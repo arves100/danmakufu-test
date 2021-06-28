@@ -62,9 +62,8 @@ bool CBgfxBump::OnPreInit()
 bool CBgfxBump::OnInit()
 {
 	{ // Object init
-		if (!m_obj.Initialize("BumpCube"))
-			return false;
-
+		m_obj.SetName("BumpCube");
+		
 		auto shsh = m_obj.GetShader(); // Get shader
 		if (!shsh->CreateFromFile("testmode/06bump", false)) // We can define custom shaders BEFORE the object goes into the rendering stage
 			return false;
@@ -137,7 +136,7 @@ void CBgfxBump::OnRender(const float time)
 	param->Set(lightPosRadius, sizeof(lightPosRadius), m_lights);
 
 	m_graph.SetZWriteEnable(true);
-	m_graph.SetDepthTest(true);
+	m_graph.SetDepthTest(directx::DirectGraphics::DepthMode::Less);
 	m_graph.UpdateState();
 
 	for (auto yy = 0; yy < 3; ++yy)
@@ -185,4 +184,4 @@ void CBgfxBump::OnLoop(const float time)
 	cam->UpdateDeviceWorldViewMatrix();
 }
 
-DEFINE_MAIN(CBgfxBump)
+//DEFINE_MAIN(CBgfxBump)
