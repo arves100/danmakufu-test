@@ -30,12 +30,14 @@ NOTE: DInput will mostly receive a refactor anyway, I'd prefer seeing a virtual 
 - SetProjectionMatrix can now work with fov (default 45.0f like original dhn)
 - Changed return time of some classes to pointers (while using unique_ptr, NEVER FREE those classes)
 - UpdateState is now PUBLIC, you have to MANULLY update the state before submitting meshes
-- SetZBufferEnable -> SetDepthTest
+- SetZBufferEnable is now REMOVED, please convert the code to use SetDepthTest
 - Viewport concepts are now removed, please use multiple view instead
 - D3DCOLOR_ARGB and D3DCOLOR_RGB are not COLOR_ARGB and COLOR_RGB (defined in DxUtility)
 
 ### RenderObjects
 Vertex declaractions (ex FVF) uses BGFX vertexlayout now, please switch to the new code.
+
+Objects MUST CONTAIN a vertex buffer and an index buffer, please note that only TriStrip and TriLine are supported as primitives.
 
 All Vertex declarations MUST IMPLEMENT a get function otherwise they WILL NOT WORK. (See VERTEX_LTA for example)
 
