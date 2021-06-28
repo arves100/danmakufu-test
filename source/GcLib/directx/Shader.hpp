@@ -113,11 +113,16 @@ public:
 	uint8_t GetStage() const { return stage_; }
 	bgfx::TextureHandle GetTexture() const { return tex_; }
 
+	uint32_t GetFlags() const { return flags_; }
+
+	void SetTextureSamplerStage(TextureFilterMode filter);
+
 private:
 	bgfx::UniformHandle uh_;
 	std::string name_;
 	uint8_t stage_;
 	bgfx::TextureHandle tex_;
+	uint32_t flags_;
 };
 
 /**********************************************************
@@ -143,6 +148,8 @@ public:
 	ShaderParameter* GetParameter(std::string name);
 
 	bool AddTexture(uint8_t stage, bgfx::TextureHandle handle);
+
+	void SetTextureSamplerStage(TextureFilterMode filter, uint8_t stage = 0);
 
 protected:
 	std::shared_ptr<ShaderData> data_;

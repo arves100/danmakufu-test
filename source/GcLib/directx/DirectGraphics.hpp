@@ -15,19 +15,6 @@ struct ShaderData;
 **********************************************************/
 struct DirectGraphicsConfig
 {
-	enum class ColorMode
-	{
-		Bit16,
-		Bit32,
-	};
-
-	enum class ScreenMode
-	{
-		Fullscreen,
-		DesktopFullscreen,
-		Windowed,
-	};
-
 	DirectGraphicsConfig() : RenderWidth(800), RenderHeight(600), Color(ColorMode::Bit32),
 		UseTripleBuffer(false), IsFullscreen(false), UseVSync(false), Render(bgfx::RendererType::Direct3D9) {}
 
@@ -51,53 +38,7 @@ class DirectGraphics
 	{
 	static DirectGraphics* thisBase_;
 
-public:	
-	enum class BlendMode
-	{
-		None, //なし
-		Alpha, //αで半透明合成
-		Add_RGB, //RGBで加算合成
-		Add_ARGB, //αで加算合成
-		Multiply, //乗算合成
-		Subtract, //減算合成
-		Shadow, //影描画用
-		InvDestRGB, //描画先色反転合成
-	};
-
-	enum class TextureFilterMode
-	{
-		None, //フィルタなし
-		Point, //補間なし
-		//Linear, //線形補間
-		Anisotropic,
-	};
-
-	enum class CullingMode
-	{
-		None,
-		Cw,
-		Ccw,
-	};
-
-	enum class ShadeMode
-	{
-		Flat,
-		Gouraud,
-		Phong,
-	};
-
-	enum class DepthMode
-	{
-		None,
-		Less,
-		LessEqual,
-		Equal,
-		GreaterEqual,
-		NotEqual,
-		Never,
-		Always,
-	};
-
+public:
 	DirectGraphics();
 	virtual ~DirectGraphics();
 	static DirectGraphics* GetBase() { return thisBase_; }
@@ -132,13 +73,11 @@ public:
 	void SetDepthTest(DepthMode mode); //Was ZBuffer before
 	void SetZWriteEnable(bool bEnable); //Zバッファ書き込み
 	void SetAlphaTest(bool bEnable, DWORD ref = 0);
-	void SetBlendMode(BlendMode mode, int stage = 0);
+	void SetBlendMode(BlendMode mode);
 	void SetFogEnable(bool bEnable);
 	bool IsFogEnable() const;
 	void SetVertexFog(bool bEnable, D3DCOLOR color, float start, float end);
 	void SetPixelFog(bool bEnable, D3DCOLOR color, float start, float end);
-	void SetTextureFilter(TextureFilterMode mode);
-	TextureFilterMode GetTextureFilter(int stage = 0) const;
 
 	void SetDirectionalLight(glm::vec3 v);
 
@@ -161,7 +100,11 @@ public:
 
 	void SetLightingEnable(bool b);
 
-	uint32_t GetSamplerFlags() const { return samplerFlags_; }
+	void SetDefaultTextureFilter(TextureFilterMode f) { texFilter_ = f; }
+	TextureFilterMode GetDefaultTextureFilter() const { return texFilter_; }
+
+	void SetDefaultTextureBlendingMode(BlendMode b) { texBlend_ = b; }
+	BlendMode GetDefaultTextureBlendingMode() const { return texBlend_; }
 
 protected:
 
@@ -195,7 +138,8 @@ protected:
 	bgfx::UniformHandle uniforms_[6];
 	glm::vec4 sh_dirlight_diffuse, sh_dirlight_ambient, sh_dirlight_direction;
 	glm::vec4 sh_amblight;
-	uint32_t samplerFlags_;
+	TextureFilterMode texFilter_;
+	BlendMode texBlend_;
 };
 
 // TODO: Migrate to an application specific part

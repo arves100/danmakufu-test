@@ -339,7 +339,7 @@ bool ShaderParameter::Set(const void* data, size_t dataSize, int16_t vn)
 /**********************************************************
 //TextureParameter
 **********************************************************/
-TextureParameter::TextureParameter() : uh_(BGFX_INVALID_HANDLE), stage_(0), tex_(BGFX_INVALID_HANDLE) {}
+TextureParameter::TextureParameter() : uh_(BGFX_INVALID_HANDLE), stage_(0), tex_(BGFX_INVALID_HANDLE), flags_(BGFX_SAMPLER_U_CLAMP | BGFX_SAMPLER_V_CLAMP | BGFX_SAMPLER_W_BORDER) {}
 TextureParameter::~TextureParameter()
 {
 	Release();
@@ -366,7 +366,29 @@ bool TextureParameter::Initialize(std::string name, uint8_t stage, bgfx::Texture
 	name_ = name;
 	stage_ = stage;
 	tex_ = tex;
+
+	auto graph = DirectGraphics::GetBase();
+	SetTextureSamplerStage(graph->GetDefaultTextureFilter());
+
 	return true;
+}
+
+void TextureParameter::SetTextureSamplerStage(TextureFilterMode filter)
+{
+	flags_ &= ~BGFX_SAMPLER_MAG_MASK;
+	flags_ &= ~BGFX_SAMPLER_MIN_MASK;
+	flags_ &= ~BGFX_SAMPLER_MIP_MASK;
+
+	switch (filter) {
+	case TextureFilterMode::None:
+		break;
+	case TextureFilterMode::Point:
+		flags_ |= BGFX_SAMPLER_MIN_POINT | BGFX_SAMPLER_MAG_POINT | BGFX_SAMPLER_MIP_POINT;
+		break;
+	case TextureFilterMode::Anisotropic:
+		flags_ |= BGFX_SAMPLER_MIN_ANISOTROPIC | BGFX_SAMPLER_MAG_ANISOTROPIC;
+		break;
+	}
 }
 
 /**********************************************************
@@ -425,12 +447,10 @@ void Shader::Release()
 
 void Shader::Submit(bgfx::ViewId id)
 {
-	auto graph = DirectGraphics::GetBase();
-
 	for (auto& s : mapTex_)
 	{
 		auto& uh = s.second;
-		bgfx::setTexture(uh->GetStage(), uh->GetHandle(), uh->GetTexture(), graph->GetSamplerFlags());
+		bgfx::setTexture(uh->GetStage(), uh->GetHandle(), uh->GetTexture(), uh->GetFlags());
 	}
 
 	for (auto& s : mapParam_)
@@ -519,4 +539,12 @@ std::string Shader::_GetTextureNameFromStage(uint8_t stage)
 	}
 
 	return "s_texUnk_" + std::to_string(stage);
+}
+
+void Shader::SetTextureSamplerStage(TextureFilterMode filter, uint8_t stage)
+{
+	if (mapTex_.size() < (stage + 1))
+		return;
+
+	mapTex_[stage]->SetTextureSamplerStage(filter);
 }

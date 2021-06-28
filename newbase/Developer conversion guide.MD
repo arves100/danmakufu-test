@@ -34,6 +34,18 @@ NOTE: DInput will mostly receive a refactor anyway, I'd prefer seeing a virtual 
 - Viewport concepts are now removed, please use multiple view instead
 - D3DCOLOR_ARGB and D3DCOLOR_RGB are not COLOR_ARGB and COLOR_RGB (defined in DxUtility)
 
+### Texture filter and Texture blending
+We NO LONGER HAVE a global state for filter and blending in textures!
+
+DirectGraphics only controls the DEFAULT CREATION OPTION, a developer can still OVERRIDE each of the specific options during texture creation
+in the shader.
+
+Modifiy the filter by calling `SetTextureSamplerStage` in a Texture parameter (or a Shader by specifying the stage).
+
+You can get and modify the default options by using SetDefaultTextureFilter/GetDefaultTextureFilter.
+
+Do note that linear sampling doesn't seem to be supported in bgfx (perhaps neither No sampling at all?, requires more investigation...).
+
 ### RenderObjects
 Vertex declaractions (ex FVF) uses BGFX vertexlayout now, please switch to the new code.
 

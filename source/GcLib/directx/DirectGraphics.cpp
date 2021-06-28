@@ -27,7 +27,7 @@ DirectGraphics* DirectGraphics::thisBase_ = nullptr;
 DirectGraphics::DirectGraphics() : states_(BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A), resetFlags_(0), blendFactor_(0),
 	clearFlags_(BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH), init_(false), matProj_(), matView_(), sh_options_(0.0f, 0.0f, 0.0f, 0.0f),
 	sh_dirlight_direction(0.0f), sh_dirlight_ambient(0.5f, 0.5f, 0.5f, 1.0f), sh_dirlight_diffuse(0.5f, 0.5f, 0.5f, 1.0f),
-	sh_amblight(0.75f, 0.75f, 0.75f, 1.0f)
+	sh_amblight(0.75f, 0.75f, 0.75f, 1.0f), texFilter_(TextureFilterMode::None), texBlend_(BlendMode::None)
 {
 	camera_ = std::make_unique<DxCamera>();
 	camera2D_ = std::make_unique<DxCamera2D>();
@@ -102,7 +102,7 @@ bool DirectGraphics::Initialize(DirectGraphicsConfig& config, void* nwh, void* n
 	init.resolution.width = config_.RenderWidth;
 	init.resolution.height = config_.RenderHeight;
 	
-	if (config_.Color == DirectGraphicsConfig::ColorMode::Bit16)
+	if (config_.Color == ColorMode::Bit16)
 		init.resolution.format = bgfx::TextureFormat::R5G6B5;
 	else
 		init.resolution.format = bgfx::TextureFormat::RGBA8;
@@ -259,7 +259,8 @@ void DirectGraphics::_InitializeDeviceState()
 
 	SetDirectionalLight(glm::vec3(-1.0f, -1.0f, -1.0f));
 
-	SetBlendMode(BlendMode::Alpha); // TODO: might get migrated into something else (like RenderObject)
+	SetBlendMode(BlendMode::Alpha);
+	SetDefaultTextureBlendingMode(BlendMode::Alpha);
 
 	SetShadingMode(ShadeMode::Gouraud);
 
@@ -267,7 +268,7 @@ void DirectGraphics::_InitializeDeviceState()
 	SetAlphaTest(true, 0);
 
 	//Filter
-	SetTextureFilter(TextureFilterMode::Anisotropic);
+	SetDefaultTextureFilter(TextureFilterMode::Anisotropic);
 
 	//Zテスト
 	SetZWriteEnable(false);
@@ -512,13 +513,14 @@ void DirectGraphics::SetAlphaTest(bool bEnable, DWORD ref)
 		pDevice_->SetRenderState(D3DRS_ALPHAREF, ref);
 	}*/
 }
-void DirectGraphics::SetBlendMode(BlendMode mode, int stage)
+void DirectGraphics::SetBlendMode(BlendMode mode)
 {
 	states_ &= ~BGFX_STATE_BLEND_MASK; // Clear all blend modes currently set in the state
 	
 	switch (mode) {
 	case BlendMode::None: //なし
-		/*pDevice_->SetTextureStageState(stage, D3DTSS_COLOROP, D3DTOP_MODULATE); // TODO
+
+		/*pDevice_->SetTextureStageState(stage, D3DTSS_COLOROP, D3DTOP_MODULATE);
 		pDevice_->SetTextureStageState(stage, D3DTSS_ALPHAARG2, D3DTA_CURRENT);
 		pDevice_->SetTextureStageState(stage, D3DTSS_ALPHAOP, D3DTOP_SELECTARG1);*/
 		
@@ -623,29 +625,6 @@ void DirectGraphics::SetVertexFog(bool bEnable, D3DCOLOR color, float start, flo
 
 void DirectGraphics::SetPixelFog(bool bEnable, D3DCOLOR color, float start, float end)
 {
-}
-
-void DirectGraphics::SetTextureFilter(TextureFilterMode mode)
-{
-	switch (mode) {
-	case TextureFilterMode::None:
-		samplerFlags_ = 0;
-		break;
-	case TextureFilterMode::Point:
-		samplerFlags_ = BGFX_SAMPLER_MIN_POINT | BGFX_SAMPLER_MAG_POINT;
-		break;
-	case TextureFilterMode::Anisotropic:
-		samplerFlags_ = BGFX_SAMPLER_MIN_ANISOTROPIC | BGFX_SAMPLER_MAG_ANISOTROPIC;
-		break;
-	}
-}
-
-DirectGraphics::TextureFilterMode DirectGraphics::GetTextureFilter(int stage) const
-{
-	if (samplerFlags_ & BGFX_SAMPLER_MIN_POINT)
-		return TextureFilterMode::Point;
-
-	return TextureFilterMode::None; // TODO
 }
 
 void DirectGraphics::SetDirectionalLight(glm::vec3 v)

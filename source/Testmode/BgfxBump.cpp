@@ -136,7 +136,7 @@ void CBgfxBump::OnRender(const float time)
 	param->Set(lightPosRadius, sizeof(lightPosRadius), m_lights);
 
 	m_graph.SetZWriteEnable(true);
-	m_graph.SetDepthTest(directx::DirectGraphics::DepthMode::Less);
+	m_graph.SetDepthTest(DepthMode::Less);
 	m_graph.UpdateState();
 
 	for (auto yy = 0; yy < 3; ++yy)
