@@ -272,20 +272,11 @@ public:
 
 	bool IsCoordinate2D() const { return bCoordinate2D_; }
 	void SetCoordinate2D(const bool b) { bCoordinate2D_ = b; }
-	
-	bool Initialize(std::string name)
-	{
-		name_ = name;
-		return true;
-	}
 
 	Shader* GetShader() const { return shader_.get(); }
 
 	virtual void Submit(bgfx::ViewId id = 0)
 	{
-		if (bRecreate_)
-			_RestoreBuffers();
-
 		const auto mtx = _CreateWorldTransformMatrix();
 		bgfx::setTransform(&mtx[0]);
 
@@ -293,6 +284,8 @@ public:
 			shader_->AddTexture(static_cast<uint8_t>(i), texture_[i]->GetHandle());
 		
 		bgfx::setVertexBuffer(0, pVertexBuffer_);
+
+		//if (bgfx::isValid(pIndexBuffer_))
 		bgfx::setIndexBuffer(pIndexBuffer_);
 
 		shader_->Submit(id);
@@ -300,18 +293,16 @@ public:
 
 	T* GetVertex(const size_t index) const
 	{
-		const auto pos = index * pVertexDecl_.getStride();
-		if (pos >= vertex_.size())
+		if (index >= vertex_.size())
 			return nullptr;
-		return const_cast<T*>(&vertex_[pos]);
+		return const_cast<T*>(&vertex_[index]);
 	}
 	
 	void SetVertex(const size_t index, const T vertex)
 	{
-		const auto pos = index * pVertexDecl_.getStride();
-		if (pos >= vertex_.size())
+		if (index >= vertex_.size())
 			return;
-		vertex_[pos] = vertex;
+		vertex_[index] = vertex;
 	}
 
 	bool GetTexture(uint8_t pos, std::shared_ptr<Texture>& ptr)
@@ -348,6 +339,46 @@ public:
 		}
 	}
 
+	void SetName(std::string n)
+	{
+		name_ = n;
+	}
+
+	bool Finalize()
+	{
+		_ReleaseBuffers();
+
+		if (!shader_->IsLoad())
+		{
+			if (!shader_->CreateFromFile(_GetDefaultShaderName(), false))
+				return false;
+		}
+
+		const bgfx::Memory* ib_mem;
+
+		if (typePrimitive_ != bgfx::Topology::TriList)
+		{
+			auto conv = GetConversionPrimitive();
+			const auto size = bgfx::topologyConvert(conv, nullptr, 0, vertexIndices_.data(), vertexIndices_.size(), false) + vertexIndices_.size();
+			pConvertedIndices_ = new uint16_t[size];
+			bx::memCopy(pConvertedIndices_, vertexIndices_.data(), vertexIndices_.size());
+			bgfx::topologyConvert(conv, pConvertedIndices_, size, vertexIndices_.data(), vertexIndices_.size(), false);
+			ib_mem = bgfx::makeRef(pConvertedIndices_, size * sizeof(uint16_t));
+		}
+		else
+			ib_mem = bgfx::makeRef(vertexIndices_.data(), vertexIndices_.size() * sizeof(uint16_t));
+
+		const auto vb_mem = bgfx::makeRef(vertex_.data(), pVertexDecl_.getSize(vertex_.size()));
+		pVertexBuffer_ = bgfx::createVertexBuffer(vb_mem, pVertexDecl_, _AllowVBResize() ? BGFX_BUFFER_ALLOW_RESIZE : 0);
+		bgfx::setName(pVertexBuffer_, name_.c_str());
+
+		pIndexBuffer_ = bgfx::createIndexBuffer(ib_mem, _AllowIBResize() ? BGFX_BUFFER_ALLOW_RESIZE : 0);
+		bgfx::setName(pIndexBuffer_, name_.c_str());
+
+		bRecreate_ = false;
+		return true;
+	}
+
 protected:
 	std::vector<T> vertex_; //頂点
 	std::vector<uint16_t> vertexIndices_;
@@ -373,6 +404,22 @@ protected:
 	std::string name_;
 	uint16_t* pConvertedIndices_;
 
+	bool _AllowIBResize() const { return false; }
+	bool _AllowVBResize() const { return false; }
+
+	bgfx::TopologyConvert::Enum GetConversionPrimitive() const
+	{
+		switch (typePrimitive_)
+		{
+		case bgfx::Topology::TriStrip:
+			return bgfx::TopologyConvert::TriStripToTriList;
+		default:
+			break;
+		}
+
+		return bgfx::TopologyConvert::Count;
+	}
+
 	void _ReleaseBuffers()
 	{
 		if (pConvertedIndices_)
@@ -388,31 +435,7 @@ protected:
 		pConvertedIndices_ = nullptr;
 		bRecreate_ = true;
 	}
-	
-	void _RestoreBuffers()
-	{
-		_ReleaseBuffers();
 
-		if (!shader_->IsLoad())
-			shader_->CreateFromFile(_GetDefaultShaderName(), false);
-
-#if 0 // eh?
-		const auto size = bgfx::topologyConvert(typePrimitive_, nullptr, 0, vertexIndices_.data(), vertexIndices_.size(), false);
-		pConvertedIndices_ = new uint16_t[size];
-		bgfx::topologyConvert(typePrimitive_, pConvertedIndices_, size, vertexIndices_.data(), vertexIndices_.size(), false);
-#else
-
-#endif
-
-		const auto vb = bgfx::makeRef(&vertex_[0], vertex_.size() * pVertexDecl_.getStride());
-		pVertexBuffer_ = bgfx::createVertexBuffer(vb, pVertexDecl_);
-		bgfx::setName(pVertexBuffer_, name_.c_str());
-		const auto ib = bgfx::makeRef(vertexIndices_.data(), vertexIndices_.size() * sizeof(uint16_t));
-		pIndexBuffer_ = bgfx::createIndexBuffer(ib);
-		bgfx::setName(pIndexBuffer_, name_.c_str());
-		bRecreate_ = false;
-	}
-	
 	void _SetTextureStageCount(const size_t count)
 	{
 		texture_.resize(count);
