@@ -1,3 +1,3 @@
 # User's conversion guide
 
-TODO: ,,...,.,
+Nothing yet, the Directx interpreter doesn't even work at this stage.
