@@ -215,7 +215,7 @@ void RenderObjectTLX::Submit(bgfx::ViewId id)
 	}
 
 	// what should be done: vertex->position = vertex->position * u_camera_matrix
-	shader_->AddParameter("u_camera_matrix", bgfx::UniformType::Mat4, &mat, sizeof(mat));
+	shader_->AddParameter("u_camera_matrix", bgfx::UniformType::Mat4, &mat[0], sizeof(mat));
 	RenderObject::Submit(id);
 }
 
@@ -273,7 +273,7 @@ void RenderObjectNX::Submit(bgfx::ViewId id)
 	auto mat = _CreateWorldTransformMatrix();
 
 	// world matrix -> vs
-	shader_->AddParameter("u_world_matrix", bgfx::UniformType::Mat4, &mat, sizeof(mat));
+	shader_->AddParameter("u_world_matrix", bgfx::UniformType::Mat4, &mat[0], sizeof(mat));
 
 	RenderObject::Submit(id);
 
@@ -309,9 +309,9 @@ RenderObjectBNX::RenderObjectBNX()
 	materialBNX_.Emissive.b = 1.0f;*/
 }
 
-/*void RenderObjectBNX::Render()
+void RenderObjectBNX::Render()
 {
-	IDirect3DDevice9* device = DirectGraphics::GetBase()->GetDevice();
+	/*IDirect3DDevice9* device = DirectGraphics::GetBase()->GetDevice();
 	ref_count_ptr<Texture>& texture = texture_[0];
 	if (texture != NULL)
 		device->SetTexture(0, texture->GetD3DTexture());
@@ -434,8 +434,11 @@ RenderObjectBNX::RenderObjectBNX()
 		device->SetTransform(D3DTS_VIEW, &matView);
 		device->SetTransform(D3DTS_PROJECTION, &matProj);
 		device->SetRenderState(D3DRS_FOGENABLE, bFogEnable);
-	}
-}*/
+	}*/
+}
+
+void RenderObjectBNX::InitializeVertexBuffer()
+{}
 
 /**********************************************************
 //RenderObjectB2NX
@@ -612,7 +615,14 @@ void RenderObjectB4NXBlock::Render()
 Sprite2D::Sprite2D()
 {
 	SetVertexCount(4); //左上、右上、左下、右下
-	SetPrimitiveType(bgfx::Topology::TriStrip);
+	SetIndicesCount(6);
+	SetIndex(0, 0);
+	SetIndex(1, 1);
+	SetIndex(2, 2);
+	SetIndex(3, 2);
+	SetIndex(4, 3);
+	SetIndex(5, 1);
+	Finalize();
 }
 
 Sprite2D::~Sprite2D()
@@ -646,10 +656,12 @@ void Sprite2D::SetSourceRect(RECT_F& rcSrc)
 	auto height = static_cast<float>(texture->GetHeight());
 
 	//テクスチャUV
-	SetVertexUV(0, rcSrc.left / width, rcSrc.top / height);
-	SetVertexUV(1, rcSrc.right / width, rcSrc.top / height);
-	SetVertexUV(2, rcSrc.left / width, rcSrc.bottom / height);
-	SetVertexUV(3, rcSrc.right / width, rcSrc.bottom / height);
+	SetVertexUV(3, rcSrc.right / width, rcSrc.top / height);
+	SetVertexUV(2, rcSrc.left / width, rcSrc.top / height);
+	SetVertexUV(0, rcSrc.left / width, rcSrc.bottom / height);
+	SetVertexUV(1, rcSrc.right / width, rcSrc.bottom / height);
+
+	name_ = texture->GetName();
 }
 
 void Sprite2D::SetDestinationRect(RECT_F& rcDest)
