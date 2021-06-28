@@ -51,9 +51,6 @@ bool DirectGraphics::Initialize(void* nwh, void* ndt)
 
 void DirectGraphics::Shutdown()
 {
-	if (bgfx::isValid(uniforms_[5]))
-		bgfx::destroy(uniforms_[5]);
-	
 	if (bgfx::isValid(uniforms_[4]))
 		bgfx::destroy(uniforms_[4]);
 	

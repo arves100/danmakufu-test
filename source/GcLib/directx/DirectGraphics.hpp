@@ -135,7 +135,7 @@ protected:
 	
 	std::shared_ptr<ShaderData> shader_;
 	glm::vec4 sh_options_;
-	bgfx::UniformHandle uniforms_[6];
+	bgfx::UniformHandle uniforms_[5];
 	glm::vec4 sh_dirlight_diffuse, sh_dirlight_ambient, sh_dirlight_direction;
 	glm::vec4 sh_amblight;
 	TextureFilterMode texFilter_;
