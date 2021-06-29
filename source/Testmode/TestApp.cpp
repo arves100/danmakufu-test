@@ -56,10 +56,10 @@ bool CTestApp::InitEngine()
 	if (!m_graph.Initialize(m_config, m_winfo.info.win.window, nullptr))
 		return false;
 #elif SDL_VIDEO_DRIVER_X11
-	if (!m_graph.Initialize(m_config, m_winfo.info.x11.window, nullptr))
+	if (!m_graph.Initialize(m_config, (void*)m_winfo.info.x11.window, nullptr))
 		return false;
 #elif SDL_VIDEO_DRIVER_COCOA
-	if (!m_graph.Initialize(m_config, m_winfo.info.cocoa.window, nullptr))
+	if (!m_graph.Initialize(m_config, (void*)m_winfo.info.cocoa.window, nullptr))
 		return false;
 #else
 	#error "Unsupported platform!"
