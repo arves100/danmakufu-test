@@ -7,6 +7,8 @@
 #undef new
 #endif
 
+#define GLM_ENABLE_EXPERIMENTAL 1
+
 #include <unordered_map>
 
 #include <SDL.h>
