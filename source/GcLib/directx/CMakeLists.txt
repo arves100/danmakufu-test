@@ -35,7 +35,7 @@ VertexDecl.hpp)
 
 add_library(GcLibDx STATIC ${GCLIBDX_SOURCES})
 target_include_directories(GcLibDx PUBLIC ${BGFX_INCLUDE_DIR} ${BIMG_INCLUDE_DIR} ${BX_INCLUDE_DIR})
-target_link_libraries(GcLibDx PUBLIC GcLibStd glm::glm)
+target_link_libraries(GcLibDx PUBLIC GcLibStd ${GLM_LIBRARIES})
 target_link_libraries(GcLibDx LINK_PUBLIC debug ${BGFX_LIBRARY_DEBUG} ${BIMG_DECODE_LIBRARY_DEBUG} ${BIMG_LIBRARY_DEBUG} ${BX_LIBRARY_DEBUG} LINK_PUBLIC optimized ${BGFX_LIBRARY_RELEASE} ${BIMG_DECODE_LIBRARY_RELEASE} ${BIMG_LIBRARY_RELEASE} ${BX_LIBRARY_RELEASE} )
 
 if (WIN32)

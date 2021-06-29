@@ -59,7 +59,11 @@ if (NOT ZLIB_FOUND)
 	set(ZLIB_LIBRARIES ZLIB::ZLIB)
 endif()
 
-find_package(glm CONFIG REQUIRED)
+pkg_check_modules(GLM glm QUIET)
+if (NOT GLM_FOUND)
+	find_package(glm CONFIG REQUIRED)
+	set(GLM_LIBRARIES glm::glm)
+endif()
 
 include(FindBgfx)
 
