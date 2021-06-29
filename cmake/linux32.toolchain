@@ -1,0 +1,13 @@
+# https://cmake.org/pipermail/cmake/2019-September/069952.html
+
+set(CMAKE_SYSTEM_NAME Linux)
+set(CMAKE_SYSTEM_VERSION 1)
+set(CMAKE_SYSTEM_PROCESSOR "i686")
+
+set(CMAKE_C_COMPILER gcc)
+set(CMAKE_C_FLAGS -m32)
+set(CMAKE_CXX_COMPILER g++)
+set(CMAKE_CXX_FLAGS -m32)
+set(CMAKE_SHARED_LINKER_FLAGS -m32)
+
+set(CMAKE_LIBRARY_ARCHITECTURE i386-linux-gnu)

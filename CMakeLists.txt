@@ -49,8 +49,13 @@ endif()
 
 pkg_check_modules(SDL2 sdl2 QUIET)
 if (NOT SDL2_FOUND)
-	find_package(SDL2 CONFIG REQUIRED)
-	set(SDL2_LIBRARIES SDL2::SDL2-static)
+	find_package(SDL2 CONFIG) # Thank you sdl2-cmake.cmake for NOT SETTING SDL2_FOUND, forcing me to NOT use REQUIRED.
+	
+	if (DEFINED VCPKG_TARGET_TRIPLET)
+		set(SDL2_LIBRARIES SDL2::SDL2-static)
+	else()
+		set(SDL2_LIBRARIES SDL2)
+	endif()
 endif()
 
 pkg_check_modules(ZLIB zlib QUIET)
@@ -62,7 +67,12 @@ endif()
 pkg_check_modules(GLM glm QUIET)
 if (NOT GLM_FOUND)
 	find_package(glm CONFIG REQUIRED)
-	set(GLM_LIBRARIES glm::glm)
+	
+	if (DEFINED VCPKG_TARGET_TRIPLET)
+		set(GLM_LIBRARIES glm::glm)
+	else()
+		set(GLM_LIBRARIES glm)
+	endif()
 endif()
 
 include(FindBgfx)
