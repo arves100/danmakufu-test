@@ -19,7 +19,7 @@ General requirements
 ## Windows specific steps
 1. Download and bootstrap [vcpkg](https://github.com/microsoft/vcpkg)
 2. Install required vcpkg dependencies
-`vcpkg install sdl2 zlib libvorbis --triplet=x86-windows-static` (or `vcpkg install sdl2 zlib libvorbis --triplet=x64-windows-static`)
+`vcpkg install sdl2 zlib libvorbis --triplet=x64-windows-static` (or `--triplet=x86-windows-static`)
 
 3. Download the three repositores of bgfx
 ```
@@ -29,7 +29,7 @@ git clone https://github.com/bkaradzic/bx
 ```
 
 4. Open a command prompt, go to bgfx folder and type this command
-`..\bx\tools\bin\windows\genie --with-tools --with-avx --with-windows=10 --platform=x32 vs2019` (or `--platform=x64`)
+`..\bx\tools\bin\windows\genie --with-tools --with-avx --with-windows=10 --platform=x64 vs2019` (or `--platform=x32`)
 
 5. Open .build\projects\vs2019\bgfx.sln and make sure to build both Release and Debug of the following projects:
 - shaderc
@@ -47,11 +47,11 @@ git clone https://github.com/bkaradzic/bimg
 git clone https://github.com/bkaradzic/bx
 ```
 3. Open a command prompt, go to bgfx folder and type this command
-`../bx/tools/bin/linux/genie --with-tools --with-avx --gcc=linux-gcc --platform=x32 gmake` (or `--platform=x64`)
+`../bx/tools/bin/linux/genie --with-tools --with-avx --gcc=linux-gcc --platform=x64 gmake` (or `--platform=x32`)
 
 NOTE: you can add `--with-wayland` if you want to enable wayland support, make sure to use an SDL2 build that supports wayland as well.
 
-4. Go to .build/projects/gmake-linux and build bgfx two times `make config=debug32` (or `config=debug64`) and `make config=release32` (or `config=release64`), make sure to at least build the following projects:
+4. Go to .build/projects/gmake-linux and build bgfx two times `make config=debug64` (or `config=debug32`) and `make config=release64` (or `config=release32`), make sure to at least build the following projects:
 - shaderc
 - bgfx
 - bimg
@@ -59,7 +59,15 @@ NOTE: you can add `--with-wayland` if you want to enable wayland support, make s
 - bimg_decode
 
 ## Building the repo
-Use CMake to generate the project, make sure to define the following variables: (either in cmake gui)
+Use CMake to generate the project, type the following command:
+
+Linux: `cmake -DBGFX_ROOT="your bgfx root directory" -DBGFX_BUILD_NAME=linux64_gcc "danmakufu directory"` (or `-DBGFX_BUILD_NAME=linux32_gcc`)
+
+Windows: `cmake -DBGFX_ROOT="your bgfx root directory" -DVCPKG_TARGET_TRIPLET=x64-windows-static -DBGFX_BUILD_NAME=win64_vs2019 "danmakufu directory"` (or `-DVCPKG_TARGET_TRIPLET=x86-windows-static -DBGFX_BUILD_NAME=win32_vs2019`)
+
+## Reference
+
+### Manual FindBgfx variables
 | Name | Type | Description | Example |
 | ---- | ---- | ----------- | ------- |
 | BGFX_INCLUDE_DIR | PATH |  Folder where the include directory of bgfx is placed | C:\bgfx\include |
@@ -74,7 +82,6 @@ Use CMake to generate the project, make sure to define the following variables: 
 | BIMG_DECODE_LIBRARY_DEBUG | FILEPATH | Debug flavor of bimg_decode statc library | C:\bgfx\.build\win32_vs2019\bin\bimg_decodeDebug.lib |
 | BIMG_DECODE_LIBRARY_RELEASE | FILEPATH | Release flavor of bimg_decode static library | C:\bgfx\.build\win32_vs2019\bin\bimg_decodeRelease.lib |
 | BGFX_SHADERC | FILEPATH | path where the bgfx shader compiler executable exists | C:\bgfx\.build\win32_vs2019\bin\shadercRelease.exe |
-| VCPKG_TARGET_TRIPLET | STRING | WINDOWS ONLY: Forces to use static MSVC | Either `x86-windows-static` or `x64-windows-static` |
 
 ## Credits
 This project is a fork of [WishMakers0's Danmakufu Woo](https://github.com/WishMakers0/Danmakufu-Woo-Edition),
