@@ -13,7 +13,7 @@ function (make_shader name type path)
 	execute_process(COMMAND ${MKS} ${BGFX_SHADERC} ${type} ${name} ${CMAKE_SOURCE_DIR}/source/Shaders ${CMAKE_BINARY_DIR}/shaders ${BGFX_ROOT} ${path} ERROR_VARIABLE ERR RESULT_VARIABLE RSS)
 
 	if (NOT ERR STREQUAL "" OR NOT RSS STREQUAL "0")
-		message(FATAL_ERROR "Cannot build shader ${name} (type ${type})")
+		message(FATAL_ERROR "Cannot build shader ${name} (type ${type}) error code ${RSS} error ${ERR}")
 	endif()
 endfunction()
 
