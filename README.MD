@@ -29,7 +29,7 @@ git clone https://github.com/bkaradzic/bx
 ```
 
 4. Open a command prompt, go to bgfx folder and type this command
-`..\bx\tools\bin\windows\genie --with-tools --with-avx --with-windows=10 --with-platform=x32 vs2019` (or `--with-platform=x64`)
+`..\bx\tools\bin\windows\genie --with-tools --with-avx --with-windows=10 --platform=x32 vs2019` (or `--platform=x64`)
 
 5. Open .build\projects\vs2019\bgfx.sln and make sure to build both Release and Debug of the following projects:
 - shaderc
