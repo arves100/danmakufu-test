@@ -7,6 +7,7 @@ Steps for converting existing TouhouDanmakufu code for the new bgfx code could b
 
 Tested builds:
 - Windows with MSVC 19.28 (32-bit)
+- Debian 10 with GCC 8.3.0 (32-bit)
 
 No artifacts at this time, there might never be.
 
