@@ -2,6 +2,7 @@
 #define __DIRECTX_DIRECTGRAPHICS__
 
 #include "DxConstant.hpp"
+#include "DxUtility.hpp"
 
 namespace directx {
 
@@ -72,12 +73,12 @@ public:
 	void SetShadingMode(ShadeMode mode); //シェーディング
 	void SetDepthTest(DepthMode mode); //Was ZBuffer before
 	void SetZWriteEnable(bool bEnable); //Zバッファ書き込み
-	void SetAlphaTest(bool bEnable, DWORD ref = 0);
+	void SetAlphaTest(bool bEnable, uint32_t ref = 0);
 	void SetBlendMode(BlendMode mode);
 	void SetFogEnable(bool bEnable);
 	bool IsFogEnable() const;
-	void SetVertexFog(bool bEnable, D3DCOLOR color, float start, float end);
-	void SetPixelFog(bool bEnable, D3DCOLOR color, float start, float end);
+	void SetVertexFog(bool bEnable, uint32_t color, float start, float end);
+	void SetPixelFog(bool bEnable, uint32_t color, float start, float end);
 
 	void SetDirectionalLight(glm::vec3 v);
 
@@ -261,15 +262,15 @@ public:
 	float GetAngleZ() const { return angleZ_; }
 	void SetAngleZ(const float angle) { angleZ_ = angle; }
 
-	RECT GetClip() const { return rcClip_; }
-	void SetClip(const RECT rect) { rcClip_ = rect; }
+	RECT_F GetClip() const { return rcClip_; }
+	void SetClip(const RECT_F rect) { rcClip_ = rect; }
 
 	void SetResetFocus(glm::vec2 pos) { posReset_ = pos; havePosReset_ = true; }
 	void Reset();
 	inline glm::vec2 GetLeftTopPosition() const;
 	inline static glm::vec2 GetLeftTopPosition(glm::vec2 focus, float ratio);
 	inline static glm::vec2 GetLeftTopPosition(glm::vec2 focus, float ratioX, float ratioY);
-	inline static glm::vec2 GetLeftTopPosition(glm::vec2 focus, float ratioX, float ratioY, RECT rcClip);
+	inline static glm::vec2 GetLeftTopPosition(glm::vec2 focus, float ratioX, float ratioY, RECT_F rcClip);
 
 	glm::mat4 GetMatrix() const;
 
@@ -279,7 +280,7 @@ private:
 	float ratioX_; //拡大率
 	float ratioY_;
 	float angleZ_;
-	RECT rcClip_; //視野
+	RECT_F rcClip_; //視野
 
 	bool havePosReset_;
 	glm::vec2 posReset_;

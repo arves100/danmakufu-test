@@ -66,12 +66,9 @@
 #include <mlang.h>
 #include <psapi.h>
 
-#define _MAX(a,b) ((a > b) ? (a) : (b))
-#define _MIN(a,b) ((a < b) ? (a) : (b))
-
-#ifdef __GNUC__
-	#define _int64 long long
-#endif
+// for acm
+#include <mmreg.h> 
+#include <msacm.h>
 
 // Visual C++ memory leak detection
 #if defined(_DEBUG) && defined(_MSC_VER)
@@ -101,6 +98,15 @@
 typedef int errno_t;
 
 #endif // defined(_WIN32)
+
+
+#define _MAX(a,b) ((a > b) ? (a) : (b))
+#define _MIN(a,b) ((a < b) ? (a) : (b))
+
+#ifdef __GNUC__
+	#define _int64 long long
+#endif // defined(__GNUC__)
+
 
 // Simple Direct Library 2 main inclusion
 #include <SDL.h>

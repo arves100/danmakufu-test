@@ -466,7 +466,7 @@ void DirectGraphics::SetDepthTest(DepthMode mode)
 
 	switch (mode)
 	{
-	case DepthMode::Always:
+	case DepthMode::Always_:
 		states_ |= BGFX_STATE_DEPTH_TEST_ALWAYS;
 		break;
 	case DepthMode::Equal:
@@ -500,7 +500,7 @@ void DirectGraphics::SetZWriteEnable(bool bEnable)
 		states_ &= ~BGFX_STATE_WRITE_Z;
 }
 
-void DirectGraphics::SetAlphaTest(bool bEnable, DWORD ref)
+void DirectGraphics::SetAlphaTest(bool bEnable, uint32_t ref)
 {
 	// TODO: DEPRECATED!!! Should be replaced in a frag shader
 	
@@ -608,7 +608,7 @@ bool DirectGraphics::IsFogEnable() const
 	return static_cast<uint32_t>(sh_options_.x) & SOX_FOG;
 }
 
-void DirectGraphics::SetVertexFog(bool bEnable, D3DCOLOR color, float start, float end)
+void DirectGraphics::SetVertexFog(bool bEnable, uint32_t color, float start, float end)
 {
 	/*
 	// TODO: DEPRECATED!! Please move to a shader
@@ -620,7 +620,7 @@ void DirectGraphics::SetVertexFog(bool bEnable, D3DCOLOR color, float start, flo
 	*/
 }
 
-void DirectGraphics::SetPixelFog(bool bEnable, D3DCOLOR color, float start, float end)
+void DirectGraphics::SetPixelFog(bool bEnable, uint32_t color, float start, float end)
 {
 }
 
@@ -905,7 +905,7 @@ void DxCamera2D::Reset()
 	}
 	ratioX_ = 1.0f;
 	ratioY_ = 1.0f;
-	SetRect(&rcClip_, 0, 0, width, height);
+	SetRectF(rcClip_, 0.0f, 0.0f, width, height);
 
 	angleZ_ = 0;
 }
@@ -924,19 +924,18 @@ glm::vec2 DxCamera2D::GetLeftTopPosition(glm::vec2 focus, float ratioX, float ra
 {
 	DirectGraphics* graphics = DirectGraphics::GetBase();
 	const auto width = graphics->GetRenderWidth(), height = graphics->GetRenderHeight();
-	RECT rcClip;
-	memset(&rcClip, 0, sizeof(rcClip));
+	RECT_F rcClip;
 	rcClip.right = width;
 	rcClip.bottom = height;
 	return GetLeftTopPosition(focus, ratioX, ratioY, rcClip);
 }
 
-glm::vec2 DxCamera2D::GetLeftTopPosition(glm::vec2 focus, float ratioX, float ratioY, RECT rcClip)
+glm::vec2 DxCamera2D::GetLeftTopPosition(glm::vec2 focus, float ratioX, float ratioY, RECT_F rcClip)
 {
-	const int width = rcClip.right - rcClip.left, height = rcClip.bottom - rcClip.top;
+	const auto width = rcClip.right - rcClip.left, height = rcClip.bottom - rcClip.top;
 
-	const int cx = rcClip.left + width / 2; //画面の中心座標x
-	const int cy = rcClip.top + height / 2; //画面の中心座標y
+	const auto cx = rcClip.left + width / 2; //画面の中心座標x
+	const auto cy = rcClip.top + height / 2; //画面の中心座標y
 
 	const auto dx = focus.x - cx; //現フォーカスでの画面左端位置
 	const auto dy = focus.y - cy; //現フォーカスでの画面上端位置

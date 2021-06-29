@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../GcLib/directx/DxConstant.hpp"
 #include "../GcLib/directx/DirectGraphics.hpp"
 #include "../GcLib/directx/DirectInput.hpp"
 #include "../GcLib/directx/Texture.hpp"

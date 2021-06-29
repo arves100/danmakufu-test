@@ -74,7 +74,7 @@ void CSpriteTest::OnLoop(const float)
 void CSpriteTest::OnRender(const float)
 {
 	m_graph.SetZWriteEnable(true);
-	m_graph.SetDepthTest(DepthMode::Always);
+	m_graph.SetDepthTest(DepthMode::Always_);
 	m_graph.UpdateState();
 
 	s2->Submit();

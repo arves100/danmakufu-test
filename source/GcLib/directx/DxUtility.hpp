@@ -178,6 +178,14 @@ struct RECT_F
 	RECT_F(float left, float top, float right, float bottom) : left(left), top(top), right(right), bottom(bottom) {}
 };
 
+static inline void SetRectF(RECT_F& r, float l, float t, float ri, float b)
+{
+	r.left = l;
+	r.top = t;
+	r.right = ri;
+	r.bottom = b;
+}
+
 class DxAllocator
 {
 public:

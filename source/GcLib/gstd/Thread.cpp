@@ -41,7 +41,7 @@ void Thread::Start()
 	}
 
 	char threadName[28];
-	sprintf(threadName, "DanmakufuThread_%08p", this);
+	sprintf(threadName, "DanmakufuThread_%8p", this);
 
 	hThread_ = SDL_CreateThread(_StaticRun, threadName, (void*)this);
 

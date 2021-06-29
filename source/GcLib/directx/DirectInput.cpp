@@ -186,7 +186,7 @@ int DirectInput::GetPadState(int padNo, int button)
 	return res;
 }
 
-POINT DirectInput::GetMousePosition()
+glm::vec2 DirectInput::GetMousePosition()
 {
 	int x, y;
 	SDL_GetMouseState(&x, &y);

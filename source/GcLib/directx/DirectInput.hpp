@@ -57,7 +57,7 @@ public:
 	int GetMouseMoveX() { return stateMouse_.lX; } //マウスの移動量を取得X
 	int GetMouseMoveY() { return stateMouse_.lY; } //マウスの移動量を取得Y
 	int GetMouseMoveZ() { return stateMouse_.lZ; } //マウスの移動量を取得Z
-	POINT GetMousePosition();
+	glm::vec2 GetMousePosition();
 
 	void ResetInputState();
 	void ResetMouseState();

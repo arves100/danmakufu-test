@@ -7,14 +7,8 @@
 #undef new
 #endif
 
-//include
-#include <mmreg.h> //for acm
-#include <msacm.h> //for acm
-
 #include <unordered_map>
 
-#include <basetsd.h>
-#include <dsound.h>
 #include <SDL.h>
 
 #include <vorbis/codec.h>
@@ -88,7 +82,7 @@ enum class DepthMode
 	GreaterEqual,
 	NotEqual,
 	Never,
-	Always,
+	Always_,
 };
 
 enum class ColorMode

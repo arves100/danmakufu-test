@@ -58,6 +58,16 @@ std::wstring StringUtility::ConvertMultiToWide(std::string const& str, int codeM
 	::MultiByteToWideChar(codeMulti, 0, str.c_str(), -1, &wstr[0], sizeWide);
 	return wstr;
 }
+#else
+std::string StringUtility::ConvertWideToMulti(std::wstring const& wstr, int codeMulti)
+{
+	return ""; // TODO
+}
+
+std::wstring StringUtility::ConvertMultiToWide(std::string const& str, int codeMulti)
+{
+	return L""; // TODO
+}
 #endif
 
 //----------------------------------------------------------------

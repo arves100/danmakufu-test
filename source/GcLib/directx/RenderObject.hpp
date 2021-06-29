@@ -255,7 +255,7 @@ public:
 		scale_.z = sz;
 	}
 	
-	bool SetTexture(std::string name, std::unique_ptr<Texture>& texture, uint8_t stage = 0) //テクスチャ設定
+	bool SetTexture(std::unique_ptr<Texture>& texture, uint8_t stage = 0) //テクスチャ設定
 	{
 		if ((stage + 1) >= texture_.size())
 		{
@@ -263,7 +263,7 @@ public:
 			texture_.reserve(stage + 1);
 		}
 
-		if (!shader_->AddTexture(name, stage, texture->GetHandle()))
+		if (!shader_->AddTexture(stage, texture->GetHandle()))
 			return false;
 		
 		texture_[stage] = std::move(texture);
