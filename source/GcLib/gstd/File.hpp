@@ -193,10 +193,10 @@ public:
 	virtual size_t Write(const void* buf, size_t size);
 	virtual size_t Read(void* buf, size_t size);
 
-	bool SetFilePointerBegin() { return (::SDL_RWseek(hFile_, 0, RW_SEEK_SET) != 0xFFFFFFFF); }
-	bool SetFilePointerEnd() { return (::SDL_RWseek(hFile_, 0, RW_SEEK_END) != 0xFFFFFFFF); }
-	bool Seek(Sint64 offset, int seek = RW_SEEK_SET) { return (::SDL_RWseek(hFile_, offset, seek) != 0xFFFFFFFF); }
-	Sint64 GetFilePointer() { return ::SDL_RWseek(hFile_, 0, RW_SEEK_CUR); }
+	bool SetFilePointerBegin() { return ( SDL_RWseek(hFile_, 0, RW_SEEK_SET) != 0xFFFFFFFF); }
+	bool SetFilePointerEnd() { return ( SDL_RWseek(hFile_, 0, RW_SEEK_END) != 0xFFFFFFFF); }
+	bool Seek(Sint64 offset, int seek = RW_SEEK_SET) { return ( SDL_RWseek(hFile_, offset, seek) != 0xFFFFFFFF); }
+	Sint64 GetFilePointer() { return SDL_RWseek(hFile_, 0, RW_SEEK_CUR); }
 
 	static bool IsEqualsPath(std::string path1, std::string path2);
 	static std::vector<std::string> GetFilePathList(std::string dir);
