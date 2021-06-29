@@ -47,7 +47,7 @@ git clone https://github.com/bkaradzic/bimg
 git clone https://github.com/bkaradzic/bx
 ```
 3. Open a command prompt, go to bgfx folder and type this command
-`../bx/tools/bin/linux/genie --with-tools --with-avx --with-platform=x32 gmake` (or `--with-platform=x64`)
+`../bx/tools/bin/linux/genie --with-tools --with-avx --gcc=linux-gcc --platform=x32 gmake` (or `--platform=x64`)
 
 NOTE: you can add `--with-wayland` if you want to enable wayland support, make sure to use an SDL2 build that supports wayland as well.
 
