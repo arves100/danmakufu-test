@@ -14,7 +14,7 @@ No artifacts at this time, there might never be.
 
 General requirements
 - Cmake
-- A C++ compiler that supports C++11 or greater (Gcc, Visual Studio, Clang, ...)
+- A C++ compiler that supports C++14 or greater (Gcc, Visual Studio, Clang, ...)
 
 ## Windows specific steps
 1. Download and bootstrap [vcpkg](https://github.com/microsoft/vcpkg)

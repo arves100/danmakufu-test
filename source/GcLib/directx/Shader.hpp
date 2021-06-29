@@ -47,13 +47,13 @@ public:
 	bool GetShaderData(std::string name, std::shared_ptr<ShaderData>& shader);
 	bool CreateFromFile(std::string name, bool isComputeShader, std::shared_ptr<ShaderData>& shader); //読み込みます。ShaderDataは保持しますが、Shaderは保持しません。
 
-	std::wstring GetLastError();
+	std::string GetLastError();
 
 protected:
 	gstd::CriticalSection lock_;
 	std::map<std::string, std::shared_ptr<ShaderData>> mapShaderData_;
 
-	std::wstring lastError_;
+	std::string lastError_;
 
 	void _ReleaseShaderData(std::string name);
 	bool _CreateFromFile(std::string name, bool isComputeShader);

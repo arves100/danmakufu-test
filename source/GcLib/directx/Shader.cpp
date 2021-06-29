@@ -66,7 +66,7 @@ void ShaderManager::_ReleaseShaderData(std::string name)
 	Lock lock(lock_);
 	if (IsDataExists(name)) {
 		auto& ptr = mapShaderData_[name];
-		Logger::WriteTop(StringUtility::Format(L"ShaderManager：Shaderを解放しました(Shader Released)[%s]", name.c_str()));
+		Logger::WriteTop(StringUtility::Format(u8"ShaderManager：Shaderを解放しました(Shader Released)[%s]", name.c_str()));
 
 		if (bgfx::isValid(ptr->Program))
 			bgfx::destroy(ptr->Program);
@@ -83,7 +83,7 @@ void ShaderManager::_ReleaseShaderData(std::string name)
 
 bool ShaderManager::_CreateFromFile(std::string name, bool isComputeShader)
 {
-	lastError_ = L"";
+	lastError_ = "";
 	if (IsDataExists(name)) {
 		return true;
 	}
@@ -95,7 +95,7 @@ bool ShaderManager::_CreateFromFile(std::string name, bool isComputeShader)
 		data->Shader1 = _LoadShader(name, 2);
 		if (!bgfx::isValid(data->Shader1))
 		{
-			const std::wstring log = StringUtility::Format(L"Shader読み込み失敗(Compute Shader Load Failed)：\r\n%S", name.c_str());
+			const auto log = StringUtility::Format(u8"Shader読み込み失敗(Compute Shader Load Failed)：\r\n%s", name.c_str());
 			Logger::WriteTop(log);
 			lastError_ = log;
 			return false;
@@ -109,7 +109,7 @@ bool ShaderManager::_CreateFromFile(std::string name, bool isComputeShader)
 		data->Shader1 = _LoadShader(name, 0);
 		if (!bgfx::isValid(data->Shader1))
 		{
-			const std::wstring log = StringUtility::Format(L"Shader読み込み失敗(Vertex Shader Load Failed)：\r\n%S", name.c_str());
+			const auto log = StringUtility::Format(u8"Shader読み込み失敗(Vertex Shader Load Failed)：\r\n%s", name.c_str());
 			Logger::WriteTop(log);
 			lastError_ = log;
 			return false;
@@ -119,7 +119,7 @@ bool ShaderManager::_CreateFromFile(std::string name, bool isComputeShader)
 		data->Shader2 = _LoadShader(name, 1);
 		if (!bgfx::isValid(data->Shader2))
 		{
-			const std::wstring log = StringUtility::Format(L"Shader読み込み失敗(Fragmentation Shader Load Failed)：\r\n%S", name.c_str());
+			const auto log = StringUtility::Format(u8"Shader読み込み失敗(Fragmentation Shader Load Failed)：\r\n%s", name.c_str());
 			Logger::WriteTop(log);
 			lastError_ = log;
 			return false;
@@ -134,7 +134,7 @@ bool ShaderManager::_CreateFromFile(std::string name, bool isComputeShader)
 
 	data->Name = name;
 	
-	const std::wstring log = StringUtility::Format(L"Shader読み込み(Shader Load Success)：\r\n%s", name.c_str());
+	const auto log = StringUtility::Format(u8"Shader読み込み(Shader Load Success)：\r\n%s", name.c_str());
 	Logger::WriteTop(log);
 
 	mapShaderData_[name] = data;
@@ -143,46 +143,46 @@ bool ShaderManager::_CreateFromFile(std::string name, bool isComputeShader)
 
 bgfx::ShaderHandle ShaderManager::_LoadShader(std::string path, uint8_t type) /* internal function */
 {
-	std::wstring sh_type; /* TODO: when things get replaced, replace wstring to string */
+	std::string sh_type;
 	switch (type)
 	{
 	case 0: /* vertex shader */
-		sh_type = L"vs";
+		sh_type = "vs";
 		break;
 	case 1: /* fragmentation shader */
-		sh_type = L"fs";
+		sh_type = "fs";
 		break;
 	case 2: /* compute shader */
-		sh_type = L"cs";
+		sh_type = "cs";
 		break;
 	default:
 		return BGFX_INVALID_HANDLE;
 	}
 
-	std::wstring render_name;
+	std::string render_name;
 	switch (bgfx::getRendererType())
 	{
 	case bgfx::RendererType::Direct3D9:
-		render_name = L"hlsl3";
+		render_name = "hlsl3";
 		break;
 	case bgfx::RendererType::Direct3D11:
 	case bgfx::RendererType::Direct3D12:
-		render_name = L"hlsl5";
+		render_name = "hlsl5";
 		break;
 	case bgfx::RendererType::Gnm:
-		render_name = L"pssl";
+		render_name = "pssl";
 		break;
 	case bgfx::RendererType::Vulkan:
-		render_name = L"spirv";
+		render_name = "spirv";
 		break;
 	case bgfx::RendererType::Metal:
-		render_name = L"metal";
+		render_name = "metal";
 		break;
 	case bgfx::RendererType::OpenGL:
-		render_name = L"glsl";
+		render_name = "glsl";
 		break;
 	case bgfx::RendererType::OpenGLES:
-		render_name = L"essl";
+		render_name = "essl";
 		break;
 	default:
 		return BGFX_INVALID_HANDLE;
@@ -190,11 +190,11 @@ bgfx::ShaderHandle ShaderManager::_LoadShader(std::string path, uint8_t type) /*
 
 	// TODO: make a file format for compressing all this shaders
 
-	const auto wpath = PathProperty::GetUnique(StringUtility::Format(L"shaders/%s/%s_%s.bin", render_name.c_str(), StringUtility::ConvertMultiToWide(path, CP_UTF8).c_str(), sh_type.c_str()));
+	path = PathProperty::GetUnique(StringUtility::Format("shaders/%s/%s_%s.bin", render_name.c_str(), path.c_str(), sh_type.c_str()));
 
-	ref_count_ptr<FileReader> reader = FileManager::GetBase()->GetFileReader(wpath);
+	auto reader = FileManager::GetBase()->GetFileReader(path);
 	if (reader == nullptr || !reader->Open()) {
-		std::wstring log = StringUtility::Format(L"Shader読み込み失敗(Shader Load Failed)：\r\n%s", wpath.c_str());
+		const auto log = StringUtility::Format(u8"Shader読み込み失敗(Shader Load Failed)：\r\n%s", path.c_str());
 		Logger::WriteTop(log);
 		lastError_ = log;
 		return BGFX_INVALID_HANDLE;
@@ -247,9 +247,9 @@ bool ShaderManager::CreateFromFile(std::string name, bool isComputeShader, std::
 	return false;
 }
 
-std::wstring ShaderManager::GetLastError()
+std::string ShaderManager::GetLastError()
 {
-	std::wstring res;
+	std::string res;
 	{
 		Lock lock(lock_);
 		res = lastError_;

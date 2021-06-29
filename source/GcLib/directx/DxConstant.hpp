@@ -8,7 +8,6 @@
 #endif
 
 //include
-#ifdef _WIN32
 #include <mmreg.h> //for acm
 #include <msacm.h> //for acm
 

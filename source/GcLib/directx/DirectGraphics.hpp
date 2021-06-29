@@ -264,7 +264,7 @@ public:
 	RECT GetClip() const { return rcClip_; }
 	void SetClip(const RECT rect) { rcClip_ = rect; }
 
-	void SetResetFocus(gstd::ref_count_ptr<glm::vec2> pos) { posReset_ = pos; }
+	void SetResetFocus(glm::vec2 pos) { posReset_ = pos; havePosReset_ = true; }
 	void Reset();
 	inline glm::vec2 GetLeftTopPosition() const;
 	inline static glm::vec2 GetLeftTopPosition(glm::vec2 focus, float ratio);
@@ -281,7 +281,8 @@ private:
 	float angleZ_;
 	RECT rcClip_; //視野
 
-	gstd::ref_count_ptr<glm::vec2> posReset_;
+	bool havePosReset_;
+	glm::vec2 posReset_;
 };
 
 } // namespace directx

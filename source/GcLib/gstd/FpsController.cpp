@@ -79,7 +79,7 @@ void StaticFpsController::Wait()
 	auto time = _GetTime();
 
 	double tFps = fps_;
-	tFps = MIN(tFps, static_cast<double>(GetControlObjectFps()));
+	tFps = _MIN(tFps, static_cast<double>(GetControlObjectFps()));
 	if (bFastMode_)
 		tFps = FPS_FAST_MODE;
 
@@ -186,7 +186,7 @@ void AutoSkipFpsController::Wait()
 	auto time = _GetTime();
 
 	double tFps = fps_;
-	tFps = MIN(tFps, static_cast<double>(GetControlObjectFps()));
+	tFps = _MIN(tFps, static_cast<double>(GetControlObjectFps()));
 	if (bFastMode_)
 		tFps = FPS_FAST_MODE;
 

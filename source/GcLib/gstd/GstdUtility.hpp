@@ -349,7 +349,7 @@ public:
 	static T* GetInstance()
 	{
 		if (_This() == NULL) {
-			throw gstd::wexception(L"Singleton::GetInstance 未初期化");
+			throw std::runtime_error(u8"Singleton::GetInstance 未初期化");
 		}
 		return _This();
 	}

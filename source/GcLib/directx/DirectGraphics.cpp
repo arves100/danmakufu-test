@@ -72,7 +72,7 @@ void DirectGraphics::Shutdown()
 	if (init_)
 	{
 		bgfx::shutdown();
-		Logger::WriteTop(L"DirectGraphic: Bgfx shutdown");
+		Logger::WriteTop(u8"DirectGraphic: Bgfx shutdown");
 		init_ = false;
 	}
 }
@@ -82,7 +82,7 @@ bool DirectGraphics::Initialize(DirectGraphicsConfig& config, void* nwh, void* n
 	if (thisBase_ != nullptr)
 		return false;
 
-	Logger::WriteTop(L"DirectGraphics: Bgfx creation");
+	Logger::WriteTop(u8"DirectGraphics: Bgfx creation");
 
 	config_ = config;
 
@@ -136,7 +136,7 @@ bool DirectGraphics::Initialize(DirectGraphicsConfig& config, void* nwh, void* n
 
 	if (!bgfx::init(init))
 	{
-		Logger::WriteTop(L"DirectGraphics: Cannot initialize bgfx");
+		Logger::WriteTop(u8"DirectGraphics: Cannot initialize bgfx");
 		return false;
 	}
 
@@ -222,7 +222,7 @@ void DirectGraphics::Submit(bgfx::ViewId id, bgfx::ProgramHandle prog)
 
 void DirectGraphics::_Restore()
 {
-	Logger::WriteTop(L"DirectGraphics：_Restore開始");
+	Logger::WriteTop(u8"DirectGraphics：_Restore開始");
 
 	// リストア
 	_ReleaseDxResource();
@@ -247,7 +247,7 @@ void DirectGraphics::_Restore()
 		bgfx::setViewFrameBuffer(tt.first, tt.second->GetHandle());		
 	}
 
-	Logger::WriteTop(L"DirectGraphics：_Restore完了");
+	Logger::WriteTop(u8"DirectGraphics：_Restore完了");
 }
 
 void DirectGraphics::_InitializeDeviceState()
@@ -881,7 +881,7 @@ glm::vec2 DxCamera::TransformCoordinateTo2D(glm::vec3 pos) // ###E2
 /**********************************************************
 //DxCamera2D
 **********************************************************/
-DxCamera2D::DxCamera2D()
+DxCamera2D::DxCamera2D() : posReset_(0.0f, 0.0f)
 {
 	pos_.x = 400;
 	pos_.y = 300;
@@ -890,14 +890,14 @@ DxCamera2D::DxCamera2D()
 	angleZ_ = 0;
 	bEnable_ = false;
 	rcClip_ = { 0, 0, 0, 0 };
-	
+	havePosReset_ = false;
 }
 
 void DxCamera2D::Reset()
 {
 	DirectGraphics* graphics = DirectGraphics::GetBase();
 	const auto width = graphics->GetRenderWidth(), height = graphics->GetRenderHeight();
-	if (posReset_ == nullptr) {
+	if (!havePosReset_) {
 		pos_.x = static_cast<float>(width) / 2;
 		pos_.y = static_cast<float>(height) / 2;
 	} else {

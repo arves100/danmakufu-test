@@ -281,7 +281,7 @@ void scanner::skip()
 void scanner::AddLog(const char* data)
 {
 	const char* pStart = current;
-	const char* pEnd = current + MIN(16, endPoint - current);
+	const char* pEnd = current + _MIN(16, endPoint - current);
 	std::string wstr = std::string(pStart, pEnd);
 	Logger::WriteTop(StringUtility::Format("%s current=%x, endPoint=%d, val=%d, ch=%s", data, pStart, endPoint, *current, wstr.c_str()));
 }
@@ -2054,8 +2054,6 @@ void parser::parse_block(script_engine::block* block, std::vector<std::string> c
 	lex->advance();
 }
 
-} /* namespace gstd */
-
 /* script_type_manager */
 
 script_type_manager::script_type_manager()
@@ -2101,7 +2099,7 @@ script_engine::script_engine(script_type_manager* a_type_manager, std::vector<ch
 
 	if (false) {
 		wchar_t* pStart = (wchar_t*)&source[0];
-		wchar_t* pEnd = (wchar_t*)(&source[0] + MIN(source.size(), 64));
+		wchar_t* pEnd = (wchar_t*)(&source[0] + _MIN(source.size(), 64));
 		std::string str = std::string(pStart, pEnd);
 		// Logger::WriteTop(str);
 	}

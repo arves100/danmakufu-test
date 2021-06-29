@@ -109,15 +109,15 @@ public:
 	bool CreateRenderTarget(std::string name, std::shared_ptr<FrameBufferData>& data);
 	bool GetFrameBuffer(std::string name, std::shared_ptr<FrameBuffer>& data); //作成済みのテクスチャを取得します
 
-	gstd::ref_count_ptr<Texture> CreateFromFileInLoadThread(std::string path, bool bLoadImageInfo = false);
-	virtual void CallFromLoadThread(gstd::ref_count_ptr<gstd::FileManager::LoadThreadEvent> event);
+	std::shared_ptr<Texture> CreateFromFileInLoadThread(std::string path, bool bLoadImageInfo = false);
+	virtual void CallFromLoadThread(std::unique_ptr<gstd::FileManager::LoadThreadEvent>& event);
 
 protected:
 	gstd::CriticalSection lock_;
 	std::map<std::string, std::shared_ptr<FrameBuffer>> mapFrameBuffer_;
 	std::map<std::string, std::shared_ptr<TextureData>> mapTextureData_;
 	std::map<std::string, std::shared_ptr<FrameBufferData>> mapFrameBufferData_;
-	std::map<std::string, gstd::ref_count_ptr<Texture>> mapTexture_;
+	std::map<std::string, std::shared_ptr<Texture>> mapTexture_;
 
 	void _ReleaseTextureData(std::string name);
 	void _ReleaseFrameBufferData(std::string name);

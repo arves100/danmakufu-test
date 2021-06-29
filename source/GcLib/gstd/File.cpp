@@ -94,7 +94,7 @@ size_t ByteBuffer::Write(const void* buf, size_t size)
 
 	memcpy(&data_[offset_], buf, size);
 	offset_ += size;
-	size_ = MAX(size_, offset_);
+	size_ = _MAX(size_, offset_);
 	return size;
 }
 size_t ByteBuffer::Read(void* buf, size_t size)

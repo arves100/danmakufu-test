@@ -214,17 +214,7 @@ std::string ScriptClientBase::_GetErrorLineSource(int line)
 	}
 
 	int size = _MAX(count - 1, 0);
-	std::wstring res;
-	if (encoding == Encoding::UTF16LE) {
-		wchar_t* wbufS = (wchar_t*)sbuf;
-		wchar_t* wbufE = wbufS + size;
-		res = std::wstring(wbufS, wbufE);
-	} else {
-		std::string sStr = std::string(sbuf, sbuf + size);
-		res = StringUtility::ConvertMultiToWide(sStr);
-	}
-
-	return res;
+	return std::string(sbuf, sbuf + size);
 }
 std::vector<char> ScriptClientBase::_Include(std::vector<char>& source)
 {

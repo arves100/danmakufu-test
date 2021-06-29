@@ -46,8 +46,6 @@ void Texture::Release()
 
 bool Texture::CreateFromFile(std::string path)
 {
-	path = StringUtility::ConvertWideToMulti(PathProperty::GetUnique(StringUtility::ConvertMultiToWide(path, CP_UTF8)), CP_UTF8);
-
 	Lock lock(TextureManager::GetBase()->GetLock());
 	Release();
 	TextureManager* manager = TextureManager::GetBase();
@@ -59,8 +57,6 @@ bool Texture::CreateFromFile(std::string path)
 
 bool Texture::CreateFromFileInLoadThread(std::string path, bool bLoadImageInfo)
 {
-	path = StringUtility::ConvertWideToMulti(PathProperty::GetUnique(StringUtility::ConvertMultiToWide(path, CP_UTF8)), CP_UTF8);
-	
 	Lock lock(TextureManager::GetBase()->GetLock());
 	if (data_ != nullptr)
 		Release();
@@ -89,7 +85,7 @@ bgfx::TextureHandle Texture::GetHandle() const
 			if (bWait && bx::getHPFrequency() - time > 10000) {
 				//一定時間たってもだめだったらロック？ame; // TODO ,.,.,,.,.
 				Logger::WriteTop(
-					StringUtility::Format(L"テクスチャ読み込みを行えていません。ロック？ ：%S", data_->Name));
+					StringUtility::Format(u8"テクスチャ読み込みを行えていません。ロック？ ：%s", data_->Name));
 				break;
 			}
 
@@ -225,7 +221,7 @@ void TextureManager::_ReleaseTextureData(std::string name)
 		auto& ptr = mapTextureData_[name];
 		bgfx::destroy(ptr->Handle);
 		mapTextureData_.erase(name);
-		Logger::WriteTop(StringUtility::Format(L"TextureManager：テクスチャを解放しました[%s]", name.c_str()));
+		Logger::WriteTop(StringUtility::Format(u8"TextureManager：テクスチャを解放しました[%s]", name.c_str()));
 	}
 }
 
@@ -237,7 +233,7 @@ void TextureManager::_ReleaseFrameBufferData(std::string name)
 		auto& ptr = mapFrameBufferData_[name];
 		bgfx::destroy(ptr->Handle);
 		mapFrameBufferData_.erase(name);
-		Logger::WriteTop(StringUtility::Format(L"TextureManager：テクスチャを解放しました[%s]", name.c_str()));
+		Logger::WriteTop(StringUtility::Format(u8"TextureManager：テクスチャを解放しました[%s]", name.c_str()));
 	}
 }
 
@@ -277,11 +273,11 @@ bool TextureManager::_CreateFromFile(std::string path)
 
 	//まだ作成されていないなら、作成
 	try {
-		ref_count_ptr<FileReader> reader = FileManager::GetBase()->GetFileReader(StringUtility::ConvertMultiToWide(path, CP_UTF8));
-		if (reader == NULL)
-			throw std::runtime_error("ファイルが見つかりません");
+		auto reader = FileManager::GetBase()->GetFileReader(path);
+		if (reader == nullptr)
+			throw std::runtime_error(u8"ファイルが見つかりません");
 		if (!reader->Open())
-			throw std::runtime_error("ファイルが開けません");
+			throw std::runtime_error(u8"ファイルが開けません");
 
 		const auto size = reader->GetFileSize();
 		ByteBuffer buf;
@@ -303,7 +299,7 @@ bool TextureManager::_CreateFromFile(std::string path)
 		data->Name = path;
 		
 		if (!bgfx::isValid(data->Handle)) {
-			throw gstd::wexception(L"D3DXCreateTextureFromFileInMemoryEx失敗");
+			throw std::runtime_error(u8"D3DXCreateTextureFromFileInMemoryEx失敗");
 		}
 
 		bgfx::setName(data->Handle, path.c_str());
@@ -311,11 +307,10 @@ bool TextureManager::_CreateFromFile(std::string path)
 		
 		mapTextureData_[path] = data;
 		
-		Logger::WriteTop(StringUtility::Format(L"TextureManager：テクスチャを読み込みました[%s]", path.c_str()));
-	} catch (gstd::wexception& e)
+		Logger::WriteTop(StringUtility::Format(u8"TextureManager：テクスチャを読み込みました[%s]", path.c_str()));
+	} catch (std::exception& e)
 	{
-		const std::wstring str = StringUtility::Format(L"TextureManager：テクスチャ読み込み失敗[%s]\n\t%s", path.c_str(), e.what());
-		Logger::WriteTop(str);
+		Logger::WriteTop(StringUtility::Format(u8"TextureManager：テクスチャ読み込み失敗[%s]\n\t%s", path.c_str(), e.what()));
 		return false;
 	}
 	
@@ -371,12 +366,12 @@ bool TextureManager::_CreateRenderTarget(std::string name)
 
 		mapFrameBufferData_[name] = ptr;
 
-		Logger::WriteTop(StringUtility::Format(L"TextureManager：レンダリングターゲット作成[%s]", name.c_str()));
+		Logger::WriteTop(StringUtility::Format(u8"TextureManager：レンダリングターゲット作成[%s]", name.c_str()));
 
 	}
 	catch (...)
 	{
-		Logger::WriteTop(StringUtility::Format(L"TextureManager：レンダリングターゲット作成失敗[%s]", name.c_str()));
+		Logger::WriteTop(StringUtility::Format(u8"TextureManager：レンダリングターゲット作成失敗[%s]", name.c_str()));
 		res = false;
 	}
 	return res;
@@ -384,8 +379,6 @@ bool TextureManager::_CreateRenderTarget(std::string name)
 
 bool TextureManager::CreateDataFromFile(std::string path, std::shared_ptr<TextureData>& out)
 {
-	path = StringUtility::ConvertWideToMulti(PathProperty::GetUnique(StringUtility::ConvertMultiToWide(path, CP_UTF8)), CP_UTF8); // TODO!
-
 	Lock lock(lock_);
 	if (mapTextureData_.find(path) != mapTextureData_.end())
 	{
@@ -420,18 +413,16 @@ bool TextureManager::CreateRenderTarget(std::string name, std::shared_ptr<FrameB
 	return false;
 }
 
-gstd::ref_count_ptr<Texture> TextureManager::CreateFromFileInLoadThread(std::string path, bool bLoadImageInfo)
+std::shared_ptr<Texture> TextureManager::CreateFromFileInLoadThread(std::string path, bool bLoadImageInfo)
 {
-	path = StringUtility::ConvertWideToMulti(PathProperty::GetUnique(StringUtility::ConvertMultiToWide(path, CP_UTF8)), CP_UTF8);
-	const auto wpath = StringUtility::ConvertMultiToWide(path, CP_UTF8);
-	gstd::ref_count_ptr<Texture> res;
+	std::shared_ptr<Texture> res;
 	{
 		Lock lock(lock_);
 		if (mapTexture_.find(path) != mapTexture_.end()) {
 			res = mapTexture_[path];
 		} else {
 			bool bLoadTarget = true;
-			res = new Texture();
+			res = std::make_shared<Texture>();
 			if (!IsDataExists(path)) {
 				auto data = std::make_shared<TextureData>();
 				mapTextureData_[path] = data;
@@ -441,11 +432,11 @@ gstd::ref_count_ptr<Texture> TextureManager::CreateFromFileInLoadThread(std::str
 				//画像情報だけ事前に読み込み
 				if (bLoadImageInfo) {
 					try {
-						ref_count_ptr<FileReader> reader = FileManager::GetBase()->GetFileReader(wpath);
+						auto reader = FileManager::GetBase()->GetFileReader(path);
 						if (reader == nullptr)
-							throw gstd::wexception(L"ファイルが見つかりません");
+							throw std::runtime_error(u8"ファイルが見つかりません");
 						if (!reader->Open())
-							throw std::runtime_error("ファイルが開けません");
+							throw std::runtime_error(u8"ファイルが開けません");
 
 						int size = reader->GetFileSize();
 						ByteBuffer buf;
@@ -455,7 +446,7 @@ gstd::ref_count_ptr<Texture> TextureManager::CreateFromFileInLoadThread(std::str
 						bimg::ImageContainer* container = bimg::imageParse(DxAllocator::Get(), buf.GetPointer(), buf.GetSize());
 
 						if (!container)
-							return false;
+							return res;
 
 						const auto mem = bgfx::makeRef(container->m_data, container->m_size, bimgImageFree, container);
 						buf.Clear();
@@ -465,14 +456,13 @@ gstd::ref_count_ptr<Texture> TextureManager::CreateFromFileInLoadThread(std::str
 						data->Handle = bgfx::createTexture2D(data->Width, data->Height, false, container->m_numLayers, static_cast<bgfx::TextureFormat::Enum>(container->m_format), 0, mem); // TODO: flags?
 
 						if (!bgfx::isValid(data->Handle)) {
-							throw gstd::wexception(L"D3DXCreateTextureFromFileInMemoryEx失敗");
+							throw std::runtime_error(u8"D3DXCreateTextureFromFileInMemoryEx失敗");
 						}
 
 						bgfx::setName(data->Handle, path.c_str());
 
-					} catch (gstd::wexception& e) {
-						std::wstring str = StringUtility::Format(L"TextureManager：テクスチャ読み込み失敗[%s]\n\t%s", path.c_str(), e.what());
-						Logger::WriteTop(str);
+					} catch (std::exception& e) {
+						Logger::WriteTop(StringUtility::Format(u8"TextureManager：テクスチャ読み込み失敗[%s]\n\t%s", path.c_str(), e.what()));
 						data->Handle = BGFX_INVALID_HANDLE; //読み込み完了扱い
 						bLoadTarget = false;
 					}
@@ -482,8 +472,8 @@ gstd::ref_count_ptr<Texture> TextureManager::CreateFromFileInLoadThread(std::str
 
 			res->data_ = mapTextureData_[path];
 			if (bLoadTarget) {
-				ref_count_ptr<FileManager::LoadObject> source = res;
-				ref_count_ptr<FileManager::LoadThreadEvent> event = new FileManager::LoadThreadEvent(this, wpath, res);
+				auto source = res;
+				std::unique_ptr<FileManager::LoadThreadEvent> event = std::make_unique<FileManager::LoadThreadEvent>(this, path, res);
 				FileManager::GetBase()->AddLoadThreadEvent(event);
 			}
 		}
@@ -491,7 +481,7 @@ gstd::ref_count_ptr<Texture> TextureManager::CreateFromFileInLoadThread(std::str
 	return res;
 }
 
-void TextureManager::CallFromLoadThread(ref_count_ptr<FileManager::LoadThreadEvent> event)
+void TextureManager::CallFromLoadThread(std::unique_ptr<FileManager::LoadThreadEvent>& event)
 {
 #if 0
 	std::wstring path = event->GetPath();
@@ -502,7 +492,7 @@ void TextureManager::CallFromLoadThread(ref_count_ptr<FileManager::LoadThreadEve
 		if (texture == NULL)
 			return;
 
-		std::shared_ptr<TextureData> data = texture->data_;
+		ref_count_ptr<TextureData> data = texture->data_;
 		if (data == NULL || data->bLoad_)
 			return;
 
@@ -514,11 +504,11 @@ void TextureManager::CallFromLoadThread(ref_count_ptr<FileManager::LoadThreadEve
 		}
 
 		try {
-			std::shared_ptr<FileReader> reader = FileManager::GetBase()->GetFileReader(path);
+			ref_count_ptr<FileReader> reader = FileManager::GetBase()->GetFileReader(path);
 			if (reader == NULL)
-				throw std::runtime_error("ファイルが見つかりません");
+				throw gstd::wexception(L"ファイルが見つかりません");
 			if (!reader->Open())
-				throw std::runtime_error("ファイルが開けません");
+				throw gstd::wexception(L"ファイルが開けません");
 
 			int size = reader->GetFileSize();
 			ByteBuffer buf;
@@ -545,7 +535,7 @@ void TextureManager::CallFromLoadThread(ref_count_ptr<FileManager::LoadThreadEve
 				NULL,
 				&data->pTexture_);
 			if (FAILED(hr)) {
-				throw std::runtime_error("D3DXCreateTextureFromFileInMemoryEx失敗");
+				throw gstd::wexception(L"D3DXCreateTextureFromFileInMemoryEx失敗");
 			}
 
 			D3DXGetImageInfoFromFileInMemory(buf.GetPointer(), size, &data->infoImage_);
