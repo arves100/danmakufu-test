@@ -51,7 +51,7 @@ git clone https://github.com/bkaradzic/bx
 
 NOTE: you can add `--with-wayland` if you want to enable wayland support, make sure to use an SDL2 build that supports wayland as well.
 
-4. Go to .build/projects/gmake-linux and build it with `make`, make sure to at least build the following projects:
+4. Go to .build/projects/gmake-linux and build bgfx two times `make config=debug32` (or `config=debug64`) and `make config=release32` (or `config=release64`), make sure to at least build the following projects:
 - shaderc
 - bgfx
 - bimg
