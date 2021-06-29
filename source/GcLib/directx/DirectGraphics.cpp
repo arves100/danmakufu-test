@@ -163,7 +163,7 @@ bool DirectGraphics::Initialize(DirectGraphicsConfig& config, void* nwh, void* n
 	uniforms_[4] = bgfx::createUniform("u_dl_direction", bgfx::UniformType::Vec4);
 	uniforms_[5] = bgfx::createUniform("u_al", bgfx::UniformType::Vec4);
 
-	Logger::WriteTop(L"DirectGraphics：初期化完了");
+	Logger::WriteTop(u8"DirectGraphics：初期化完了");
 	return true;
 }
 
@@ -901,8 +901,7 @@ void DxCamera2D::Reset()
 		pos_.x = static_cast<float>(width) / 2;
 		pos_.y = static_cast<float>(height) / 2;
 	} else {
-		pos_.x = posReset_->x;
-		pos_.y = posReset_->y;
+		pos_ = posReset_;
 	}
 	ratioX_ = 1.0f;
 	ratioY_ = 1.0f;

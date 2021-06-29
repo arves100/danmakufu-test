@@ -95,8 +95,8 @@ void StgPlayerObject::Work()
 				listScriptValue.push_back(script_->CreateValueArrayValue(listValPos));
 				script_->RequestEvent(StgStagePlayerScript::EV_GRAZE, listScriptValue);
 
-				ref_count_ptr<StgStageScriptManager> stageScriptManager = stageController_->GetScriptManagerR();
-				ref_count_ptr<ManagedScript> itemScript = stageScriptManager->GetItemScript();
+				std::shared_ptr<StgStageScriptManager> stageScriptManager = stageController_->GetScriptManagerR();
+				std::shared_ptr<ManagedScript> itemScript = stageScriptManager->GetItemScript();
 				if (itemScript != NULL) {
 					itemScript->RequestEvent(StgStagePlayerScript::EV_GRAZE, listScriptValue);
 				}
@@ -119,7 +119,7 @@ void StgPlayerObject::Work()
 			if (frameState_ < 0) {
 				//自機ダウン
 				bool bEnemyLastSpell = false;
-				ref_count_ptr<StgEnemyBossSceneObject>::unsync objBossScene = enemyManager->GetBossSceneObject();
+				std::shared_ptr<StgEnemyBossSceneObject>::unsync objBossScene = enemyManager->GetBossSceneObject();
 				if (objBossScene != NULL) {
 					objBossScene->AddPlayerShootDownCount();
 					if (objBossScene->GetActiveData()->IsLastSpell())
@@ -235,7 +235,7 @@ void StgPlayerObject::CallSpell()
 	if (!IsPermitSpell())
 		return;
 
-	ref_count_ptr<StgStageScriptObjectManager> objectManager = stageController_->GetMainObjectManager();
+	std::shared_ptr<StgStageScriptObjectManager> objectManager = stageController_->GetMainObjectManager();
 	objSpell_ = new StgPlayerSpellManageObject();
 	int idSpell = objectManager->AddObject(objSpell_);
 
@@ -255,7 +255,7 @@ void StgPlayerObject::CallSpell()
 	}
 
 	StgEnemyManager* enemyManager = stageController_->GetEnemyManager();
-	ref_count_ptr<StgEnemyBossSceneObject>::unsync objBossScene = enemyManager->GetBossSceneObject();
+	std::shared_ptr<StgEnemyBossSceneObject>::unsync objBossScene = enemyManager->GetBossSceneObject();
 	if (objBossScene != NULL) {
 		objBossScene->AddPlayerSpellCount();
 	}
@@ -264,7 +264,7 @@ void StgPlayerObject::CallSpell()
 	scriptManager->RequestEventAll(StgStageScript::EV_PLAYER_SPELL);
 }
 
-void StgPlayerObject::Intersect(ref_count_ptr<StgIntersectionTarget>::unsync ownTarget, ref_count_ptr<StgIntersectionTarget>::unsync otherTarget)
+void StgPlayerObject::Intersect(std::shared_ptr<StgIntersectionTarget>::unsync ownTarget, std::shared_ptr<StgIntersectionTarget>::unsync otherTarget)
 {
 	StgIntersectionTarget_Player* own = (StgIntersectionTarget_Player*)ownTarget.GetPointer();
 	int otherType = otherTarget->GetTargetType();
@@ -296,10 +296,9 @@ void StgPlayerObject::Intersect(ref_count_ptr<StgIntersectionTarget>::unsync own
 	} break;
 	}
 }
-ref_count_ptr<StgPlayerObject>::unsync StgPlayerObject::GetOwnObject()
+std::shared_ptr<StgPlayerObject>::unsync StgPlayerObject::GetOwnObject()
 {
-	auto src = stageController_->GetMainRenderObject(idObject_);
-	return ref_count_ptr<StgPlayerObject>::unsync::DownCast(src);
+	return std::shared_ptr<StgPlayerObject>::unsync::DownCast(stageController_->GetMainRenderObject(idObject_));
 }
 bool StgPlayerObject::IsPermitShot()
 {
@@ -314,9 +313,9 @@ bool StgPlayerObject::IsPermitSpell()
 	//・ラストスペル中
 	StgEnemyManager* enemyManager = stageController_->GetEnemyManager();
 	bool bEnemyLastSpell = false;
-	ref_count_ptr<StgEnemyBossSceneObject>::unsync objBossScene = enemyManager->GetBossSceneObject();
+	std::shared_ptr<StgEnemyBossSceneObject>::unsync objBossScene = enemyManager->GetBossSceneObject();
 	if (objBossScene != NULL) {
-		ref_count_ptr<StgEnemyBossSceneData>::unsync data = objBossScene->GetActiveData();
+		std::shared_ptr<StgEnemyBossSceneData>::unsync data = objBossScene->GetActiveData();
 		if (data != NULL && data->IsLastSpell())
 			bEnemyLastSpell = true;
 	}
@@ -344,11 +343,11 @@ void StgPlayerSpellObject::Work()
 	if (IsDeleted())
 		return;
 	if (life_ <= 0) {
-		ref_count_ptr<StgStageScriptObjectManager> objectManager = stageController_->GetMainObjectManager();
+		std::shared_ptr<StgStageScriptObjectManager> objectManager = stageController_->GetMainObjectManager();
 		objectManager->DeleteObject(idObject_);
 	}
 }
-void StgPlayerSpellObject::Intersect(ref_count_ptr<StgIntersectionTarget>::unsync ownTarget, ref_count_ptr<StgIntersectionTarget>::unsync otherTarget)
+void StgPlayerSpellObject::Intersect(std::shared_ptr<StgIntersectionTarget>::unsync ownTarget, std::shared_ptr<StgIntersectionTarget>::unsync otherTarget)
 {
 	double damage = 0;
 	int otherType = otherTarget->GetTargetType();

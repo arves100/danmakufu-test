@@ -12,7 +12,7 @@ class StgUserExtendScene {
 public:
 	StgUserExtendScene(StgSystemController* controller);
 	virtual ~StgUserExtendScene();
-	ref_count_ptr<StgUserExtendSceneScriptManager>& GetScriptManager() { return scriptManager_; }
+	std::shared_ptr<StgUserExtendSceneScriptManager> GetScriptManager() { return scriptManager_; }
 
 	virtual void Work();
 	virtual void Render();
@@ -28,7 +28,7 @@ protected:
 	void _AddRelativeManager();
 
 	StgSystemController* systemController_;
-	ref_count_ptr<StgUserExtendSceneScriptManager> scriptManager_;
+	std::shared_ptr<StgUserExtendSceneScriptManager> scriptManager_;
 };
 
 /**********************************************************
@@ -41,7 +41,7 @@ public:
 	virtual ~StgUserExtendSceneScriptManager();
 	virtual void Work();
 	virtual void Render();
-	virtual ref_count_ptr<ManagedScript> Create(int type);
+	virtual std::shared_ptr<ManagedScript> Create(int type);
 
 	void CallScriptFinalizeAll();
 	gstd::value GetResultValue();
@@ -49,7 +49,7 @@ public:
 
 protected:
 	StgSystemController* systemController_;
-	ref_count_ptr<DxScriptObjectManager> objectManager_;
+	std::shared_ptr<DxScriptObjectManager> objectManager_;
 };
 
 /**********************************************************

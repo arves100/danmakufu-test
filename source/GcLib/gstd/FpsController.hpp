@@ -2,7 +2,7 @@
 #define __GSTD_FPSCONTROLLER__
 
 #include "GstdConstant.hpp"
-#include "SmartPointer.hpp"
+
 
 namespace gstd {
 
@@ -32,8 +32,8 @@ public:
 	bool IsFastMode() { return bFastMode_; }
 	void SetFastMode(bool b) { bFastMode_ = b; }
 
-	void AddFpsControlObject(ref_count_weak_ptr<FpsControlObject> obj);
-	void RemoveFpsControlObject(ref_count_weak_ptr<FpsControlObject> obj);
+	void AddFpsControlObject(std::weak_ptr<FpsControlObject> obj);
+	void RemoveFpsControlObject(std::weak_ptr<FpsControlObject> obj);
 	int GetControlObjectFps();
 
 protected:
@@ -42,9 +42,9 @@ protected:
 	bool bCriticalFrame_;
 	bool bFastMode_;
 
-	std::list<ref_count_weak_ptr<FpsControlObject>> listFpsControlObject_;
+	std::list<std::weak_ptr<FpsControlObject>> listFpsControlObject_;
 
-	inline int _GetTime();
+	inline Uint64 _GetTime();
 	inline void _Sleep(int msec);
 };
 
@@ -72,12 +72,12 @@ public:
 
 protected:
 	float fpsCurrent_; //現在のFPS
-	int timePrevious_; //前回Waitしたときの時間
-	int timeError_; //持ち越し時間(誤差)
-	int timeCurrentFpsUpdate_; //1秒を測定するための時間保持
+	Uint64 timePrevious_; //前回Waitしたときの時間
+	Uint64 timeError_; //持ち越し時間(誤差)
+	Uint64 timeCurrentFpsUpdate_; //1秒を測定するための時間保持
 	int rateSkip_; //描画スキップ数
 	int countSkip_; //描画スキップカウント
-	std::list<int> listFps_; //1秒ごとに現在fpsを計算するためにfpsを保持
+	std::list<Uint64> listFps_; //1秒ごとに現在fpsを計算するためにfpsを保持
 
 private:
 	enum {
@@ -109,13 +109,13 @@ public:
 protected:
 	float fpsCurrentWork_; //実際のfps
 	float fpsCurrentRender_; //実際のfps
-	int timePrevious_; //前回Waitしたときの時間
-	int timePreviousWork_;
-	int timePreviousRender_;
-	int timeError_; //持ち越し時間(誤差)
-	int timeCurrentFpsUpdate_; //1秒を測定するための時間保持
-	std::list<int> listFpsWork_;
-	std::list<int> listFpsRender_;
+	Uint64 timePrevious_; //前回Waitしたときの時間
+	Uint64 timePreviousWork_;
+	Uint64 timePreviousRender_;
+	Uint64 timeError_; //持ち越し時間(誤差)
+	Uint64 timeCurrentFpsUpdate_; //1秒を測定するための時間保持
+	std::list<Uint64> listFpsWork_;
+	std::list<Uint64> listFpsRender_;
 	double countSkip_; //連続描画スキップ数
 	int countSkipMax_; //最大連続描画スキップ数
 };

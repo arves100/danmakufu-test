@@ -28,8 +28,8 @@ private:
 	_int64 totalScore_;
 	double fpsAvarage_;
 	SYSTEMTIME date_;
-	ref_count_ptr<ScriptCommonData> userData_;
-	std::map<int, ref_count_ptr<StageData>> mapStageData_;
+	std::shared_ptr<ScriptCommonData> userData_;
+	std::map<int, std::shared_ptr<StageData>> mapStageData_;
 
 public:
 	ReplayInformation();
@@ -59,13 +59,13 @@ public:
 	gstd::value GetUserData(std::string key);
 	bool IsUserDataExists(std::string key);
 
-	ref_count_ptr<StageData> GetStageData(int stage) { return mapStageData_[stage]; }
-	void SetStageData(int stage, ref_count_ptr<StageData> data) { mapStageData_[stage] = data; }
+	std::shared_ptr<StageData> GetStageData(int stage) { return mapStageData_[stage]; }
+	void SetStageData(int stage, std::shared_ptr<StageData> data) { mapStageData_[stage] = data; }
 	std::vector<int> GetStageIndexList();
 
 	bool SaveToFile(std::wstring scriptPath, int index);
-	static ref_count_ptr<ReplayInformation> CreateFromFile(std::wstring scriptPath, std::wstring fileName);
-	static ref_count_ptr<ReplayInformation> CreateFromFile(std::wstring path);
+	static std::shared_ptr<ReplayInformation> CreateFromFile(std::wstring scriptPath, std::wstring fileName);
+	static std::shared_ptr<ReplayInformation> CreateFromFile(std::wstring path);
 };
 
 class ReplayInformation::StageData {
@@ -104,11 +104,11 @@ public:
 	}
 	void AddFramePerSecond(float frame) { listFramePerSecond_.push_back(frame); }
 	double GetFramePerSecondAvarage();
-	ref_count_ptr<gstd::RecordBuffer> GetReplayKeyRecord() { return recordKey_; }
-	void SetReplayKeyRecord(ref_count_ptr<gstd::RecordBuffer> rec) { recordKey_ = rec; }
+	std::shared_ptr<gstd::RecordBuffer> GetReplayKeyRecord() { return recordKey_; }
+	void SetReplayKeyRecord(std::shared_ptr<gstd::RecordBuffer> rec) { recordKey_ = rec; }
 	std::set<std::string> GetCommonDataAreaList();
-	ref_count_ptr<ScriptCommonData> GetCommonData(std::string area);
-	void SetCommonData(std::string area, ref_count_ptr<ScriptCommonData> commonData);
+	std::shared_ptr<ScriptCommonData> GetCommonData(std::string area);
+	void SetCommonData(std::string area, std::shared_ptr<ScriptCommonData> commonData);
 
 	std::wstring GetPlayerScriptID() { return playerScriptID_; }
 	void SetPlayerScriptID(std::wstring id) { playerScriptID_ = id; }
@@ -141,8 +141,8 @@ private:
 	int frameEnd_;
 	int randSeed_;
 	std::vector<float> listFramePerSecond_;
-	ref_count_ptr<gstd::RecordBuffer> recordKey_;
-	std::map<std::string, ref_count_ptr<gstd::RecordBuffer>> mapCommonData_;
+	std::shared_ptr<gstd::RecordBuffer> recordKey_;
+	std::map<std::string, std::shared_ptr<gstd::RecordBuffer>> mapCommonData_;
 
 	//自機情報
 	std::wstring playerScriptID_;
@@ -165,10 +165,10 @@ public:
 
 	void UpdateInformationList(std::wstring pathScript);
 	std::vector<int> GetIndexList();
-	ref_count_ptr<ReplayInformation> GetInformation(int index);
+	std::shared_ptr<ReplayInformation> GetInformation(int index);
 
 protected:
-	std::map<int, ref_count_ptr<ReplayInformation>> mapInfo_;
+	std::map<int, std::shared_ptr<ReplayInformation>> mapInfo_;
 };
 
 #endif

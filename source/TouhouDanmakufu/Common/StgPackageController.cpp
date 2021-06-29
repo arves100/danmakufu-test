@@ -16,8 +16,8 @@ void StgPackageController::Initialize()
 	infoPackage_ = new StgPackageInformation();
 	scriptManager_ = new StgPackageScriptManager(systemController_);
 
-	ref_count_ptr<StgSystemInformation> infoSystem = systemController_->GetSystemInformation();
-	ref_count_ptr<ScriptInformation> infoScript = infoSystem->GetMainScriptInformation();
+	std::shared_ptr<StgSystemInformation> infoSystem = systemController_->GetSystemInformation();
+	std::shared_ptr<ScriptInformation> infoScript = infoSystem->GetMainScriptInformation();
 	infoPackage_->SetMainScriptInformation(infoScript);
 
 	//メインスクリプト
@@ -43,7 +43,7 @@ void StgPackageController::RenderToTransitionTexture()
 {
 	DirectGraphics* graphics = DirectGraphics::GetBase();
 	TextureManager* textureManager = ETextureManager::GetInstance();
-	ref_count_ptr<Texture> texture = textureManager->GetTexture(TextureManager::TARGET_TRANSITION);
+	std::shared_ptr<Texture> texture = textureManager->GetTexture(TextureManager::TARGET_TRANSITION);
 
 	graphics->SetRenderTarget(texture);
 	graphics->BeginScene(true);
@@ -71,21 +71,21 @@ void StgPackageInformation::InitializeStageData()
 	listStageData_.clear();
 
 	nextStageStartData_ = new StgStageStartData();
-	ref_count_ptr<StgStageInformation> infoStage = new StgStageInformation();
+	std::shared_ptr<StgStageInformation> infoStage = new StgStageInformation();
 	nextStageStartData_->SetStageInformation(infoStage);
 }
 void StgPackageInformation::FinishCurrentStage()
 {
-	ref_count_ptr<StgStageStartData> currentStageStartData = nextStageStartData_;
-	ref_count_ptr<StgStageInformation> currentStageInfo = currentStageStartData->GetStageInformation();
+	std::shared_ptr<StgStageStartData> currentStageStartData = nextStageStartData_;
+	std::shared_ptr<StgStageInformation> currentStageInfo = currentStageStartData->GetStageInformation();
 	listStageData_.push_back(currentStageStartData);
 
 	nextStageStartData_ = new StgStageStartData();
-	ref_count_ptr<StgStageInformation> nextStageInfo = new StgStageInformation();
+	std::shared_ptr<StgStageInformation> nextStageInfo = new StgStageInformation();
 	nextStageStartData_->SetStageInformation(nextStageInfo);
 
 	nextStageStartData_->SetPrevStageInformation(currentStageInfo);
 
-	ref_count_ptr<StgPlayerInformation> infoPlayer = currentStageInfo->GetPlayerObjectInformation();
+	std::shared_ptr<StgPlayerInformation> infoPlayer = currentStageInfo->GetPlayerObjectInformation();
 	nextStageStartData_->SetPrevPlayerInformation(infoPlayer);
 }

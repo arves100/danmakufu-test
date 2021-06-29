@@ -30,9 +30,9 @@ bool StgStageScriptManager::IsError()
 	return res;
 }
 
-ref_count_ptr<ManagedScript> StgStageScriptManager::Create(int type)
+std::shared_ptr<ManagedScript> StgStageScriptManager::Create(int type)
 {
-	ref_count_ptr<ManagedScript> res = NULL;
+	std::shared_ptr<ManagedScript> res = NULL;
 	switch (type) {
 	case StgStageScript::TYPE_STAGE:
 		res = new StgStageScript(stageController_);
@@ -57,16 +57,16 @@ ref_count_ptr<ManagedScript> StgStageScriptManager::Create(int type)
 
 	return res;
 }
-ref_count_ptr<ManagedScript> StgStageScriptManager::GetItemScript()
+std::shared_ptr<ManagedScript> StgStageScriptManager::GetItemScript()
 {
-	ref_count_ptr<ManagedScript> res = NULL;
+	std::shared_ptr<ManagedScript> res = NULL;
 	if (idItemScript_ != StgControlScriptManager::ID_INVALID)
 		res = GetScript(idItemScript_);
 	return res;
 }
-ref_count_ptr<ManagedScript> StgStageScriptManager::GetShotScript()
+std::shared_ptr<ManagedScript> StgStageScriptManager::GetShotScript()
 {
-	ref_count_ptr<ManagedScript> res = NULL;
+	std::shared_ptr<ManagedScript> res = NULL;
 	if (idShotScript_ != StgControlScriptManager::ID_INVALID)
 		res = GetScript(idShotScript_);
 	return res;
@@ -85,8 +85,7 @@ StgStageScriptObjectManager::StgStageScriptObjectManager(StgStageController* sta
 StgStageScriptObjectManager::~StgStageScriptObjectManager()
 {
 	if (idObjPleyer_ != DxScript::ID_INVALID) {
-		auto src = GetObject(idObjPleyer_);
-		ref_count_ptr<StgPlayerObject>::unsync obj = ref_count_ptr<StgPlayerObject>::unsync::DownCast(src);
+		std::shared_ptr<StgPlayerObject>::unsync obj = std::shared_ptr<StgPlayerObject>::unsync::DownCast(GetObject(idObjPleyer_));
 		if (obj != NULL)
 			obj->Clear();
 	}
@@ -106,9 +105,9 @@ void StgStageScriptObjectManager::RenderObject()
 void StgStageScriptObjectManager::RenderObject(int priMin, int priMax)
 {
 	/*
-	std::list<gstd::ref_count_ptr<DxScriptObjectBase>::unsync >::iterator itr;
+	std::list<gstd::shared_ptr<DxScriptObjectBase>::unsync >::iterator itr;
 	for (itr = listActiveObject_.begin(); itr != listActiveObject_.end(); itr++) {
-		gstd::ref_count_ptr<DxScriptObjectBase>::unsync obj = (*itr);
+		gstd::shared_ptr<DxScriptObjectBase>::unsync obj = (*itr);
 		if (obj == NULL || obj->IsDeleted())
 			continue;
 		if (!obj->IsVisible())
@@ -117,10 +116,10 @@ void StgStageScriptObjectManager::RenderObject(int priMin, int priMax)
 	}
 
 	DirectGraphics* graphics = DirectGraphics::GetBase();
-	gstd::ref_count_ptr<DxCamera> camera3D = graphics->GetCamera();
-	gstd::ref_count_ptr<DxCamera2D> camera2D = graphics->GetCamera2D();
+	gstd::shared_ptr<DxCamera> camera3D = graphics->GetCamera();
+	gstd::shared_ptr<DxCamera2D> camera2D = graphics->GetCamera2D();
 
-	ref_count_ptr<StgStageInformation> stageInfo = stageController_->GetStageInformation();
+	std::shared_ptr<StgStageInformation> stageInfo = stageController_->GetStageInformation();
 	RECT rcStgFrame = stageInfo->GetStgFrameRect();
 	int stgWidth = rcStgFrame.right - rcStgFrame.left;
 	int stgHeight = rcStgFrame.bottom - rcStgFrame.top;
@@ -176,12 +175,12 @@ void StgStageScriptObjectManager::RenderObject(int priMin, int priMax)
 			stageController_->GetItemManager()->Render();
 		}
 
-		std::list<gstd::ref_count_ptr<DxScriptObjectBase>::unsync>::iterator itr;
+		std::list<gstd::shared_ptr<DxScriptObjectBase>::unsync>::iterator itr;
 		for (itr = objRender_[iPri].begin(); itr != objRender_[iPri].end(); itr++) {
 			if (!bClearZBufferFor2DCoordinate) {
 				DxScriptMeshObject* objMesh = dynamic_cast<DxScriptMeshObject*>((*itr).GetPointer());
 				if (objMesh != NULL) {
-					gstd::ref_count_ptr<DxMesh>& mesh = objMesh->GetMesh();
+					gstd::shared_ptr<DxMesh>& mesh = objMesh->GetMesh();
 					if (mesh != NULL && mesh->IsCoordinate2D()) {
 						graphics->GetDevice()->Clear(0, NULL, D3DCLEAR_ZBUFFER, D3DCOLOR_XRGB(0,0,0), 1.0,0);
 						bClearZBufferFor2DCoordinate = true;
@@ -213,7 +212,7 @@ void StgStageScriptObjectManager::RenderObject(int priMin, int priMax)
 int StgStageScriptObjectManager::CreatePlayerObject()
 {
 	//自機オブジェクト生成
-	ref_count_ptr<StgPlayerObject>::unsync objPlayer = new StgPlayerObject(stageController_);
+	std::shared_ptr<StgPlayerObject>::unsync objPlayer = new StgPlayerObject(stageController_);
 	idObjPleyer_ = AddObject(objPlayer);
 	return idObjPleyer_;
 }
@@ -538,7 +537,7 @@ StgStageScript::StgStageScript(StgStageController* stageController)
 	typeScript_ = TYPE_STAGE;
 	_AddFunction(stgFunction, sizeof(stgFunction) / sizeof(function));
 
-	ref_count_ptr<StgStageInformation> info = stageController_->GetStageInformation();
+	std::shared_ptr<StgStageInformation> info = stageController_->GetStageInformation();
 	mt_ = info->GetMersenneTwister();
 
 	scriptManager_ = stageController_->GetScriptManagerP();
@@ -549,10 +548,10 @@ StgStageScript::StgStageScript(StgStageController* stageController)
 StgStageScript::~StgStageScript()
 {
 }
-ref_count_ptr<StgStageScriptObjectManager> StgStageScript::GetStgObjectManager()
+std::shared_ptr<StgStageScriptObjectManager> StgStageScript::GetStgObjectManager()
 {
 	StgStageScriptManager* scriptManager = (StgStageScriptManager*)scriptManager_;
-	ref_count_ptr<StgStageScriptObjectManager> objectManager = scriptManager->GetObjectManager();
+	std::shared_ptr<StgStageScriptObjectManager> objectManager = scriptManager->GetObjectManager();
 	return objectManager;
 }
 
@@ -561,19 +560,19 @@ gstd::value StgStageScript::Func_SaveCommonDataAreaToReplayFile(gstd::script_mac
 {
 	StgStageScript* script = (StgStageScript*)machine->data;
 	StgStageController* stageController = script->stageController_;
-	ref_count_ptr<StgStageInformation> infoStage = stageController->GetStageInformation();
-	ref_count_ptr<ReplayInformation::StageData> replayStageData = infoStage->GetReplayData();
+	std::shared_ptr<StgStageInformation> infoStage = stageController->GetStageInformation();
+	std::shared_ptr<ReplayInformation::StageData> replayStageData = infoStage->GetReplayData();
 	ScriptCommonDataManager* commonDataManager = script->GetCommonDataManager();
 
 	if (infoStage->IsReplay())
 		script->RaiseError(L"call only in normal play (not replay)");
 
 	std::string area = to_mbcs(argv[0].as_string());
-	ref_count_ptr<ScriptCommonData> commonDataO = commonDataManager->GetData(area);
+	std::shared_ptr<ScriptCommonData> commonDataO = commonDataManager->GetData(area);
 	if (commonDataO == NULL)
 		return value(machine->get_engine()->get_boolean_type(), false);
 
-	ref_count_ptr<ScriptCommonData> commonDataS = new ScriptCommonData();
+	std::shared_ptr<ScriptCommonData> commonDataS = new ScriptCommonData();
 	commonDataS->Copy(commonDataO);
 	replayStageData->SetCommonData(area, commonDataS);
 
@@ -583,19 +582,19 @@ gstd::value StgStageScript::Func_LoadCommonDataAreaFromReplayFile(gstd::script_m
 {
 	StgStageScript* script = (StgStageScript*)machine->data;
 	StgStageController* stageController = script->stageController_;
-	ref_count_ptr<StgStageInformation> infoStage = stageController->GetStageInformation();
-	ref_count_ptr<ReplayInformation::StageData> replayStageData = infoStage->GetReplayData();
+	std::shared_ptr<StgStageInformation> infoStage = stageController->GetStageInformation();
+	std::shared_ptr<ReplayInformation::StageData> replayStageData = infoStage->GetReplayData();
 	ScriptCommonDataManager* commonDataManager = script->GetCommonDataManager();
 
 	if (!infoStage->IsReplay())
 		script->RaiseError(L"call only in replay");
 
 	std::string area = to_mbcs(argv[0].as_string());
-	ref_count_ptr<ScriptCommonData> commonDataS = replayStageData->GetCommonData(area);
+	std::shared_ptr<ScriptCommonData> commonDataS = replayStageData->GetCommonData(area);
 	if (commonDataS == NULL)
 		return value(machine->get_engine()->get_boolean_type(), false);
 
-	ref_count_ptr<ScriptCommonData> commonDataO = new ScriptCommonData();
+	std::shared_ptr<ScriptCommonData> commonDataO = new ScriptCommonData();
 	commonDataO->Copy(commonDataS);
 	commonDataManager->SetData(area, commonDataO);
 
@@ -607,7 +606,7 @@ gstd::value StgStageScript::Func_GetMainStgScriptPath(gstd::script_machine* mach
 {
 	StgStageScript* script = (StgStageScript*)machine->data;
 	StgStageController* stageController = script->stageController_;
-	ref_count_ptr<ScriptInformation> infoMain = stageController->GetStageInformation()->GetMainScriptInformation();
+	std::shared_ptr<ScriptInformation> infoMain = stageController->GetStageInformation()->GetMainScriptInformation();
 
 	std::wstring path = infoMain->GetScriptPath();
 	path = PathProperty::GetUnique(path);
@@ -618,7 +617,7 @@ gstd::value StgStageScript::Func_GetMainStgScriptDirectory(gstd::script_machine*
 {
 	StgStageScript* script = (StgStageScript*)machine->data;
 	StgStageController* stageController = script->stageController_;
-	ref_count_ptr<ScriptInformation> infoMain = stageController->GetStageInformation()->GetMainScriptInformation();
+	std::shared_ptr<ScriptInformation> infoMain = stageController->GetStageInformation()->GetMainScriptInformation();
 
 	std::wstring path = infoMain->GetScriptPath();
 	path = PathProperty::GetUnique(path);
@@ -640,7 +639,7 @@ gstd::value StgStageScript::Func_SetStgFrame(gstd::script_machine* machine, int 
 	int min = (int)argv[4].as_real();
 	int max = (int)argv[5].as_real();
 
-	ref_count_ptr<StgStageInformation> stageInfo = stageController->GetStageInformation();
+	std::shared_ptr<StgStageInformation> stageInfo = stageController->GetStageInformation();
 	stageInfo->SetStgFrameRect(rect);
 	stageInfo->SetStgFrameMinPriority(min);
 	stageInfo->SetStgFrameMaxPriority(max);
@@ -652,7 +651,7 @@ gstd::value StgStageScript::Func_SetItemRenderPriorityI(gstd::script_machine* ma
 {
 	StgStageScript* script = (StgStageScript*)machine->data;
 	StgStageController* stageController = script->stageController_;
-	ref_count_ptr<StgStageInformation> info = stageController->GetStageInformation();
+	std::shared_ptr<StgStageInformation> info = stageController->GetStageInformation();
 	int pri = (int)argv[0].as_real();
 	// pri = _MIN(pri, info->GetStgFrameMaxPriority());
 	// pri = _MAX(pri, info->GetStgFrameMinPriority());
@@ -663,7 +662,7 @@ gstd::value StgStageScript::Func_SetShotRenderPriorityI(gstd::script_machine* ma
 {
 	StgStageScript* script = (StgStageScript*)machine->data;
 	StgStageController* stageController = script->stageController_;
-	ref_count_ptr<StgStageInformation> info = stageController->GetStageInformation();
+	std::shared_ptr<StgStageInformation> info = stageController->GetStageInformation();
 	int pri = (int)argv[0].as_real();
 	// pri = _MIN(pri, info->GetStgFrameMaxPriority());
 	// pri = _MAX(pri, info->GetStgFrameMinPriority());
@@ -701,7 +700,7 @@ gstd::value StgStageScript::Func_GetShotRenderPriorityI(gstd::script_machine* ma
 gstd::value StgStageScript::Func_GetPlayerRenderPriorityI(gstd::script_machine* machine, int argc, gstd::value const* argv)
 {
 	StgStageScript* script = (StgStageScript*)machine->data;
-	ref_count_ptr<StgStageScriptObjectManager> objectManager = script->GetStgObjectManager();
+	std::shared_ptr<StgStageScriptObjectManager> objectManager = script->GetStgObjectManager();
 	int idObjPlayer = objectManager->GetPlayerObjectID();
 
 	long double res = 30;
@@ -727,7 +726,7 @@ gstd::value StgStageScript::Func_CloseStgScene(gstd::script_machine* machine, in
 	StgSystemController* systemController = script->stageController_->GetSystemController();
 
 	StgStageController* stageController = script->stageController_;
-	ref_count_ptr<StgStageInformation> info = stageController->GetStageInformation();
+	std::shared_ptr<StgStageInformation> info = stageController->GetStageInformation();
 	info->SetEnd();
 
 	return value();
@@ -736,11 +735,11 @@ gstd::value StgStageScript::Func_GetReplayFps(gstd::script_machine* machine, int
 {
 	StgStageScript* script = (StgStageScript*)machine->data;
 	StgStageController* stageController = script->stageController_;
-	ref_count_ptr<StgStageInformation> infoStage = stageController->GetStageInformation();
+	std::shared_ptr<StgStageInformation> infoStage = stageController->GetStageInformation();
 
 	int fps = 0;
 	if (infoStage->IsReplay()) {
-		ref_count_ptr<ReplayInformation::StageData> replayStageData = infoStage->GetReplayData();
+		std::shared_ptr<ReplayInformation::StageData> replayStageData = infoStage->GetReplayData();
 		int frame = infoStage->GetCurrentFrame();
 		fps = replayStageData->GetFramePerSecond(frame);
 	}
@@ -752,7 +751,7 @@ gstd::value StgStageScript::Func_GetReplayFps(gstd::script_machine* machine, int
 gstd::value StgStageScript::Func_GetPlayerObjectID(gstd::script_machine* machine, int argc, gstd::value const* argv)
 {
 	StgStageScript* script = (StgStageScript*)machine->data;
-	ref_count_ptr<StgStageScriptObjectManager> objectManager = script->GetStgObjectManager();
+	std::shared_ptr<StgStageScriptObjectManager> objectManager = script->GetStgObjectManager();
 	long double res = objectManager->GetPlayerObjectID();
 	return value(machine->get_engine()->get_real_type(), res);
 }
@@ -769,7 +768,7 @@ gstd::value StgStageScript::Func_SetPlayerSpeed(gstd::script_machine* machine, i
 {
 	StgStagePlayerScript* script = (StgStagePlayerScript*)machine->data;
 	StgStageController* stageController = script->stageController_;
-	ref_count_ptr<StgPlayerObject>::unsync obj = stageController->GetPlayerObject();
+	std::shared_ptr<StgPlayerObject>::unsync obj = stageController->GetPlayerObject();
 	if (obj == NULL)
 		return value();
 
@@ -782,7 +781,7 @@ gstd::value StgStageScript::Func_SetPlayerSpeed(gstd::script_machine* machine, i
 gstd::value StgStageScript::Func_SetPlayerClip(gstd::script_machine* machine, int argc, gstd::value const* argv)
 {
 	StgStageScript* script = (StgStageScript*)machine->data;
-	ref_count_ptr<StgStageScriptObjectManager> objectManager = script->GetStgObjectManager();
+	std::shared_ptr<StgStageScriptObjectManager> objectManager = script->GetStgObjectManager();
 	int idObjPlayer = objectManager->GetPlayerObjectID();
 
 	StgPlayerObject* obj = dynamic_cast<StgPlayerObject*>(script->GetObjectPointer(idObjPlayer));
@@ -802,7 +801,7 @@ gstd::value StgStageScript::Func_SetPlayerLife(gstd::script_machine* machine, in
 {
 	StgStageScript* script = (StgStageScript*)machine->data;
 	StgStageController* stageController = script->stageController_;
-	ref_count_ptr<StgPlayerObject>::unsync obj = stageController->GetPlayerObject();
+	std::shared_ptr<StgPlayerObject>::unsync obj = stageController->GetPlayerObject();
 	if (obj == NULL)
 		return value();
 
@@ -815,7 +814,7 @@ gstd::value StgStageScript::Func_SetPlayerSpell(gstd::script_machine* machine, i
 {
 	StgStageScript* script = (StgStageScript*)machine->data;
 	StgStageController* stageController = script->stageController_;
-	ref_count_ptr<StgPlayerObject>::unsync obj = stageController->GetPlayerObject();
+	std::shared_ptr<StgPlayerObject>::unsync obj = stageController->GetPlayerObject();
 	if (obj == NULL)
 		return value();
 
@@ -828,7 +827,7 @@ gstd::value StgStageScript::Func_SetPlayerPower(gstd::script_machine* machine, i
 {
 	StgStageScript* script = (StgStageScript*)machine->data;
 	StgStageController* stageController = script->stageController_;
-	ref_count_ptr<StgPlayerObject>::unsync obj = stageController->GetPlayerObject();
+	std::shared_ptr<StgPlayerObject>::unsync obj = stageController->GetPlayerObject();
 	if (obj == NULL)
 		return value();
 
@@ -841,7 +840,7 @@ gstd::value StgStageScript::Func_SetPlayerInvincibilityFrame(gstd::script_machin
 {
 	StgStageScript* script = (StgStageScript*)machine->data;
 	StgStageController* stageController = script->stageController_;
-	ref_count_ptr<StgPlayerObject>::unsync obj = stageController->GetPlayerObject();
+	std::shared_ptr<StgPlayerObject>::unsync obj = stageController->GetPlayerObject();
 	if (obj == NULL)
 		return value();
 
@@ -854,7 +853,7 @@ gstd::value StgStageScript::Func_SetPlayerDownStateFrame(gstd::script_machine* m
 {
 	StgStageScript* script = (StgStageScript*)machine->data;
 	StgStageController* stageController = script->stageController_;
-	ref_count_ptr<StgPlayerObject>::unsync obj = stageController->GetPlayerObject();
+	std::shared_ptr<StgPlayerObject>::unsync obj = stageController->GetPlayerObject();
 	if (obj == NULL)
 		return value();
 
@@ -867,7 +866,7 @@ gstd::value StgStageScript::Func_SetPlayerRebirthFrame(gstd::script_machine* mac
 {
 	StgStageScript* script = (StgStageScript*)machine->data;
 	StgStageController* stageController = script->stageController_;
-	ref_count_ptr<StgPlayerObject>::unsync obj = stageController->GetPlayerObject();
+	std::shared_ptr<StgPlayerObject>::unsync obj = stageController->GetPlayerObject();
 	if (obj == NULL)
 		return value();
 
@@ -881,7 +880,7 @@ gstd::value StgStageScript::Func_SetPlayerRebirthLossFrame(gstd::script_machine*
 {
 	StgStageScript* script = (StgStageScript*)machine->data;
 	StgStageController* stageController = script->stageController_;
-	ref_count_ptr<StgPlayerObject>::unsync obj = stageController->GetPlayerObject();
+	std::shared_ptr<StgPlayerObject>::unsync obj = stageController->GetPlayerObject();
 	if (obj == NULL)
 		return value();
 
@@ -894,7 +893,7 @@ gstd::value StgStageScript::Func_SetPlayerAutoItemCollectLine(gstd::script_machi
 {
 	StgStageScript* script = (StgStageScript*)machine->data;
 	StgStageController* stageController = script->stageController_;
-	ref_count_ptr<StgPlayerObject>::unsync obj = stageController->GetPlayerObject();
+	std::shared_ptr<StgPlayerObject>::unsync obj = stageController->GetPlayerObject();
 	if (obj == NULL)
 		return value();
 
@@ -907,7 +906,7 @@ gstd::value StgStageScript::Func_SetForbidPlayerShot(gstd::script_machine* machi
 {
 	StgStageScript* script = (StgStageScript*)machine->data;
 	StgStageController* stageController = script->stageController_;
-	ref_count_ptr<StgPlayerObject>::unsync obj = stageController->GetPlayerObject();
+	std::shared_ptr<StgPlayerObject>::unsync obj = stageController->GetPlayerObject();
 	if (obj == NULL)
 		return value();
 
@@ -920,7 +919,7 @@ gstd::value StgStageScript::Func_SetForbidPlayerSpell(gstd::script_machine* mach
 {
 	StgStageScript* script = (StgStageScript*)machine->data;
 	StgStageController* stageController = script->stageController_;
-	ref_count_ptr<StgPlayerObject>::unsync obj = stageController->GetPlayerObject();
+	std::shared_ptr<StgPlayerObject>::unsync obj = stageController->GetPlayerObject();
 	if (obj == NULL)
 		return value();
 
@@ -933,7 +932,7 @@ gstd::value StgStageScript::Func_GetPlayerX(gstd::script_machine* machine, int a
 {
 	StgStageScript* script = (StgStageScript*)machine->data;
 	StgStageController* stageController = script->stageController_;
-	ref_count_ptr<StgPlayerObject>::unsync obj = stageController->GetPlayerObject();
+	std::shared_ptr<StgPlayerObject>::unsync obj = stageController->GetPlayerObject();
 	double res = obj != NULL ? obj->GetX() : 0;
 	return value(machine->get_engine()->get_real_type(), (long double)res);
 }
@@ -941,7 +940,7 @@ gstd::value StgStageScript::Func_GetPlayerY(gstd::script_machine* machine, int a
 {
 	StgStageScript* script = (StgStageScript*)machine->data;
 	StgStageController* stageController = script->stageController_;
-	ref_count_ptr<StgPlayerObject>::unsync obj = stageController->GetPlayerObject();
+	std::shared_ptr<StgPlayerObject>::unsync obj = stageController->GetPlayerObject();
 	double res = obj != NULL ? obj->GetY() : 0;
 	return value(machine->get_engine()->get_real_type(), (long double)res);
 }
@@ -949,7 +948,7 @@ gstd::value StgStageScript::Func_GetPlayerState(gstd::script_machine* machine, i
 {
 	StgStageScript* script = (StgStageScript*)machine->data;
 	StgStageController* stageController = script->stageController_;
-	ref_count_ptr<StgPlayerObject>::unsync obj = stageController->GetPlayerObject();
+	std::shared_ptr<StgPlayerObject>::unsync obj = stageController->GetPlayerObject();
 	double res = obj != NULL ? obj->GetState() : StgPlayerObject::STATE_END;
 	return value(machine->get_engine()->get_real_type(), (long double)res);
 }
@@ -957,7 +956,7 @@ gstd::value StgStageScript::Func_GetPlayerSpeed(gstd::script_machine* machine, i
 {
 	StgStageScript* script = (StgStageScript*)machine->data;
 	StgStageController* stageController = script->stageController_;
-	ref_count_ptr<StgPlayerObject>::unsync obj = stageController->GetPlayerObject();
+	std::shared_ptr<StgPlayerObject>::unsync obj = stageController->GetPlayerObject();
 
 	std::vector<long double> listValue;
 	listValue.push_back(obj->GetFastSpeed());
@@ -970,7 +969,7 @@ gstd::value StgStageScript::Func_GetPlayerClip(gstd::script_machine* machine, in
 {
 	StgStageScript* script = (StgStageScript*)machine->data;
 	StgStageController* stageController = script->stageController_;
-	ref_count_ptr<StgPlayerObject>::unsync obj = stageController->GetPlayerObject();
+	std::shared_ptr<StgPlayerObject>::unsync obj = stageController->GetPlayerObject();
 
 	RECT clip = obj->GetClip();
 	std::vector<long double> listValue;
@@ -986,7 +985,7 @@ gstd::value StgStageScript::Func_GetPlayerLife(gstd::script_machine* machine, in
 {
 	StgStageScript* script = (StgStageScript*)machine->data;
 	StgStageController* stageController = script->stageController_;
-	ref_count_ptr<StgPlayerObject>::unsync obj = stageController->GetPlayerObject();
+	std::shared_ptr<StgPlayerObject>::unsync obj = stageController->GetPlayerObject();
 	double res = obj != NULL ? obj->GetLife() : 0;
 	return value(machine->get_engine()->get_real_type(), (long double)res);
 }
@@ -994,7 +993,7 @@ gstd::value StgStageScript::Func_GetPlayerSpell(gstd::script_machine* machine, i
 {
 	StgStageScript* script = (StgStageScript*)machine->data;
 	StgStageController* stageController = script->stageController_;
-	ref_count_ptr<StgPlayerObject>::unsync obj = stageController->GetPlayerObject();
+	std::shared_ptr<StgPlayerObject>::unsync obj = stageController->GetPlayerObject();
 	double res = obj != NULL ? obj->GetSpell() : 0;
 	return value(machine->get_engine()->get_real_type(), (long double)res);
 }
@@ -1002,7 +1001,7 @@ gstd::value StgStageScript::Func_GetPlayerPower(gstd::script_machine* machine, i
 {
 	StgStageScript* script = (StgStageScript*)machine->data;
 	StgStageController* stageController = script->stageController_;
-	ref_count_ptr<StgPlayerObject>::unsync obj = stageController->GetPlayerObject();
+	std::shared_ptr<StgPlayerObject>::unsync obj = stageController->GetPlayerObject();
 	double res = obj != NULL ? obj->GetPower() : 0;
 	return value(machine->get_engine()->get_real_type(), (long double)res);
 }
@@ -1010,7 +1009,7 @@ gstd::value StgStageScript::Func_GetPlayerInvincibilityFrame(gstd::script_machin
 {
 	StgStageScript* script = (StgStageScript*)machine->data;
 	StgStageController* stageController = script->stageController_;
-	ref_count_ptr<StgPlayerObject>::unsync obj = stageController->GetPlayerObject();
+	std::shared_ptr<StgPlayerObject>::unsync obj = stageController->GetPlayerObject();
 	double res = obj != NULL ? obj->GetInvincibilityFrame() : 0;
 	return value(machine->get_engine()->get_real_type(), (long double)res);
 }
@@ -1018,7 +1017,7 @@ gstd::value StgStageScript::Func_GetPlayerDownStateFrame(gstd::script_machine* m
 {
 	StgStageScript* script = (StgStageScript*)machine->data;
 	StgStageController* stageController = script->stageController_;
-	ref_count_ptr<StgPlayerObject>::unsync obj = stageController->GetPlayerObject();
+	std::shared_ptr<StgPlayerObject>::unsync obj = stageController->GetPlayerObject();
 	double res = obj != NULL ? obj->GetDownStateFrame() : 0;
 	return value(machine->get_engine()->get_real_type(), (long double)res);
 }
@@ -1026,7 +1025,7 @@ gstd::value StgStageScript::Func_GetPlayerRebirthFrame(gstd::script_machine* mac
 {
 	StgStageScript* script = (StgStageScript*)machine->data;
 	StgStageController* stageController = script->stageController_;
-	ref_count_ptr<StgPlayerObject>::unsync obj = stageController->GetPlayerObject();
+	std::shared_ptr<StgPlayerObject>::unsync obj = stageController->GetPlayerObject();
 	double res = obj != NULL ? obj->GetRebirthFrame() : 0;
 	return value(machine->get_engine()->get_real_type(), (long double)res);
 }
@@ -1034,15 +1033,14 @@ gstd::value StgStageScript::Func_GetAngleToPlayer(gstd::script_machine* machine,
 {
 	StgStageScript* script = (StgStageScript*)machine->data;
 	StgStageController* stageController = script->stageController_;
-	ref_count_ptr<StgPlayerObject>::unsync objPlayer = stageController->GetPlayerObject();
+	std::shared_ptr<StgPlayerObject>::unsync objPlayer = stageController->GetPlayerObject();
 	if (objPlayer == NULL)
 		return value(machine->get_engine()->get_real_type(), (long double)-1);
 	double px = objPlayer->GetPositionX();
 	double py = objPlayer->GetPositionY();
 
 	int id = (int)argv[0].as_real();
-	auto src = script->GetObject(id);
-	ref_count_ptr<DxScriptRenderObject>::unsync objMove = ref_count_ptr<DxScriptRenderObject>::unsync::DownCast(src);
+	std::shared_ptr<DxScriptRenderObject>::unsync objMove = std::shared_ptr<DxScriptRenderObject>::unsync::DownCast(script->GetObject(id));
 	if (objMove == NULL)
 		return value(machine->get_engine()->get_real_type(), (long double)-1);
 	double tx = objMove->GetPosition().x;
@@ -1056,7 +1054,7 @@ gstd::value StgStageScript::Func_IsPermitPlayerShot(gstd::script_machine* machin
 {
 	StgStageScript* script = (StgStageScript*)machine->data;
 	StgStageController* stageController = script->stageController_;
-	ref_count_ptr<StgPlayerObject>::unsync obj = stageController->GetPlayerObject();
+	std::shared_ptr<StgPlayerObject>::unsync obj = stageController->GetPlayerObject();
 	bool res = obj != NULL ? obj->IsPermitShot() : false;
 	return value(machine->get_engine()->get_boolean_type(), res);
 }
@@ -1064,7 +1062,7 @@ gstd::value StgStageScript::Func_IsPermitPlayerSpell(gstd::script_machine* machi
 {
 	StgStageScript* script = (StgStageScript*)machine->data;
 	StgStageController* stageController = script->stageController_;
-	ref_count_ptr<StgPlayerObject>::unsync obj = stageController->GetPlayerObject();
+	std::shared_ptr<StgPlayerObject>::unsync obj = stageController->GetPlayerObject();
 	bool res = obj != NULL ? obj->IsPermitSpell() : false;
 	return value(machine->get_engine()->get_boolean_type(), res);
 }
@@ -1072,7 +1070,7 @@ gstd::value StgStageScript::Func_IsPlayerLastSpellWait(gstd::script_machine* mac
 {
 	StgStageScript* script = (StgStageScript*)machine->data;
 	StgStageController* stageController = script->stageController_;
-	ref_count_ptr<StgPlayerObject>::unsync obj = stageController->GetPlayerObject();
+	std::shared_ptr<StgPlayerObject>::unsync obj = stageController->GetPlayerObject();
 	bool res = obj != NULL ? obj->IsWaitLastSpell() : false;
 	return value(machine->get_engine()->get_boolean_type(), res);
 }
@@ -1082,9 +1080,9 @@ gstd::value StgStageScript::Func_IsPlayerSpellActive(gstd::script_machine* machi
 	StgStageController* stageController = script->stageController_;
 
 	bool res = false;
-	ref_count_ptr<StgPlayerObject>::unsync objPlayer = stageController->GetPlayerObject();
+	std::shared_ptr<StgPlayerObject>::unsync objPlayer = stageController->GetPlayerObject();
 	if (objPlayer != NULL) {
-		ref_count_ptr<StgPlayerSpellManageObject>::unsync objSpell = objPlayer->GetSpellManageObject();
+		std::shared_ptr<StgPlayerSpellManageObject>::unsync objSpell = objPlayer->GetSpellManageObject();
 		res = (objSpell != NULL && !objSpell->IsDeleted());
 	}
 	return value(machine->get_engine()->get_boolean_type(), res);
@@ -1098,7 +1096,7 @@ gstd::value StgStageScript::Func_GetEnemyBossSceneObjectID(gstd::script_machine*
 	StgEnemyManager* enemyManager = stageController->GetEnemyManager();
 
 	int res = ID_INVALID;
-	ref_count_ptr<StgEnemyBossSceneObject>::unsync obj = enemyManager->GetBossSceneObject();
+	std::shared_ptr<StgEnemyBossSceneObject>::unsync obj = enemyManager->GetBossSceneObject();
 	if (obj != NULL && !obj->IsDeleted())
 		res = obj->GetObjectID();
 
@@ -1109,15 +1107,15 @@ gstd::value StgStageScript::Func_GetEnemyBossObjectID(gstd::script_machine* mach
 	StgStageScript* script = (StgStageScript*)machine->data;
 	StgStageController* stageController = script->stageController_;
 	StgEnemyManager* enemyManager = stageController->GetEnemyManager();
-	ref_count_ptr<StgEnemyBossSceneObject>::unsync scene = enemyManager->GetBossSceneObject();
+	std::shared_ptr<StgEnemyBossSceneObject>::unsync scene = enemyManager->GetBossSceneObject();
 
 	std::vector<long double> listLD;
 	if (scene != NULL) {
-		ref_count_ptr<StgEnemyBossSceneData>::unsync data = scene->GetActiveData();
+		std::shared_ptr<StgEnemyBossSceneData>::unsync data = scene->GetActiveData();
 		if (data != NULL) {
-			std::vector<ref_count_ptr<StgEnemyBossObject>::unsync> listEnemy = data->GetEnemyObjectList();
+			std::vector<std::shared_ptr<StgEnemyBossObject>::unsync> listEnemy = data->GetEnemyObjectList();
 			for (int iEnemy = 0; iEnemy < listEnemy.size(); iEnemy++) {
-				ref_count_ptr<StgEnemyBossObject>::unsync obj = listEnemy[iEnemy];
+				std::shared_ptr<StgEnemyBossObject>::unsync obj = listEnemy[iEnemy];
 				if (obj->IsDeleted())
 					continue;
 				int id = obj->GetObjectID();
@@ -1134,12 +1132,12 @@ gstd::value StgStageScript::Func_GetAllEnemyID(gstd::script_machine* machine, in
 	StgStageController* stageController = script->stageController_;
 	StgEnemyManager* enemyManager = stageController->GetEnemyManager();
 
-	std::list<ref_count_ptr<StgEnemyObject>::unsync>& listEnemy = enemyManager->GetEnemyList();
+	std::list<std::shared_ptr<StgEnemyObject>::unsync>& listEnemy = enemyManager->GetEnemyList();
 
 	std::vector<long double> listLD;
-	std::list<ref_count_ptr<StgEnemyObject>::unsync>::iterator itr = listEnemy.begin();
+	std::list<std::shared_ptr<StgEnemyObject>::unsync>::iterator itr = listEnemy.begin();
 	for (; itr != listEnemy.end(); itr++) {
-		ref_count_ptr<StgEnemyObject>::unsync obj = (*itr);
+		std::shared_ptr<StgEnemyObject>::unsync obj = (*itr);
 		if (obj->IsDeleted())
 			continue;
 		int id = obj->GetObjectID();
@@ -1449,7 +1447,7 @@ gstd::value StgStageScript::Func_CreateShotA1(gstd::script_machine* machine, int
 	StgStageScript* script = (StgStageScript*)machine->data;
 	StgStageController* stageController = script->stageController_;
 
-	ref_count_ptr<StgNormalShotObject>::unsync obj = new StgNormalShotObject(stageController);
+	std::shared_ptr<StgNormalShotObject>::unsync obj = new StgNormalShotObject(stageController);
 	obj->SetObjectManager(script->objManager_.GetPointer());
 	int id = script->AddObject(obj);
 	if (id != ID_INVALID) {
@@ -1478,7 +1476,7 @@ gstd::value StgStageScript::Func_CreateShotA2(gstd::script_machine* machine, int
 	StgStageScript* script = (StgStageScript*)machine->data;
 	StgStageController* stageController = script->stageController_;
 
-	ref_count_ptr<StgNormalShotObject>::unsync obj = new StgNormalShotObject(stageController);
+	std::shared_ptr<StgNormalShotObject>::unsync obj = new StgNormalShotObject(stageController);
 	obj->SetObjectManager(script->objManager_.GetPointer());
 	int id = script->AddObject(obj);
 	if (id != ID_INVALID) {
@@ -1522,7 +1520,7 @@ gstd::value StgStageScript::Func_CreateShotOA1(gstd::script_machine* machine, in
 	double posX = tObj->GetPosition().x;
 	double posY = tObj->GetPosition().y;
 
-	ref_count_ptr<StgNormalShotObject>::unsync obj = new StgNormalShotObject(stageController);
+	std::shared_ptr<StgNormalShotObject>::unsync obj = new StgNormalShotObject(stageController);
 	obj->SetObjectManager(script->objManager_.GetPointer());
 	int id = script->AddObject(obj);
 	if (id != ID_INVALID) {
@@ -1549,7 +1547,7 @@ gstd::value StgStageScript::Func_CreateShotB1(gstd::script_machine* machine, int
 	StgStageScript* script = (StgStageScript*)machine->data;
 	StgStageController* stageController = script->stageController_;
 
-	ref_count_ptr<StgNormalShotObject>::unsync obj = new StgNormalShotObject(stageController);
+	std::shared_ptr<StgNormalShotObject>::unsync obj = new StgNormalShotObject(stageController);
 	obj->SetObjectManager(script->objManager_.GetPointer());
 	int id = script->AddObject(obj);
 	if (id != ID_INVALID) {
@@ -1568,7 +1566,7 @@ gstd::value StgStageScript::Func_CreateShotB1(gstd::script_machine* machine, int
 		obj->SetDelay(delay);
 		obj->SetOwnerType(typeOwner);
 
-		ref_count_ptr<StgMovePattern_XY>::unsync pattern = new StgMovePattern_XY(obj.GetPointer());
+		std::shared_ptr<StgMovePattern_XY>::unsync pattern = new StgMovePattern_XY(obj.GetPointer());
 		pattern->SetSpeedX(speedX);
 		pattern->SetSpeedY(speedY);
 		obj->SetPattern(pattern);
@@ -1581,7 +1579,7 @@ gstd::value StgStageScript::Func_CreateShotB2(gstd::script_machine* machine, int
 	StgStageScript* script = (StgStageScript*)machine->data;
 	StgStageController* stageController = script->stageController_;
 
-	ref_count_ptr<StgNormalShotObject>::unsync obj = new StgNormalShotObject(stageController);
+	std::shared_ptr<StgNormalShotObject>::unsync obj = new StgNormalShotObject(stageController);
 	obj->SetObjectManager(script->objManager_.GetPointer());
 	int id = script->AddObject(obj);
 	if (id != ID_INVALID) {
@@ -1604,7 +1602,7 @@ gstd::value StgStageScript::Func_CreateShotB2(gstd::script_machine* machine, int
 		obj->SetDelay(delay);
 		obj->SetOwnerType(typeOwner);
 
-		ref_count_ptr<StgMovePattern_XY>::unsync pattern = new StgMovePattern_XY(obj.GetPointer());
+		std::shared_ptr<StgMovePattern_XY>::unsync pattern = new StgMovePattern_XY(obj.GetPointer());
 		pattern->SetSpeedX(speedX);
 		pattern->SetSpeedY(speedY);
 		pattern->SetAccelerationX(accelX);
@@ -1629,7 +1627,7 @@ gstd::value StgStageScript::Func_CreateShotOB1(gstd::script_machine* machine, in
 	double posX = tObj->GetPosition().x;
 	double posY = tObj->GetPosition().y;
 
-	ref_count_ptr<StgNormalShotObject>::unsync obj = new StgNormalShotObject(stageController);
+	std::shared_ptr<StgNormalShotObject>::unsync obj = new StgNormalShotObject(stageController);
 	obj->SetObjectManager(script->objManager_.GetPointer());
 	int id = script->AddObject(obj);
 	if (id != ID_INVALID) {
@@ -1646,7 +1644,7 @@ gstd::value StgStageScript::Func_CreateShotOB1(gstd::script_machine* machine, in
 		obj->SetDelay(delay);
 		obj->SetOwnerType(typeOwner);
 
-		ref_count_ptr<StgMovePattern_XY>::unsync pattern = new StgMovePattern_XY(obj.GetPointer());
+		std::shared_ptr<StgMovePattern_XY>::unsync pattern = new StgMovePattern_XY(obj.GetPointer());
 		pattern->SetSpeedX(speedX);
 		pattern->SetSpeedY(speedY);
 		obj->SetPattern(pattern);
@@ -1660,7 +1658,7 @@ gstd::value StgStageScript::Func_CreateLooseLaserA1(gstd::script_machine* machin
 	StgStageScript* script = (StgStageScript*)machine->data;
 	StgStageController* stageController = script->stageController_;
 
-	ref_count_ptr<StgLooseLaserObject>::unsync obj = new StgLooseLaserObject(stageController);
+	std::shared_ptr<StgLooseLaserObject>::unsync obj = new StgLooseLaserObject(stageController);
 	obj->SetObjectManager(script->objManager_.GetPointer());
 	int id = script->AddObject(obj);
 	if (id != ID_INVALID) {
@@ -1694,7 +1692,7 @@ gstd::value StgStageScript::Func_CreateStraightLaserA1(gstd::script_machine* mac
 	StgStageScript* script = (StgStageScript*)machine->data;
 	StgStageController* stageController = script->stageController_;
 
-	ref_count_ptr<StgStraightLaserObject>::unsync obj = new StgStraightLaserObject(stageController);
+	std::shared_ptr<StgStraightLaserObject>::unsync obj = new StgStraightLaserObject(stageController);
 	obj->SetObjectManager(script->objManager_.GetPointer());
 	int id = script->AddObject(obj);
 	if (id != ID_INVALID) {
@@ -1726,7 +1724,7 @@ gstd::value StgStageScript::Func_CreateCurveLaserA1(gstd::script_machine* machin
 	StgStageScript* script = (StgStageScript*)machine->data;
 	StgStageController* stageController = script->stageController_;
 
-	ref_count_ptr<StgCurveLaserObject>::unsync obj = new StgCurveLaserObject(stageController);
+	std::shared_ptr<StgCurveLaserObject>::unsync obj = new StgCurveLaserObject(stageController);
 	obj->SetObjectManager(script->objManager_.GetPointer());
 	int id = script->AddObject(obj);
 	if (id != ID_INVALID) {
@@ -1769,8 +1767,7 @@ gstd::value StgStageScript::Func_SetShotIntersectionCircle(gstd::script_machine*
 	DxCircle circle(px, py, radius);
 
 	//当たり判定
-	auto src = intersectionManager->GetPoolObject(StgIntersectionTarget::SHAPE_CIRCLE);
-	ref_count_ptr<StgIntersectionTarget_Circle>::unsync target = ref_count_ptr<StgIntersectionTarget_Circle>::unsync::DownCast(src);
+	std::shared_ptr<StgIntersectionTarget_Circle>::unsync target = std::shared_ptr<StgIntersectionTarget_Circle>::unsync::DownCast(intersectionManager->GetPoolObject(StgIntersectionTarget::SHAPE_CIRCLE));
 	target->SetTargetType(typeTarget);
 	target->SetCircle(circle);
 
@@ -1794,8 +1791,7 @@ gstd::value StgStageScript::Func_SetShotIntersectionLine(gstd::script_machine* m
 	DxWidthLine line(px1, py1, px2, py2, width);
 
 	//当たり判定
-	auto src = intersectionManager->GetPoolObject(StgIntersectionTarget::SHAPE_LINE);
-	ref_count_ptr<StgIntersectionTarget_Line>::unsync target = ref_count_ptr<StgIntersectionTarget_Line>::unsync::DownCast(src);
+	std::shared_ptr<StgIntersectionTarget_Line>::unsync target = std::shared_ptr<StgIntersectionTarget_Line>::unsync::DownCast(intersectionManager->GetPoolObject(StgIntersectionTarget::SHAPE_LINE));
 	target->SetTargetType(typeTarget);
 	target->SetLine(line);
 
@@ -1881,7 +1877,7 @@ gstd::value StgStageScript::Func_SetShotAutoDeleteClip(gstd::script_machine* mac
 {
 	StgStageScript* script = (StgStageScript*)machine->data;
 	StgStageController* stageController = script->stageController_;
-	ref_count_ptr<StgStageInformation> infoStage = stageController->GetStageInformation();
+	std::shared_ptr<StgStageInformation> infoStage = stageController->GetStageInformation();
 
 	RECT rect;
 	rect.left = -(int)argv[0].as_real();
@@ -1896,7 +1892,7 @@ gstd::value StgStageScript::Func_GetShotDataInfoA1(gstd::script_machine* machine
 {
 	StgStageScript* script = (StgStageScript*)machine->data;
 	StgStageController* stageController = script->stageController_;
-	ref_count_ptr<StgStageInformation> infoStage = stageController->GetStageInformation();
+	std::shared_ptr<StgStageInformation> infoStage = stageController->GetStageInformation();
 
 	int idShot = (int)argv[0].as_real();
 	int target = (int)argv[1].as_real();
@@ -1905,7 +1901,7 @@ gstd::value StgStageScript::Func_GetShotDataInfoA1(gstd::script_machine* machine
 	StgShotManager* shotManager = stageController->GetShotManager();
 	StgShotDataList* dataList = (target == TARGET_PLAYER) ? shotManager->GetPlayerShotDataList() : shotManager->GetEnemyShotDataList();
 
-	ref_count_ptr<StgShotData>::unsync shotData = NULL;
+	std::shared_ptr<StgShotData>::unsync shotData = NULL;
 	if (dataList != NULL)
 		shotData = dataList->GetData(idShot);
 
@@ -2002,7 +1998,7 @@ gstd::value StgStageScript::Func_CreateItemA1(gstd::script_machine* machine, int
 	StgItemManager* itemManager = stageController->GetItemManager();
 
 	int type = (int)argv[0].as_real();
-	ref_count_ptr<StgItemObject>::unsync obj = itemManager->CreateItem(type);
+	std::shared_ptr<StgItemObject>::unsync obj = itemManager->CreateItem(type);
 	int id = script->AddObject(obj);
 	if (id != ID_INVALID) {
 		itemManager->AddItem(obj);
@@ -2024,7 +2020,7 @@ gstd::value StgStageScript::Func_CreateItemA2(gstd::script_machine* machine, int
 	StgItemManager* itemManager = stageController->GetItemManager();
 
 	int type = (int)argv[0].as_real();
-	ref_count_ptr<StgItemObject>::unsync obj = itemManager->CreateItem(type);
+	std::shared_ptr<StgItemObject>::unsync obj = itemManager->CreateItem(type);
 	int id = script->AddObject(obj);
 	if (id != ID_INVALID) {
 		itemManager->AddItem(obj);
@@ -2046,8 +2042,7 @@ gstd::value StgStageScript::Func_CreateItemU1(gstd::script_machine* machine, int
 	StgItemManager* itemManager = stageController->GetItemManager();
 
 	int type = StgItemObject::ITEM_USER;
-	auto src = itemManager->CreateItem(type);
-	ref_count_ptr<StgItemObject_User>::unsync obj = ref_count_ptr<StgItemObject_User>::unsync::DownCast(src);
+	std::shared_ptr<StgItemObject_User>::unsync obj = std::shared_ptr<StgItemObject_User>::unsync::DownCast(itemManager->CreateItem(type));
 	int id = script->AddObject(obj);
 	if (id != ID_INVALID) {
 		itemManager->AddItem(obj);
@@ -2073,8 +2068,7 @@ gstd::value StgStageScript::Func_CreateItemU2(gstd::script_machine* machine, int
 	StgItemManager* itemManager = stageController->GetItemManager();
 
 	int type = StgItemObject::ITEM_USER;
-	auto src = itemManager->CreateItem(type);
-	ref_count_ptr<StgItemObject_User>::unsync obj = ref_count_ptr<StgItemObject_User>::unsync::DownCast(src);
+	std::shared_ptr<StgItemObject_User>::unsync obj = std::shared_ptr<StgItemObject_User>::unsync::DownCast(itemManager->CreateItem(type));
 	int id = script->AddObject(obj);
 	if (id != ID_INVALID) {
 		itemManager->AddItem(obj);
@@ -2102,7 +2096,7 @@ gstd::value StgStageScript::Func_CreateItemScore(gstd::script_machine* machine, 
 	int posX = (int)argv[1].as_real();
 	int posY = (int)argv[2].as_real();
 
-	ref_count_ptr<StgItemObject_Score>::unsync obj = new StgItemObject_Score(stageController);
+	std::shared_ptr<StgItemObject_Score>::unsync obj = new StgItemObject_Score(stageController);
 	int id = script->AddObject(obj);
 	if (id != ID_INVALID) {
 		itemManager->AddItem(obj);
@@ -2219,7 +2213,7 @@ gstd::value StgStageScript::Func_StartSlow(gstd::script_machine* machine, int ar
 	int slowTarget = PseudoSlowInformation::TARGET_ALL;
 	int typeOwner = script->GetScriptType() == TYPE_PLAYER ? PseudoSlowInformation::OWNER_PLAYER : PseudoSlowInformation::OWNER_ENEMY;
 
-	ref_count_ptr<PseudoSlowInformation> infoSlow = stageController->GetSlowInformation();
+	std::shared_ptr<PseudoSlowInformation> infoSlow = stageController->GetSlowInformation();
 	infoSlow->AddSlow(fps, typeOwner, slowTarget);
 
 	return value();
@@ -2234,7 +2228,7 @@ gstd::value StgStageScript::Func_StopSlow(gstd::script_machine* machine, int arg
 	int slowTarget = PseudoSlowInformation::TARGET_ALL;
 	int typeOwner = script->GetScriptType() == TYPE_PLAYER ? PseudoSlowInformation::OWNER_PLAYER : PseudoSlowInformation::OWNER_ENEMY;
 
-	ref_count_ptr<PseudoSlowInformation> infoSlow = stageController->GetSlowInformation();
+	std::shared_ptr<PseudoSlowInformation> infoSlow = stageController->GetSlowInformation();
 	infoSlow->RemoveSlow(typeOwner, slowTarget);
 
 	return value();
@@ -2270,14 +2264,14 @@ gstd::value StgStageScript::Func_IsIntersected_Obj_Obj(gstd::script_machine* mac
 	if (obj2 == NULL)
 		return value(machine->get_engine()->get_boolean_type(), false);
 
-	std::vector<ref_count_ptr<StgIntersectionTarget>::unsync> listTaget1 = obj1->GetIntersectionTargetList();
-	std::vector<ref_count_ptr<StgIntersectionTarget>::unsync> listTaget2 = obj2->GetIntersectionTargetList();
+	std::vector<std::shared_ptr<StgIntersectionTarget>::unsync> listTaget1 = obj1->GetIntersectionTargetList();
+	std::vector<std::shared_ptr<StgIntersectionTarget>::unsync> listTaget2 = obj2->GetIntersectionTargetList();
 
 	bool res = false;
 	for (int iTarget1 = 0; iTarget1 < listTaget1.size() && !res; iTarget1++) {
 		for (int iTarget2 = 0; iTarget2 < listTaget2.size() && !res; iTarget2++) {
-			ref_count_ptr<StgIntersectionTarget>::unsync target1 = listTaget1[iTarget1];
-			ref_count_ptr<StgIntersectionTarget>::unsync target2 = listTaget2[iTarget2];
+			std::shared_ptr<StgIntersectionTarget>::unsync target1 = listTaget1[iTarget1];
+			std::shared_ptr<StgIntersectionTarget>::unsync target2 = listTaget2[iTarget2];
 			res = StgIntersectionManager::IsIntersected(target1, target2);
 		}
 	}
@@ -2373,8 +2367,7 @@ gstd::value StgStageScript::Func_ObjMove_SetAcceleration(gstd::script_machine* m
 	StgMoveObject* obj = dynamic_cast<StgMoveObject*>(script->GetObjectPointer(id));
 	if (obj == NULL)
 		return value();
-	auto src = obj->GetPattern();
-	ref_count_ptr<StgMovePattern_Angle>::unsync pattern = ref_count_ptr<StgMovePattern_Angle>::unsync::DownCast(src);
+	std::shared_ptr<StgMovePattern_Angle>::unsync pattern = std::shared_ptr<StgMovePattern_Angle>::unsync::DownCast(obj->GetPattern());
 	if (pattern == NULL) {
 		pattern = new StgMovePattern_Angle(obj);
 		obj->SetPattern(pattern);
@@ -2391,8 +2384,7 @@ gstd::value StgStageScript::Func_ObjMove_SetAngularVelocity(gstd::script_machine
 	StgMoveObject* obj = dynamic_cast<StgMoveObject*>(script->GetObjectPointer(id));
 	if (obj == NULL)
 		return value();
-	auto src = obj->GetPattern();
-	ref_count_ptr<StgMovePattern_Angle>::unsync pattern = ref_count_ptr<StgMovePattern_Angle>::unsync::DownCast(src);
+	std::shared_ptr<StgMovePattern_Angle>::unsync pattern = std::shared_ptr<StgMovePattern_Angle>::unsync::DownCast(obj->GetPattern());
 	if (pattern == NULL) {
 		pattern = new StgMovePattern_Angle(obj);
 		obj->SetPattern(pattern);
@@ -2409,8 +2401,7 @@ gstd::value StgStageScript::Func_ObjMove_SetMaxSpeed(gstd::script_machine* machi
 	StgMoveObject* obj = dynamic_cast<StgMoveObject*>(script->GetObjectPointer(id));
 	if (obj == NULL)
 		return value();
-	auto src = obj->GetPattern();
-	ref_count_ptr<StgMovePattern_Angle>::unsync pattern = ref_count_ptr<StgMovePattern_Angle>::unsync::DownCast(src);
+	std::shared_ptr<StgMovePattern_Angle>::unsync pattern = std::shared_ptr<StgMovePattern_Angle>::unsync::DownCast(obj->GetPattern());
 	if (pattern == NULL) {
 		pattern = new StgMovePattern_Angle(obj);
 		obj->SetPattern(pattern);
@@ -2433,7 +2424,7 @@ gstd::value StgStageScript::Func_ObjMove_SetDestAtSpeed(gstd::script_machine* ma
 	double ty = argv[2].as_real();
 	double speed = argv[3].as_real();
 
-	ref_count_ptr<StgMovePattern_Line>::unsync pattern = new StgMovePattern_Line(obj);
+	std::shared_ptr<StgMovePattern_Line>::unsync pattern = new StgMovePattern_Line(obj);
 	pattern->SetAtSpeed(tx, ty, speed);
 	obj->SetPattern(pattern);
 
@@ -2451,7 +2442,7 @@ gstd::value StgStageScript::Func_ObjMove_SetDestAtFrame(gstd::script_machine* ma
 	double ty = argv[2].as_real();
 	int frame = (int)argv[3].as_real();
 
-	ref_count_ptr<StgMovePattern_Line>::unsync pattern = new StgMovePattern_Line(obj);
+	std::shared_ptr<StgMovePattern_Line>::unsync pattern = new StgMovePattern_Line(obj);
 	pattern->SetAtFrame(tx, ty, frame);
 	obj->SetPattern(pattern);
 
@@ -2470,7 +2461,7 @@ gstd::value StgStageScript::Func_ObjMove_SetDestAtWeight(gstd::script_machine* m
 	double weight = argv[3].as_real();
 	double maxSpeed = argv[4].as_real();
 
-	ref_count_ptr<StgMovePattern_Line>::unsync pattern = new StgMovePattern_Line(obj);
+	std::shared_ptr<StgMovePattern_Line>::unsync pattern = new StgMovePattern_Line(obj);
 	pattern->SetAtWait(tx, ty, weight, maxSpeed);
 	obj->SetPattern(pattern);
 
@@ -2488,7 +2479,7 @@ gstd::value StgStageScript::Func_ObjMove_AddPatternA1(gstd::script_machine* mach
 	double speed = argv[2].as_real();
 	double angle = argv[3].as_real();
 
-	ref_count_ptr<StgMovePattern_Angle>::unsync pattern = new StgMovePattern_Angle(obj);
+	std::shared_ptr<StgMovePattern_Angle>::unsync pattern = new StgMovePattern_Angle(obj);
 	pattern->SetSpeed(speed);
 	pattern->SetDirectionAngle(angle);
 	obj->AddPattern(frame, pattern);
@@ -2510,7 +2501,7 @@ gstd::value StgStageScript::Func_ObjMove_AddPatternA2(gstd::script_machine* mach
 	double angV = argv[5].as_real();
 	double maxSpeed = argv[6].as_real();
 
-	ref_count_ptr<StgMovePattern_Angle>::unsync pattern = new StgMovePattern_Angle(obj);
+	std::shared_ptr<StgMovePattern_Angle>::unsync pattern = new StgMovePattern_Angle(obj);
 	pattern->SetSpeed(speed);
 	pattern->SetDirectionAngle(angle);
 	pattern->SetAcceleration(accele);
@@ -2536,7 +2527,7 @@ gstd::value StgStageScript::Func_ObjMove_AddPatternA3(gstd::script_machine* mach
 	double maxSpeed = argv[6].as_real();
 	int idShot = (int)argv[7].as_real();
 
-	ref_count_ptr<StgMovePattern_Angle>::unsync pattern = new StgMovePattern_Angle(obj);
+	std::shared_ptr<StgMovePattern_Angle>::unsync pattern = new StgMovePattern_Angle(obj);
 	pattern->SetSpeed(speed);
 	pattern->SetDirectionAngle(angle);
 	pattern->SetAcceleration(accele);
@@ -2564,7 +2555,7 @@ gstd::value StgStageScript::Func_ObjMove_AddPatternA4(gstd::script_machine* mach
 	int idRelative = (int)argv[7].as_real();
 	int idShot = (int)argv[8].as_real();
 
-	ref_count_ptr<StgMovePattern_Angle>::unsync pattern = new StgMovePattern_Angle(obj);
+	std::shared_ptr<StgMovePattern_Angle>::unsync pattern = new StgMovePattern_Angle(obj);
 	pattern->SetSpeed(speed);
 	pattern->SetDirectionAngle(angle);
 	pattern->SetAcceleration(accele);
@@ -2588,7 +2579,7 @@ gstd::value StgStageScript::Func_ObjMove_AddPatternB1(gstd::script_machine* mach
 	double speedX = argv[2].as_real();
 	double speedY = argv[3].as_real();
 
-	ref_count_ptr<StgMovePattern_XY>::unsync pattern = new StgMovePattern_XY(obj);
+	std::shared_ptr<StgMovePattern_XY>::unsync pattern = new StgMovePattern_XY(obj);
 	pattern->SetSpeedX(speedX);
 	pattern->SetSpeedY(speedY);
 	obj->AddPattern(frame, pattern);
@@ -2611,7 +2602,7 @@ gstd::value StgStageScript::Func_ObjMove_AddPatternB2(gstd::script_machine* mach
 	double maxSpeedX = argv[6].as_real();
 	double maxSpeedY = argv[7].as_real();
 
-	ref_count_ptr<StgMovePattern_XY>::unsync pattern = new StgMovePattern_XY(obj);
+	std::shared_ptr<StgMovePattern_XY>::unsync pattern = new StgMovePattern_XY(obj);
 	pattern->SetSpeedX(speedX);
 	pattern->SetSpeedY(speedY);
 	pattern->SetAccelerationX(accelX);
@@ -2639,7 +2630,7 @@ gstd::value StgStageScript::Func_ObjMove_AddPatternB3(gstd::script_machine* mach
 	double maxSpeedY = argv[7].as_real();
 	int idShot = (int)argv[8].as_real();
 
-	ref_count_ptr<StgMovePattern_XY>::unsync pattern = new StgMovePattern_XY(obj);
+	std::shared_ptr<StgMovePattern_XY>::unsync pattern = new StgMovePattern_XY(obj);
 	pattern->SetSpeedX(speedX);
 	pattern->SetSpeedY(speedY);
 	pattern->SetAccelerationX(accelX);
@@ -2704,16 +2695,16 @@ gstd::value StgStageScript::Func_ObjEnemy_Create(gstd::script_machine* machine, 
 	StgEnemyManager* enemyManager = stageController->GetEnemyManager();
 
 	int type = (int)argv[0].as_real();
-	ref_count_ptr<DxScriptObjectBase>::unsync obj;
+	std::shared_ptr<DxScriptObjectBase>::unsync obj;
 	if (type == OBJ_ENEMY) {
 		obj = new StgEnemyObject(stageController);
 	} else if (type == OBJ_ENEMY_BOSS) {
-		ref_count_ptr<StgEnemyBossSceneObject>::unsync objScene = enemyManager->GetBossSceneObject();
+		std::shared_ptr<StgEnemyBossSceneObject>::unsync objScene = enemyManager->GetBossSceneObject();
 		if (objScene == NULL) {
 			throw gstd::wexception(L"EnemyBossSceneが作成されていません");
 		}
 
-		ref_count_ptr<StgEnemyBossSceneData>::unsync data = objScene->GetActiveData();
+		std::shared_ptr<StgEnemyBossSceneData>::unsync data = objScene->GetActiveData();
 		int id = data->GetEnemyBossIdInCreate();
 		return value(machine->get_engine()->get_real_type(), (long double)id);
 	}
@@ -2732,8 +2723,7 @@ gstd::value StgStageScript::Func_ObjEnemy_Regist(gstd::script_machine* machine, 
 
 	int id = (int)argv[0].as_real();
 
-	auto src = stageController->GetMainRenderObject(id);
-	ref_count_ptr<StgEnemyObject>::unsync objEnemy = ref_count_ptr<StgEnemyObject>::unsync::DownCast(src);
+	std::shared_ptr<StgEnemyObject>::unsync objEnemy = std::shared_ptr<StgEnemyObject>::unsync::DownCast(stageController->GetMainRenderObject(id));
 	if (objEnemy != NULL) {
 		StgEnemyManager* enemyManager = stageController->GetEnemyManager();
 		enemyManager->AddEnemy(objEnemy);
@@ -2822,8 +2812,7 @@ gstd::value StgStageScript::Func_ObjEnemy_AddIntersectionCircleA(gstd::script_ma
 	StgIntersectionManager* intersectionManager = stageController->GetIntersectionManager();
 
 	int id = (int)argv[0].as_real();
-	auto src2 = script->GetObject(id);
-	ref_count_ptr<StgEnemyObject>::unsync obj = ref_count_ptr<StgEnemyObject>::unsync::DownCast(src2);
+	std::shared_ptr<StgEnemyObject>::unsync obj = std::shared_ptr<StgEnemyObject>::unsync::DownCast(script->GetObject(id));
 	if (obj == NULL)
 		return value();
 
@@ -2835,8 +2824,7 @@ gstd::value StgStageScript::Func_ObjEnemy_AddIntersectionCircleA(gstd::script_ma
 
 	//当たり判定
 	ref_count_weak_ptr<StgEnemyObject>::unsync wObj = obj;
-	auto src = intersectionManager->GetPoolObject(StgIntersectionTarget::SHAPE_CIRCLE);
-	ref_count_ptr<StgIntersectionTarget_Circle>::unsync target = ref_count_ptr<StgIntersectionTarget_Circle>::unsync::DownCast(src);
+	std::shared_ptr<StgIntersectionTarget_Circle>::unsync target = std::shared_ptr<StgIntersectionTarget_Circle>::unsync::DownCast(intersectionManager->GetPoolObject(StgIntersectionTarget::SHAPE_CIRCLE));
 	target->SetTargetType(StgIntersectionTarget::TYPE_ENEMY);
 	target->SetObject(wObj);
 	target->SetCircle(circle);
@@ -2851,8 +2839,7 @@ gstd::value StgStageScript::Func_ObjEnemy_SetIntersectionCircleToShot(gstd::scri
 	StgIntersectionManager* intersectionManager = stageController->GetIntersectionManager();
 
 	int id = (int)argv[0].as_real();
-	auto src2 = script->GetObject(id);
-	ref_count_ptr<StgEnemyObject>::unsync obj = ref_count_ptr<StgEnemyObject>::unsync::DownCast(src2);
+	std::shared_ptr<StgEnemyObject>::unsync obj = std::shared_ptr<StgEnemyObject>::unsync::DownCast(script->GetObject(id));
 	if (obj == NULL)
 		return value();
 
@@ -2864,8 +2851,7 @@ gstd::value StgStageScript::Func_ObjEnemy_SetIntersectionCircleToShot(gstd::scri
 
 	//当たり判定
 	ref_count_weak_ptr<StgEnemyObject>::unsync wObj = obj;
-	auto src = intersectionManager->GetPoolObject(StgIntersectionTarget::SHAPE_CIRCLE);
-	ref_count_ptr<StgIntersectionTarget_Circle>::unsync target = ref_count_ptr<StgIntersectionTarget_Circle>::unsync::DownCast(src);
+	std::shared_ptr<StgIntersectionTarget_Circle>::unsync target = std::shared_ptr<StgIntersectionTarget_Circle>::unsync::DownCast(intersectionManager->GetPoolObject(StgIntersectionTarget::SHAPE_CIRCLE));
 	target->SetTargetType(StgIntersectionTarget::TYPE_ENEMY);
 	target->SetObject(wObj);
 	target->SetCircle(circle);
@@ -2880,8 +2866,7 @@ gstd::value StgStageScript::Func_ObjEnemy_SetIntersectionCircleToPlayer(gstd::sc
 	StgIntersectionManager* intersectionManager = stageController->GetIntersectionManager();
 
 	int id = (int)argv[0].as_real();
-	auto src2 = script->GetObject(id);
-	ref_count_ptr<StgEnemyObject>::unsync obj = ref_count_ptr<StgEnemyObject>::unsync::DownCast(src2);
+	std::shared_ptr<StgEnemyObject>::unsync obj = std::shared_ptr<StgEnemyObject>::unsync::DownCast(script->GetObject(id));
 	if (obj == NULL)
 		return value();
 
@@ -2893,8 +2878,7 @@ gstd::value StgStageScript::Func_ObjEnemy_SetIntersectionCircleToPlayer(gstd::sc
 
 	//当たり判定
 	ref_count_weak_ptr<StgEnemyObject>::unsync wObj = obj;
-	auto src = intersectionManager->GetPoolObject(StgIntersectionTarget::SHAPE_CIRCLE);
-	ref_count_ptr<StgIntersectionTarget_Circle>::unsync target = ref_count_ptr<StgIntersectionTarget_Circle>::unsync::DownCast(src);
+	std::shared_ptr<StgIntersectionTarget_Circle>::unsync target = std::shared_ptr<StgIntersectionTarget_Circle>::unsync::DownCast(intersectionManager->GetPoolObject(StgIntersectionTarget::SHAPE_CIRCLE));
 	target->SetTargetType(StgIntersectionTarget::TYPE_ENEMY);
 	target->SetObject(wObj);
 	target->SetCircle(circle);
@@ -2911,7 +2895,7 @@ gstd::value StgStageScript::Func_ObjEnemyBossScene_Create(gstd::script_machine* 
 	StgStageController* stageController = script->stageController_;
 	StgEnemyManager* enemyManager = stageController->GetEnemyManager();
 
-	ref_count_ptr<DxScriptObjectBase>::unsync obj = new StgEnemyBossSceneObject(stageController);
+	std::shared_ptr<DxScriptObjectBase>::unsync obj = new StgEnemyBossSceneObject(stageController);
 
 	int id = ID_INVALID;
 	if (obj != NULL) {
@@ -2929,8 +2913,7 @@ gstd::value StgStageScript::Func_ObjEnemyBossScene_Regist(gstd::script_machine* 
 
 	StgEnemyManager* enemyManager = stageController->GetEnemyManager();
 
-	auto src = stageController->GetMainRenderObject(id);
-	ref_count_ptr<StgEnemyBossSceneObject>::unsync objScene = ref_count_ptr<StgEnemyBossSceneObject>::unsync::DownCast(src);
+	std::shared_ptr<StgEnemyBossSceneObject>::unsync objScene = std::shared_ptr<StgEnemyBossSceneObject>::unsync::DownCast(stageController->GetMainRenderObject(id));
 	if (objScene != NULL) {
 		enemyManager->SetBossSceneObject(objScene);
 		objScene->Activate();
@@ -2951,7 +2934,7 @@ gstd::value StgStageScript::Func_ObjEnemyBossScene_Add(gstd::script_machine* mac
 	std::wstring path = argv[2].as_string();
 	path = PathProperty::GetUnique(path);
 
-	ref_count_ptr<StgEnemyBossSceneData>::unsync data = new StgEnemyBossSceneData();
+	std::shared_ptr<StgEnemyBossSceneData>::unsync data = new StgEnemyBossSceneData();
 	data->SetPath(path);
 	obj->AddData(step, data);
 
@@ -3004,7 +2987,7 @@ gstd::value StgStageScript::Func_ObjEnemyBossScene_GetInfo(gstd::script_machine*
 		return value();
 	}
 
-	ref_count_ptr<StgEnemyBossSceneData>::unsync sceneData = obj->GetActiveData();
+	std::shared_ptr<StgEnemyBossSceneData>::unsync sceneData = obj->GetActiveData();
 	switch (type) {
 	case INFO_IS_SPELL: {
 		bool res = false;
@@ -3118,7 +3101,7 @@ gstd::value StgStageScript::Func_ObjEnemyBossScene_SetSpellTimer(gstd::script_ma
 	StgEnemyBossSceneObject* obj = dynamic_cast<StgEnemyBossSceneObject*>(script->GetObjectPointer(id));
 	if (obj == NULL)
 		return value();
-	ref_count_ptr<StgEnemyBossSceneData>::unsync sceneData = obj->GetActiveData();
+	std::shared_ptr<StgEnemyBossSceneData>::unsync sceneData = obj->GetActiveData();
 	if (sceneData == NULL)
 		return value();
 
@@ -3133,7 +3116,7 @@ gstd::value StgStageScript::Func_ObjEnemyBossScene_StartSpell(gstd::script_machi
 	StgEnemyBossSceneObject* obj = dynamic_cast<StgEnemyBossSceneObject*>(script->GetObjectPointer(id));
 	if (obj == NULL)
 		return value();
-	ref_count_ptr<StgEnemyBossSceneData>::unsync sceneData = obj->GetActiveData();
+	std::shared_ptr<StgEnemyBossSceneData>::unsync sceneData = obj->GetActiveData();
 	if (sceneData == NULL)
 		return value();
 
@@ -3151,7 +3134,7 @@ gstd::value StgStageScript::Func_ObjShot_Create(gstd::script_machine* machine, i
 	StgStageController* stageController = script->stageController_;
 
 	int type = (int)argv[0].as_real();
-	ref_count_ptr<StgShotObject>::unsync obj;
+	std::shared_ptr<StgShotObject>::unsync obj;
 	if (type == OBJ_SHOT) {
 		obj = new StgNormalShotObject(stageController);
 	} else if (type == OBJ_LOOSE_LASER) {
@@ -3179,11 +3162,10 @@ gstd::value StgStageScript::Func_ObjShot_Regist(gstd::script_machine* machine, i
 
 	int id = (int)argv[0].as_real();
 
-	auto src = stageController->GetMainRenderObject(id);
-	ref_count_ptr<StgShotObject>::unsync objShot = ref_count_ptr<StgShotObject>::unsync::DownCast(src);
+	std::shared_ptr<StgShotObject>::unsync objShot = std::shared_ptr<StgShotObject>::unsync::DownCast(stageController->GetMainRenderObject(id));
 	if (objShot != NULL) {
 		if (script->GetScriptType() == TYPE_PLAYER) {
-			ref_count_ptr<StgPlayerObject>::unsync objPlayer = stageController->GetPlayerObject();
+			std::shared_ptr<StgPlayerObject>::unsync objPlayer = stageController->GetPlayerObject();
 			if (objPlayer != NULL && !objPlayer->IsPermitShot())
 				return value();
 		}
@@ -3393,8 +3375,7 @@ gstd::value StgStageScript::Func_ObjShot_SetIntersectionCircleA1(gstd::script_ma
 	StgStageScript* script = (StgStageScript*)machine->data;
 	StgStageController* stageController = script->stageController_;
 	int id = (int)argv[0].as_real();
-	auto src2 = script->GetObject(id);
-	ref_count_ptr<StgShotObject>::unsync obj = ref_count_ptr<StgShotObject>::unsync::DownCast(src2);
+	std::shared_ptr<StgShotObject>::unsync obj = std::shared_ptr<StgShotObject>::unsync::DownCast(script->GetObject(id));
 	if (obj == NULL)
 		return value();
 	if (obj->GetDelay() > 0)
@@ -3411,8 +3392,7 @@ gstd::value StgStageScript::Func_ObjShot_SetIntersectionCircleA1(gstd::script_ma
 	ref_count_weak_ptr<StgShotObject>::unsync wObj = obj;
 
 	//当たり判定
-	auto src = intersectionManager->GetPoolObject(StgIntersectionTarget::SHAPE_CIRCLE);
-	ref_count_ptr<StgIntersectionTarget_Circle>::unsync target = ref_count_ptr<StgIntersectionTarget_Circle>::unsync::DownCast(src);
+	std::shared_ptr<StgIntersectionTarget_Circle>::unsync target = std::shared_ptr<StgIntersectionTarget_Circle>::unsync::DownCast(intersectionManager->GetPoolObject(StgIntersectionTarget::SHAPE_CIRCLE));
 	target->SetTargetType(typeTarget);
 	target->SetCircle(circle);
 	target->SetObject(wObj);
@@ -3426,8 +3406,7 @@ gstd::value StgStageScript::Func_ObjShot_SetIntersectionCircleA2(gstd::script_ma
 	StgStageScript* script = (StgStageScript*)machine->data;
 	StgStageController* stageController = script->stageController_;
 	int id = (int)argv[0].as_real();
-	auto src2 = script->GetObject(id);
-	ref_count_ptr<StgShotObject>::unsync obj = ref_count_ptr<StgShotObject>::unsync::DownCast(src2);
+	std::shared_ptr<StgShotObject>::unsync obj = std::shared_ptr<StgShotObject>::unsync::DownCast(script->GetObject(id));
 	if (obj == NULL)
 		return value();
 	if (obj->GetDelay() > 0)
@@ -3444,8 +3423,7 @@ gstd::value StgStageScript::Func_ObjShot_SetIntersectionCircleA2(gstd::script_ma
 	ref_count_weak_ptr<StgShotObject>::unsync wObj = obj;
 
 	//当たり判定
-	auto src = intersectionManager->GetPoolObject(StgIntersectionTarget::SHAPE_CIRCLE);
-	ref_count_ptr<StgIntersectionTarget_Circle>::unsync target = ref_count_ptr<StgIntersectionTarget_Circle>::unsync::DownCast(src);
+	std::shared_ptr<StgIntersectionTarget_Circle>::unsync target = std::shared_ptr<StgIntersectionTarget_Circle>::unsync::DownCast(intersectionManager->GetPoolObject(StgIntersectionTarget::SHAPE_CIRCLE));
 	target->SetTargetType(typeTarget);
 	target->SetCircle(circle);
 	target->SetObject(wObj);
@@ -3460,8 +3438,7 @@ gstd::value StgStageScript::Func_ObjShot_SetIntersectionLine(gstd::script_machin
 	StgStageController* stageController = script->stageController_;
 
 	int id = (int)argv[0].as_real();
-	auto src = script->GetObject(id);
-	ref_count_ptr<StgShotObject>::unsync obj = ref_count_ptr<StgShotObject>::unsync::DownCast(src);
+	std::shared_ptr<StgShotObject>::unsync obj = std::shared_ptr<StgShotObject>::unsync::DownCast(script->GetObject(id));
 	if (obj == NULL)
 		return value();
 	if (obj->GetDelay() > 0)
@@ -3480,8 +3457,7 @@ gstd::value StgStageScript::Func_ObjShot_SetIntersectionLine(gstd::script_machin
 
 	//当たり判定
 	ref_count_weak_ptr<StgShotObject>::unsync wObjShot = obj;
-	auto src2 = intersectionManager->GetPoolObject(StgIntersectionTarget::SHAPE_LINE);
-	ref_count_ptr<StgIntersectionTarget_Line>::unsync target = ref_count_ptr<StgIntersectionTarget_Line>::unsync::DownCast(src2);
+	std::shared_ptr<StgIntersectionTarget_Line>::unsync target = std::shared_ptr<StgIntersectionTarget_Line>::unsync::DownCast(intersectionManager->GetPoolObject(StgIntersectionTarget::SHAPE_LINE));
 	target->SetTargetType(typeTarget);
 	target->SetObject(wObjShot);
 	target->SetLine(line);
@@ -3754,7 +3730,7 @@ gstd::value StgStageScript::Func_ObjItem_Create(gstd::script_machine* machine, i
 	StgStageController* stageController = script->stageController_;
 
 	int type = (int)argv[0].as_real();
-	ref_count_ptr<StgItemObject>::unsync obj;
+	std::shared_ptr<StgItemObject>::unsync obj;
 	if (type == StgItemObject::ITEM_USER) {
 		obj = new StgItemObject_User(stageController);
 	}
@@ -3773,8 +3749,7 @@ gstd::value StgStageScript::Func_ObjItem_Regist(gstd::script_machine* machine, i
 
 	int id = (int)argv[0].as_real();
 
-	auto src = stageController->GetMainRenderObject(id);
-	ref_count_ptr<StgItemObject>::unsync objItem = ref_count_ptr<StgItemObject>::unsync::DownCast(src);
+	std::shared_ptr<StgItemObject>::unsync objItem = std::shared_ptr<StgItemObject>::unsync::DownCast(stageController->GetMainRenderObject(id));
 	if (objItem != NULL) {
 		StgItemManager* itemManager = stageController->GetItemManager();
 		itemManager->AddItem(objItem);
@@ -3833,7 +3808,7 @@ gstd::value StgStageScript::Func_ObjItem_SetDefinedMovePatternA1(gstd::script_ma
 		return value();
 
 	int type = (int)argv[1].as_real();
-	ref_count_ptr<StgMovePattern_Item>::unsync move = new StgMovePattern_Item(obj);
+	std::shared_ptr<StgMovePattern_Item>::unsync move = new StgMovePattern_Item(obj);
 	move->SetItemMoveType(type);
 	obj->SetPattern(move);
 
@@ -3867,8 +3842,7 @@ gstd::value StgStageScript::Func_ObjPlayer_AddIntersectionCircleA1(gstd::script_
 {
 	DxScript* script = (DxScript*)machine->data;
 	int id = (int)argv[0].as_real();
-	auto src = script->GetObject(id);
-	ref_count_ptr<StgPlayerObject>::unsync obj = ref_count_ptr<StgPlayerObject>::unsync::DownCast(src);
+	std::shared_ptr<StgPlayerObject>::unsync obj = std::shared_ptr<StgPlayerObject>::unsync::DownCast(script->GetObject(id));
 	if (obj == NULL)
 		return value();
 
@@ -3881,14 +3855,14 @@ gstd::value StgStageScript::Func_ObjPlayer_AddIntersectionCircleA1(gstd::script_
 
 	//当たり判定
 	ref_count_weak_ptr<StgPlayerObject>::unsync wObj = obj;
-	ref_count_ptr<StgIntersectionTarget_Player>::unsync targetHit = new StgIntersectionTarget_Player(false);
+	std::shared_ptr<StgIntersectionTarget_Player>::unsync targetHit = new StgIntersectionTarget_Player(false);
 	targetHit->SetObject(wObj);
 	targetHit->SetCircle(circle);
 	obj->AddIntersectionRelativeTarget(targetHit);
 
 	//Graze判定
 	circle.SetR(rHit + rGraze);
-	ref_count_ptr<StgIntersectionTarget_Player>::unsync targetGraze = new StgIntersectionTarget_Player(true);
+	std::shared_ptr<StgIntersectionTarget_Player>::unsync targetGraze = new StgIntersectionTarget_Player(true);
 	targetGraze->SetObject(wObj);
 	targetGraze->SetCircle(circle);
 	obj->AddIntersectionRelativeTarget(targetGraze);
@@ -3899,8 +3873,7 @@ gstd::value StgStageScript::Func_ObjPlayer_AddIntersectionCircleA2(gstd::script_
 {
 	DxScript* script = (DxScript*)machine->data;
 	int id = (int)argv[0].as_real();
-	auto src = script->GetObject(id);
-	ref_count_ptr<StgPlayerObject>::unsync obj = ref_count_ptr<StgPlayerObject>::unsync::DownCast(src);
+	std::shared_ptr<StgPlayerObject>::unsync obj = std::shared_ptr<StgPlayerObject>::unsync::DownCast(script->GetObject(id));
 	if (obj == NULL)
 		return value();
 
@@ -3913,7 +3886,7 @@ gstd::value StgStageScript::Func_ObjPlayer_AddIntersectionCircleA2(gstd::script_
 	//Graze判定
 	ref_count_weak_ptr<StgPlayerObject>::unsync wObj = obj;
 	circle.SetR(rGraze);
-	ref_count_ptr<StgIntersectionTarget_Player>::unsync targetGraze = new StgIntersectionTarget_Player(true);
+	std::shared_ptr<StgIntersectionTarget_Player>::unsync targetGraze = new StgIntersectionTarget_Player(true);
 	targetGraze->SetObject(wObj);
 	targetGraze->SetCircle(circle);
 	obj->AddIntersectionRelativeTarget(targetGraze);
@@ -3924,8 +3897,7 @@ gstd::value StgStageScript::Func_ObjPlayer_ClearIntersection(gstd::script_machin
 {
 	DxScript* script = (DxScript*)machine->data;
 	int id = (int)argv[0].as_real();
-	auto src = script->GetObject(id);
-	ref_count_ptr<StgPlayerObject>::unsync obj = ref_count_ptr<StgPlayerObject>::unsync::DownCast(src);
+	std::shared_ptr<StgPlayerObject>::unsync obj = std::shared_ptr<StgPlayerObject>::unsync::DownCast(script->GetObject(id));
 	if (obj == NULL)
 		return value();
 	obj->ClearIntersectionRelativeTarget();
@@ -3942,8 +3914,7 @@ gstd::value StgStageScript::Func_ObjCol_IsIntersected(gstd::script_machine* mach
 	if (objBase == NULL)
 		return value();
 
-	auto src = script->GetObject(id);
-	ref_count_ptr<StgIntersectionObject>::unsync obj = ref_count_ptr<StgIntersectionObject>::unsync::DownCast(src);
+	std::shared_ptr<StgIntersectionObject>::unsync obj = std::shared_ptr<StgIntersectionObject>::unsync::DownCast(script->GetObject(id));
 	if (obj == NULL)
 		return value();
 
@@ -3958,8 +3929,7 @@ gstd::value StgStageScript::Func_ObjCol_GetListOfIntersectedEnemyID(gstd::script
 	if (objBase == NULL)
 		return value();
 
-	auto src2 = script->GetObject(id);
-	ref_count_ptr<StgIntersectionObject>::unsync obj = ref_count_ptr<StgIntersectionObject>::unsync::DownCast(src2);
+	std::shared_ptr<StgIntersectionObject>::unsync obj = std::shared_ptr<StgIntersectionObject>::unsync::DownCast(script->GetObject(id));
 	if (obj == NULL)
 		return value();
 
@@ -3967,8 +3937,7 @@ gstd::value StgStageScript::Func_ObjCol_GetListOfIntersectedEnemyID(gstd::script
 	std::vector<long double> listLD;
 	for (int iList = 0; iList < list.size(); iList++) {
 		int idObject = list[iList];
-		auto src = script->GetObject(idObject);
-		ref_count_ptr<StgEnemyObject>::unsync objEnemy = ref_count_ptr<StgEnemyObject>::unsync::DownCast(src);
+		std::shared_ptr<StgEnemyObject>::unsync objEnemy = std::shared_ptr<StgEnemyObject>::unsync::DownCast(script->GetObject(idObject));
 		if (objEnemy != NULL)
 			listLD.push_back(idObject);
 	}
@@ -3980,8 +3949,7 @@ gstd::value StgStageScript::Func_ObjCol_GetIntersectedCount(gstd::script_machine
 {
 	DxScript* script = (DxScript*)machine->data;
 	int id = (int)argv[0].as_real();
-	auto src = script->GetObject(id);
-	ref_count_ptr<StgIntersectionObject>::unsync obj = ref_count_ptr<StgIntersectionObject>::unsync::DownCast(src);
+	std::shared_ptr<StgIntersectionObject>::unsync obj = std::shared_ptr<StgIntersectionObject>::unsync::DownCast(script->GetObject(id));
 	if (obj == NULL)
 		return value(machine->get_engine()->get_real_type(), (long double)0);
 
@@ -4106,11 +4074,11 @@ gstd::value StgStagePlayerScript::Func_CreatePlayerShotA1(gstd::script_machine* 
 	StgStagePlayerScript* script = (StgStagePlayerScript*)machine->data;
 	StgStageController* stageController = script->stageController_;
 
-	ref_count_ptr<StgPlayerObject>::unsync objPlayer = stageController->GetPlayerObject();
+	std::shared_ptr<StgPlayerObject>::unsync objPlayer = stageController->GetPlayerObject();
 	if (objPlayer != NULL && !objPlayer->IsPermitShot())
 		return value();
 
-	ref_count_ptr<StgNormalShotObject>::unsync obj = new StgNormalShotObject(stageController);
+	std::shared_ptr<StgNormalShotObject>::unsync obj = new StgNormalShotObject(stageController);
 	obj->SetObjectManager(script->objManager_.GetPointer());
 	int id = script->AddObject(obj);
 	if (id != ID_INVALID) {
@@ -4140,7 +4108,7 @@ gstd::value StgStagePlayerScript::Func_CallSpell(gstd::script_machine* machine, 
 	StgStagePlayerScript* script = (StgStagePlayerScript*)machine->data;
 	StgStageController* stageController = script->stageController_;
 
-	ref_count_ptr<StgPlayerObject>::unsync objPlayer = stageController->GetPlayerObject();
+	std::shared_ptr<StgPlayerObject>::unsync objPlayer = stageController->GetPlayerObject();
 	if (objPlayer == NULL)
 		return value();
 
@@ -4177,10 +4145,10 @@ gstd::value StgStagePlayerScript::Func_GetSpellManageObject(gstd::script_machine
 	StgStagePlayerScript* script = (StgStagePlayerScript*)machine->data;
 	StgStageController* stageController = script->stageController_;
 
-	ref_count_ptr<StgPlayerObject>::unsync obj = stageController->GetPlayerObject();
+	std::shared_ptr<StgPlayerObject>::unsync obj = stageController->GetPlayerObject();
 	int id = ID_INVALID;
 	if (obj != NULL) {
-		ref_count_ptr<StgPlayerSpellManageObject>::unsync objManage = obj->GetSpellManageObject();
+		std::shared_ptr<StgPlayerSpellManageObject>::unsync objManage = obj->GetSpellManageObject();
 		if (objManage != NULL) {
 			id = objManage->GetObjectID();
 		}
@@ -4195,7 +4163,7 @@ gstd::value StgStagePlayerScript::Func_ObjSpell_Create(gstd::script_machine* mac
 	script->CheckRunInMainThread();
 	StgStageController* stageController = script->stageController_;
 
-	ref_count_ptr<StgPlayerSpellObject>::unsync obj = new StgPlayerSpellObject(stageController);
+	std::shared_ptr<StgPlayerSpellObject>::unsync obj = new StgPlayerSpellObject(stageController);
 
 	int id = ID_INVALID;
 	if (obj != NULL) {
@@ -4210,8 +4178,7 @@ gstd::value StgStagePlayerScript::Func_ObjSpell_Regist(gstd::script_machine* mac
 	StgStageController* stageController = script->stageController_;
 
 	int id = (int)argv[0].as_real();
-	auto src = stageController->GetMainRenderObject(id);
-	ref_count_ptr<StgPlayerSpellObject>::unsync objSpell = ref_count_ptr<StgPlayerSpellObject>::unsync::DownCast(src);
+	std::shared_ptr<StgPlayerSpellObject>::unsync objSpell = std::shared_ptr<StgPlayerSpellObject>::unsync::DownCast(stageController->GetMainRenderObject(id));
 	if (objSpell != NULL) {
 		script->ActivateObject(objSpell->GetObjectID(), true);
 	}
@@ -4224,8 +4191,7 @@ gstd::value StgStagePlayerScript::Func_ObjSpell_SetDamage(gstd::script_machine* 
 	StgStageController* stageController = script->stageController_;
 
 	int id = (int)argv[0].as_real();
-	auto src2 = stageController->GetMainRenderObject(id);
-	ref_count_ptr<StgPlayerSpellObject>::unsync objSpell = ref_count_ptr<StgPlayerSpellObject>::unsync::DownCast(src2);
+	std::shared_ptr<StgPlayerSpellObject>::unsync objSpell = std::shared_ptr<StgPlayerSpellObject>::unsync::DownCast(stageController->GetMainRenderObject(id));
 	if (objSpell == NULL)
 		return value();
 
@@ -4239,8 +4205,7 @@ gstd::value StgStagePlayerScript::Func_ObjSpell_SetPenetration(gstd::script_mach
 	StgStageController* stageController = script->stageController_;
 
 	int id = (int)argv[0].as_real();
-	auto src = stageController->GetMainRenderObject(id);
-	ref_count_ptr<StgPlayerSpellObject>::unsync objSpell = ref_count_ptr<StgPlayerSpellObject>::unsync::DownCast(src);
+	std::shared_ptr<StgPlayerSpellObject>::unsync objSpell = std::shared_ptr<StgPlayerSpellObject>::unsync::DownCast(stageController->GetMainRenderObject(id));
 	if (objSpell == NULL)
 		return value();
 
@@ -4254,8 +4219,7 @@ gstd::value StgStagePlayerScript::Func_ObjSpell_SetEraseShot(gstd::script_machin
 	StgStageController* stageController = script->stageController_;
 
 	int id = (int)argv[0].as_real();
-	auto src = stageController->GetMainRenderObject(id);
-	ref_count_ptr<StgPlayerSpellObject>::unsync objSpell = ref_count_ptr<StgPlayerSpellObject>::unsync::DownCast(src);
+	std::shared_ptr<StgPlayerSpellObject>::unsync objSpell = std::shared_ptr<StgPlayerSpellObject>::unsync::DownCast(stageController->GetMainRenderObject(id));
 	if (objSpell == NULL)
 		return value();
 
@@ -4270,8 +4234,7 @@ gstd::value StgStagePlayerScript::Func_ObjSpell_SetIntersectionCircle(gstd::scri
 
 	int id = (int)argv[0].as_real();
 
-	auto src = stageController->GetMainRenderObject(id);
-	ref_count_ptr<StgPlayerSpellObject>::unsync objSpell = ref_count_ptr<StgPlayerSpellObject>::unsync::DownCast(src);
+	std::shared_ptr<StgPlayerSpellObject>::unsync objSpell = std::shared_ptr<StgPlayerSpellObject>::unsync::DownCast(stageController->GetMainRenderObject(id));
 	if (objSpell == NULL)
 		return value();
 
@@ -4283,8 +4246,7 @@ gstd::value StgStagePlayerScript::Func_ObjSpell_SetIntersectionCircle(gstd::scri
 
 	//当たり判定
 	ref_count_weak_ptr<StgPlayerSpellObject>::unsync wObjSpell = objSpell;
-	auto src2 = intersectionManager->GetPoolObject(StgIntersectionTarget::SHAPE_CIRCLE);
-	ref_count_ptr<StgIntersectionTarget_Circle>::unsync target = ref_count_ptr<StgIntersectionTarget_Circle>::unsync::DownCast(src2);
+	std::shared_ptr<StgIntersectionTarget_Circle>::unsync target = std::shared_ptr<StgIntersectionTarget_Circle>::unsync::DownCast(intersectionManager->GetPoolObject(StgIntersectionTarget::SHAPE_CIRCLE));
 	target->SetTargetType(StgIntersectionTarget::TYPE_PLAYER_SPELL);
 	target->SetObject(wObjSpell);
 	target->SetCircle(circle);
@@ -4300,8 +4262,7 @@ gstd::value StgStagePlayerScript::Func_ObjSpell_SetIntersectionLine(gstd::script
 
 	int id = (int)argv[0].as_real();
 
-	auto src = stageController->GetMainRenderObject(id);
-	ref_count_ptr<StgPlayerSpellObject>::unsync objSpell = ref_count_ptr<StgPlayerSpellObject>::unsync::DownCast(src);
+	std::shared_ptr<StgPlayerSpellObject>::unsync objSpell = std::shared_ptr<StgPlayerSpellObject>::unsync::DownCast(stageController->GetMainRenderObject(id));
 	if (objSpell == NULL)
 		return value();
 
@@ -4315,8 +4276,7 @@ gstd::value StgStagePlayerScript::Func_ObjSpell_SetIntersectionLine(gstd::script
 
 	//当たり判定
 	ref_count_weak_ptr<StgPlayerSpellObject>::unsync wObjSpell = objSpell;
-	auto src2 = intersectionManager->GetPoolObject(StgIntersectionTarget::SHAPE_LINE);
-	ref_count_ptr<StgIntersectionTarget_Line>::unsync target = ref_count_ptr<StgIntersectionTarget_Line>::unsync::DownCast(src2);
+	std::shared_ptr<StgIntersectionTarget_Line>::unsync target = std::shared_ptr<StgIntersectionTarget_Line>::unsync::DownCast(intersectionManager->GetPoolObject(StgIntersectionTarget::SHAPE_LINE));
 	target->SetTargetType(StgIntersectionTarget::TYPE_PLAYER_SPELL);
 	target->SetObject(wObjSpell);
 	target->SetLine(line);

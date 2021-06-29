@@ -16,7 +16,6 @@ Script.cpp
 Script.hpp
 ScriptClient.cpp
 ScriptClient.hpp
-SmartPointer.hpp
 Task.cpp
 Task.hpp
 Thread.cpp

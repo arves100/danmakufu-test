@@ -20,10 +20,10 @@ void StgMoveObject::_Move()
 		return;
 
 	if (mapPattern_.size() > 0) {
-		std::map<int, ref_count_ptr<StgMovePattern>::unsync>::iterator itr = mapPattern_.begin();
+		std::map<int, std::shared_ptr<StgMovePattern>::unsync>::iterator itr = mapPattern_.begin();
 		int frame = itr->first;
 		if (frame == framePattern_) {
-			ref_count_ptr<StgMovePattern>::unsync pattern = itr->second;
+			std::shared_ptr<StgMovePattern>::unsync pattern = itr->second;
 			_AttachReservedPattern(pattern);
 			mapPattern_.erase(frame);
 		}
@@ -32,7 +32,7 @@ void StgMoveObject::_Move()
 	pattern_->Move();
 	framePattern_++;
 }
-void StgMoveObject::_AttachReservedPattern(ref_count_ptr<StgMovePattern>::unsync pattern)
+void StgMoveObject::_AttachReservedPattern(std::shared_ptr<StgMovePattern>::unsync pattern)
 {
 	//速度継続など
 	if (pattern_ == NULL)
@@ -95,7 +95,7 @@ void StgMoveObject::SetDirectionAngle(double angle)
 	StgMovePattern_Angle* pattern = (StgMovePattern_Angle*)pattern_.GetPointer();
 	pattern->SetDirectionAngle(angle);
 }
-void StgMoveObject::AddPattern(int frameDelay, ref_count_ptr<StgMovePattern>::unsync pattern)
+void StgMoveObject::AddPattern(int frameDelay, std::shared_ptr<StgMovePattern>::unsync pattern)
 {
 	if (frameDelay == 0)
 		_AttachReservedPattern(pattern);
@@ -129,14 +129,14 @@ StgMovePattern::StgMovePattern(StgMoveObject* target)
 	frameWork_ = 0;
 	typeMove_ = TYPE_OTHER;
 }
-ref_count_ptr<StgMoveObject>::unsync StgMovePattern::_GetMoveObject(int id)
+std::shared_ptr<StgMoveObject>::unsync StgMovePattern::_GetMoveObject(int id)
 {
 	StgStageController* controller = _GetStageController();
-	ref_count_ptr<DxScriptObjectBase>::unsync base = controller->GetMainRenderObject(id);
+	std::shared_ptr<DxScriptObjectBase>::unsync base = controller->GetMainRenderObject(id);
 	if (base == NULL || base->IsDeleted())
 		return NULL;
 
-	return ref_count_ptr<StgMoveObject>::unsync::DownCast(base);
+	return std::shared_ptr<StgMoveObject>::unsync::DownCast(base);
 }
 
 //StgMovePattern_Angle
@@ -198,7 +198,7 @@ double StgMovePattern::cssn(double s, double ang)
 void StgMovePattern_Angle::_Activate()
 {
 	if (idRalativeID_ != DxScript::ID_INVALID) {
-		ref_count_ptr<StgMoveObject>::unsync obj = _GetMoveObject(idRalativeID_);
+		std::shared_ptr<StgMoveObject>::unsync obj = _GetMoveObject(idRalativeID_);
 		if (obj != NULL) {
 			double px = target_->GetPositionX();
 			double py = target_->GetPositionY();

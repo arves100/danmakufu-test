@@ -33,13 +33,13 @@ public:
 	virtual ~EventScriptSource();
 
 	int GetCodeCount() { return code_.size(); }
-	void AddCode(gstd::ref_count_ptr<EventScriptCode> code);
-	gstd::ref_count_ptr<EventScriptCode> GetCode(int index) { return code_[index]; }
-	gstd::ref_count_ptr<EventScriptBlock_Main>* GetEventBlock(std::string name);
+	void AddCode(std::shared_ptr<EventScriptCode> code);
+	std::shared_ptr<EventScriptCode> GetCode(int index) { return code_[index]; }
+	std::shared_ptr<EventScriptBlock_Main> GetEventBlock(std::string name);
 
 protected:
-	std::vector<gstd::ref_count_ptr<EventScriptCode>> code_;
-	std::map<std::string, gstd::ref_count_ptr<EventScriptBlock_Main>> event_;
+	std::vector<std::shared_ptr<EventScriptCode>> code_;
+	std::map<std::string, std::shared_ptr<EventScriptBlock_Main>> event_;
 };
 
 /**********************************************************
@@ -163,16 +163,16 @@ public:
 	virtual ~EventScriptCompiler();
 
 	void SetPath(std::wstring path) { path_ = path; }
-	gstd::ref_count_ptr<EventScriptSource> Compile();
+	std::shared_ptr<EventScriptSource> Compile();
 
 private:
 	std::wstring path_;
-	gstd::ref_count_ptr<EventScriptScanner> scan_;
-	gstd::ref_count_ptr<EventScriptSource> source_;
-	std::list<std::vector<gstd::ref_count_ptr<EventScriptBlock>>> block_;
+	std::shared_ptr<EventScriptScanner> scan_;
+	std::shared_ptr<EventScriptSource> source_;
+	std::list<std::vector<std::shared_ptr<EventScriptBlock>>> block_;
 
-	void _ParseBlock(gstd::ref_count_ptr<EventScriptCode> blockStartCode);
-	gstd::ref_count_ptr<EventScriptCode> _ParseTag(gstd::ref_count_ptr<EventScriptCode> blockStartCode);
+	void _ParseBlock(std::shared_ptr<EventScriptCode> blockStartCode);
+	std::shared_ptr<EventScriptCode> _ParseTag(std::shared_ptr<EventScriptCode> blockStartCode);
 	std::map<std::string, EventScriptToken> _GetAllTagElement();
 	std::string _GetNextTagElement();
 	std::string _GetNextTagElement(int type);
@@ -642,8 +642,8 @@ private:
 		TransitionEffect* effect_;
 	};
 	EventScriptCode_Transition* code_;
-	gstd::ref_count_ptr<DxScriptForEvent> script_;
-	gstd::ref_count_ptr<TransitionEffect> effect_;
+	std::shared_ptr<DxScriptForEvent> script_;
+	std::shared_ptr<TransitionEffect> effect_;
 	int frame_;
 };
 
@@ -656,9 +656,9 @@ public:
 private:
 	EventScriptCode_Image* code_;
 	std::string pathImage_;
-	gstd::ref_count_ptr<DxScriptObjectManager> objManager_;
-	gstd::ref_count_ptr<DxScriptSpriteObject2D>::unsync nowSprite_;
-	gstd::ref_count_ptr<DxScriptSpriteObject2D>::unsync oldSprite_;
+	std::shared_ptr<DxScriptObjectManager> objManager_;
+	std::shared_ptr<DxScriptSpriteObject2D>::unsync nowSprite_;
+	std::shared_ptr<DxScriptSpriteObject2D>::unsync oldSprite_;
 	int frame_;
 	bool bTrans_;
 	double priority_;
@@ -690,13 +690,13 @@ public:
 	virtual void Work();
 	virtual void Render();
 
-	gstd::ref_count_ptr<EventMouseCaptureLayer> GetMouseCaptureLayer() { return layerCapture_; }
-	gstd::ref_count_ptr<EventTextWindow> GetTextWindow() { return wndText_; }
-	gstd::ref_count_ptr<EventLogWindow> GetLogWindow() { return wndLog_; }
-	gstd::ref_count_ptr<EventNameWindow> GetNameWindow() { return wndName_; }
+	std::shared_ptr<EventMouseCaptureLayer> GetMouseCaptureLayer() { return layerCapture_; }
+	std::shared_ptr<EventTextWindow> GetTextWindow() { return wndText_; }
+	std::shared_ptr<EventLogWindow> GetLogWindow() { return wndLog_; }
+	std::shared_ptr<EventNameWindow> GetNameWindow() { return wndName_; }
 
-	gstd::ref_count_ptr<DxButton> GetSaveButton() { return btnSave_; }
-	gstd::ref_count_ptr<DxButton> GetLoadButton() { return btnLoad_; }
+	std::shared_ptr<DxButton> GetSaveButton() { return btnSave_; }
+	std::shared_ptr<DxButton> GetLoadButton() { return btnLoad_; }
 
 	bool IsTextVisible() { return bVisibleText_; }
 	void SetTextVisible(bool bVisible) { bVisibleText_ = bVisible; }
@@ -706,13 +706,13 @@ public:
 
 protected:
 	EventEngine* engine_;
-	gstd::ref_count_ptr<EventMouseCaptureLayer> layerCapture_;
-	gstd::ref_count_ptr<EventTextWindow> wndText_;
-	gstd::ref_count_ptr<EventLogWindow> wndLog_;
-	gstd::ref_count_ptr<EventNameWindow> wndName_;
+	std::shared_ptr<EventMouseCaptureLayer> layerCapture_;
+	std::shared_ptr<EventTextWindow> wndText_;
+	std::shared_ptr<EventLogWindow> wndLog_;
+	std::shared_ptr<EventNameWindow> wndName_;
 
-	gstd::ref_count_ptr<DxButton> btnSave_;
-	gstd::ref_count_ptr<DxButton> btnLoad_;
+	std::shared_ptr<DxButton> btnSave_;
+	std::shared_ptr<DxButton> btnLoad_;
 
 	bool bVisibleText_;
 };
@@ -738,12 +738,12 @@ protected:
 class EventMouseCaptureLayer : public EventWindow {
 public:
 	virtual void AddedManager();
-	virtual void DispatchedEvent(gstd::ref_count_ptr<DxWindowEvent> event);
+	virtual void DispatchedEvent(std::shared_ptr<DxWindowEvent> event);
 	void ClearEvent();
-	gstd::ref_count_ptr<DxWindowEvent> GetEvent() { return event_; }
+	std::shared_ptr<DxWindowEvent> GetEvent() { return event_; }
 
 protected:
-	gstd::ref_count_ptr<DxWindowEvent> event_;
+	std::shared_ptr<DxWindowEvent> event_;
 };
 class EventTextWindow : public EventWindow {
 public:
@@ -754,7 +754,7 @@ public:
 
 protected:
 	RECT rcMargin_;
-	gstd::ref_count_ptr<DxText> dxText_;
+	std::shared_ptr<DxText> dxText_;
 };
 class EventNameWindow : public EventWindow {
 public:
@@ -766,7 +766,7 @@ public:
 	void SetText(std::wstring text) { text_->SetText(text); }
 
 private:
-	gstd::ref_count_ptr<DxText> text_;
+	std::shared_ptr<DxText> text_;
 };
 class EventLogWindow : public EventWindow {
 public:
@@ -775,13 +775,13 @@ public:
 	virtual void Work();
 	virtual void Render();
 
-	gstd::ref_count_ptr<DxText> GetRenderer() { return dxText_; }
+	std::shared_ptr<DxText> GetRenderer() { return dxText_; }
 	void ResetPosition();
 
 private:
 	int posMin_; //最低表示位置
 	int pos_;
-	gstd::ref_count_ptr<DxText> dxText_;
+	std::shared_ptr<DxText> dxText_;
 };
 
 /**********************************************************
@@ -789,7 +789,7 @@ private:
 **********************************************************/
 class EventScriptObjectManager : public DxScriptObjectManager, public gstd::Recordable {
 public:
-	virtual int AddObject(gstd::ref_count_ptr<DxScriptObjectBase>::unsync obj);
+	virtual int AddObject(std::shared_ptr<DxScriptObjectBase>::unsync obj);
 
 	void Read(gstd::RecordBuffer& record);
 	void Write(gstd::RecordBuffer& record);
@@ -810,12 +810,12 @@ public:
 	void Add(std::string text, std::string name);
 
 	int GetInfoCount() { return listInfo_.size(); }
-	gstd::ref_count_ptr<DxTextInfo> GetTextInfo(int pos) { return listInfo_[pos]; }
+	std::shared_ptr<DxTextInfo> GetTextInfo(int pos) { return listInfo_[pos]; }
 
 private:
 	EventEngine* engine_;
 	int max_;
-	std::vector<gstd::ref_count_ptr<DxTextInfo>> listInfo_;
+	std::vector<std::shared_ptr<DxTextInfo>> listInfo_;
 };
 class EventValue : public gstd::Recordable {
 	friend EventValueParser;
@@ -898,21 +898,21 @@ class EventFrame {
 public:
 	EventFrame();
 	virtual ~EventFrame();
-	void SetActiveSource(gstd::ref_count_ptr<EventScriptSource> source) { sourceActive_ = source; }
-	gstd::ref_count_ptr<EventScriptBlock> GetBlock() { return block_; }
-	void SetBlock(gstd::ref_count_ptr<EventScriptBlock> block);
-	gstd::ref_count_ptr<EventScriptSource> GetActiveSource() { return sourceActive_; }
+	void SetActiveSource(std::shared_ptr<EventScriptSource> source) { sourceActive_ = source; }
+	std::shared_ptr<EventScriptBlock> GetBlock() { return block_; }
+	void SetBlock(std::shared_ptr<EventScriptBlock> block);
+	std::shared_ptr<EventScriptSource> GetActiveSource() { return sourceActive_; }
 
 	int GetCurrentPosition() { return posCode_; }
 	void SetCurrentPosition(int pos) { posCode_ = pos; }
-	gstd::ref_count_ptr<EventScriptCode> NextCode();
-	gstd::ref_count_ptr<EventScriptCode> GetCurrentCode();
+	std::shared_ptr<EventScriptCode> NextCode();
+	std::shared_ptr<EventScriptCode> GetCurrentCode();
 	bool HasNextCode();
 	void SetEnd() { bEnd_ = true; }
 	bool IsEnd() { return bEnd_; }
-	gstd::ref_count_ptr<EventValue> GetValue(std::string key);
-	void AddValue(std::string key, gstd::ref_count_ptr<EventValue> val);
-	void SetValue(std::string key, gstd::ref_count_ptr<EventValue> val);
+	std::shared_ptr<EventValue> GetValue(std::string key);
+	void AddValue(std::string key, std::shared_ptr<EventValue> val);
+	void SetValue(std::string key, std::shared_ptr<EventValue> val);
 
 	int GetReturnPosition() { return posReturn_; }
 	void SetReturnPosition(int pos) { posReturn_ = pos; }
@@ -930,15 +930,15 @@ protected:
 	int posCode_;
 	int posReturn_;
 	bool bAutoGlobal_;
-	gstd::ref_count_ptr<EventScriptSource> sourceActive_;
-	gstd::ref_count_ptr<EventScriptBlock> block_;
-	std::map<std::string, gstd::ref_count_ptr<EventValue>> mapValue_;
+	std::shared_ptr<EventScriptSource> sourceActive_;
+	std::shared_ptr<EventScriptBlock> block_;
+	std::map<std::string, std::shared_ptr<EventValue>> mapValue_;
 };
 
 class EventValueParser : public gstd::TextParser {
 public:
 	EventValueParser(EventEngine* engine);
-	gstd::ref_count_ptr<EventValue> GetEventValue(std::string text);
+	std::shared_ptr<EventValue> GetEventValue(std::string text);
 protected:
 	EventEngine* engine_;
 	virtual Result _ParseIdentifer(std::vector<char>::iterator pos);
@@ -963,13 +963,13 @@ public:
 	int GetForegroundLayerIndex();
 	int GetBackgroundLayerIndex();
 	void SwapForeBackLayerIndex();
-	gstd::ref_count_ptr<DxScriptObjectManager> GetObjectManager(int layer) { return objManager_[layer]; }
+	std::shared_ptr<DxScriptObjectManager> GetObjectManager(int layer) { return objManager_[layer]; }
 
 	void Read(gstd::RecordBuffer& record);
 	void Write(gstd::RecordBuffer& record);
 
 protected:
-	std::vector<gstd::ref_count_ptr<EventScriptObjectManager>> objManager_;
+	std::vector<std::shared_ptr<EventScriptObjectManager>> objManager_;
 	int indexForeground_;
 };
 
@@ -1006,8 +1006,8 @@ public:
 	void Write(gstd::RecordBuffer& record);
 
 private:
-	gstd::ref_count_ptr<SoundPlayer> playerBgm_;
-	gstd::ref_count_ptr<SoundPlayer> playerSe_;
+	std::shared_ptr<SoundPlayer> playerBgm_;
+	std::shared_ptr<SoundPlayer> playerSe_;
 };
 
 class EventEngine : public gstd::TaskBase, public gstd::Recordable {
@@ -1028,22 +1028,22 @@ public:
 	virtual void Render();
 	void SetSource(std::wstring path);
 
-	gstd::ref_count_ptr<EventScriptSource> GetSource(std::wstring path);
-	std::wstring GetSourcePath(gstd::ref_count_ptr<EventScriptSource> source);
+	std::shared_ptr<EventScriptSource> GetSource(std::wstring path);
+	std::wstring GetSourcePath(std::shared_ptr<EventScriptSource> source);
 	virtual bool IsEnd();
 
-	gstd::ref_count_ptr<EventText> GetEventText() { return textEvent_; }
-	gstd::ref_count_ptr<EventLogText> GetEventLogText() { return logEvent_; }
-	gstd::ref_count_ptr<EventWindowManager> GetWindowManager() { return windowManager_; }
+	std::shared_ptr<EventText> GetEventText() { return textEvent_; }
+	std::shared_ptr<EventLogText> GetEventLogText() { return logEvent_; }
+	std::shared_ptr<EventWindowManager> GetWindowManager() { return windowManager_; }
 
-	gstd::ref_count_ptr<EventValue> GetEventValue(std::string key);
-	gstd::ref_count_ptr<EventImage> GetEventImage() { return image_; }
-	gstd::ref_count_ptr<EventKeyState> GetEventKeyState() { return keyState_; }
+	std::shared_ptr<EventValue> GetEventValue(std::string key);
+	std::shared_ptr<EventImage> GetEventImage() { return image_; }
+	std::shared_ptr<EventKeyState> GetEventKeyState() { return keyState_; }
 
-	gstd::ref_count_ptr<EventScriptCodeExecuter> GetActiveCodeExecuter() { return activeCodeExecuter_; }
-	gstd::ref_count_ptr<EventFrame> GetGlobalFrame() { return frameGlobal_; }
+	std::shared_ptr<EventScriptCodeExecuter> GetActiveCodeExecuter() { return activeCodeExecuter_; }
+	std::shared_ptr<EventFrame> GetGlobalFrame() { return frameGlobal_; }
 
-	gstd::ref_count_ptr<gstd::ScriptEngineCache> GetScriptEngineCache() { return cacheScriptEngine_; }
+	std::shared_ptr<gstd::ScriptEngineCache> GetScriptEngineCache() { return cacheScriptEngine_; }
 
 	bool IsCriticalFrame() { return bCriticalFrame_; }
 
@@ -1065,28 +1065,28 @@ protected:
 	};
 
 	int state_;
-	gstd::ref_count_ptr<EventWindowManager> windowManager_;
-	gstd::ref_count_ptr<EventText> textEvent_;
-	gstd::ref_count_ptr<EventLogText> logEvent_;
-	std::map<std::wstring, gstd::ref_count_ptr<EventScriptSource>> mapSource_;
-	std::vector<gstd::ref_count_ptr<EventFrame>> frame_;
-	gstd::ref_count_ptr<EventImage> image_;
-	gstd::ref_count_ptr<EventKeyState> keyState_;
-	gstd::ref_count_ptr<EventSound> sound_;
+	std::shared_ptr<EventWindowManager> windowManager_;
+	std::shared_ptr<EventText> textEvent_;
+	std::shared_ptr<EventLogText> logEvent_;
+	std::map<std::wstring, std::shared_ptr<EventScriptSource>> mapSource_;
+	std::vector<std::shared_ptr<EventFrame>> frame_;
+	std::shared_ptr<EventImage> image_;
+	std::shared_ptr<EventKeyState> keyState_;
+	std::shared_ptr<EventSound> sound_;
 	bool bCriticalFrame_;
-	gstd::ref_count_ptr<EventFrame> frameGlobal_; //グローバル変数用
+	std::shared_ptr<EventFrame> frameGlobal_; //グローバル変数用
 
-	gstd::ref_count_ptr<EventScriptCodeExecuter> activeCodeExecuter_;
-	std::list<gstd::ref_count_ptr<EventScriptCodeExecuter>> parallelCodeExecuter_;
-	std::list<gstd::ref_count_ptr<DxScriptForEvent>> listScript_;
-	gstd::ref_count_ptr<gstd::ScriptEngineCache> cacheScriptEngine_;
+	std::shared_ptr<EventScriptCodeExecuter> activeCodeExecuter_;
+	std::list<std::shared_ptr<EventScriptCodeExecuter>> parallelCodeExecuter_;
+	std::list<std::shared_ptr<DxScriptForEvent>> listScript_;
+	std::shared_ptr<gstd::ScriptEngineCache> cacheScriptEngine_;
 
 	void _RaiseError(std::wstring msg);
 	virtual void _RunCode();
-	virtual int _RunCode(gstd::ref_count_ptr<EventFrame> frameActive, gstd::ref_count_ptr<EventScriptCode> code) { return RUN_RETURN_NONE; }
+	virtual int _RunCode(std::shared_ptr<EventFrame> frameActive, std::shared_ptr<EventScriptCode> code) { return RUN_RETURN_NONE; }
 	virtual void _RunScript();
 	virtual void _WorkWindow();
-	gstd::ref_count_ptr<EventScriptSource> _GetSource(std::wstring path);
+	std::shared_ptr<EventScriptSource> _GetSource(std::wstring path);
 };
 
 /**********************************************************
@@ -1099,7 +1099,7 @@ public:
 	void Clear();
 	virtual bool SetSourceFromFile(std::wstring path);
 	virtual void SetSource(std::string source);
-	virtual int AddObject(gstd::ref_count_ptr<DxScriptObjectBase>::unsync obj);
+	virtual int AddObject(std::shared_ptr<DxScriptObjectBase>::unsync obj);
 	virtual void DeleteObject(int id);
 
 	std::string GetMethod() { return method_; }
@@ -1113,7 +1113,7 @@ public:
 	void SetScriptId(std::string id) { scriptId_ = id; }
 	std::string GetCode() { return code_; }
 
-	void AddArgumentValue(gstd::ref_count_ptr<EventValue> arg);
+	void AddArgumentValue(std::shared_ptr<EventValue> arg);
 
 	void Read(gstd::RecordBuffer& record);
 	void Write(gstd::RecordBuffer& record);

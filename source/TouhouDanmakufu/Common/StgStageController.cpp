@@ -18,7 +18,7 @@ StgStageController::~StgStageController()
 	objectManagerMain_ = NULL;
 	scriptManager_ = NULL;
 }
-void StgStageController::Initialize(ref_count_ptr<StgStageStartData> startData)
+void StgStageController::Initialize(std::shared_ptr<StgStageStartData> startData)
 {
 	//FPU初期化
 	Math::InitializeFPU();
@@ -29,18 +29,18 @@ void StgStageController::Initialize(ref_count_ptr<StgStageStartData> startData)
 
 	//3Dカメラ
 	DirectGraphics* graphics = DirectGraphics::GetBase();
-	ref_count_ptr<DxCamera> camera3D = graphics->GetCamera();
+	std::shared_ptr<DxCamera> camera3D = graphics->GetCamera();
 	camera3D->Reset();
 	camera3D->SetProjectionMatrix(384, 448, 10, 2000);
 
 	//2Dカメラ
-	gstd::ref_count_ptr<DxCamera2D> camera2D = graphics->GetCamera2D();
+	gstd::shared_ptr<DxCamera2D> camera2D = graphics->GetCamera2D();
 	camera2D->Reset();
 
-	ref_count_ptr<StgStageInformation> infoStage = startData->GetStageInformation();
-	ref_count_ptr<ReplayInformation::StageData> replayStageData = startData->GetStageReplayData();
-	ref_count_ptr<StgStageInformation> prevStageData = startData->GetPrevStageInformation();
-	ref_count_ptr<StgPlayerInformation> prevPlayerInfo = startData->GetPrevPlayerInformation();
+	std::shared_ptr<StgStageInformation> infoStage = startData->GetStageInformation();
+	std::shared_ptr<ReplayInformation::StageData> replayStageData = startData->GetStageReplayData();
+	std::shared_ptr<StgStageInformation> prevStageData = startData->GetPrevStageInformation();
+	std::shared_ptr<StgPlayerInformation> prevPlayerInfo = startData->GetPrevPlayerInformation();
 
 	infoStage_ = infoStage;
 	infoStage_->SetReplay(replayStageData != NULL);
@@ -90,8 +90,8 @@ void StgStageController::Initialize(ref_count_ptr<StgStageStartData> startData)
 		replayStageData->SetRandSeed(randSeed);
 
 		//ステージ情報
-		ref_count_ptr<ScriptInformation> infoParent = systemController_->GetSystemInformation()->GetMainScriptInformation();
-		ref_count_ptr<ScriptInformation> infoMain = infoStage_->GetMainScriptInformation();
+		std::shared_ptr<ScriptInformation> infoParent = systemController_->GetSystemInformation()->GetMainScriptInformation();
+		std::shared_ptr<ScriptInformation> infoMain = infoStage_->GetMainScriptInformation();
 		std::wstring pathParentScript = infoParent->GetScriptPath();
 		std::wstring pathMainScript = infoMain->GetScriptPath();
 		std::wstring filenameMainScript = PathProperty::GetFileName(pathMainScript);
@@ -135,15 +135,15 @@ void StgStageController::Initialize(ref_count_ptr<StgStageStartData> startData)
 	//パッケージスクリプトの場合は、ステージスクリプトと関連付ける
 	StgPackageController* packageController = systemController_->GetPackageController();
 	if (packageController != NULL) {
-		ref_count_ptr<ScriptManager> packageScriptManager = packageController->GetScriptManager();
-		ref_count_ptr<ScriptManager> stageScriptManager = scriptManager_;
+		std::shared_ptr<ScriptManager> packageScriptManager = packageController->GetScriptManager();
+		std::shared_ptr<ScriptManager> stageScriptManager = scriptManager_;
 		ScriptManager::AddRelativeScriptManagerMutual(packageScriptManager, stageScriptManager);
 	}
 
-	gstd::ref_count_ptr<StgStageScriptObjectManager> objectManager = scriptManager_->GetObjectManager();
+	gstd::shared_ptr<StgStageScriptObjectManager> objectManager = scriptManager_->GetObjectManager();
 
 	//メインスクリプト情報
-	ref_count_ptr<ScriptInformation> infoMain = infoStage_->GetMainScriptInformation();
+	std::shared_ptr<ScriptInformation> infoMain = infoStage_->GetMainScriptInformation();
 	std::wstring dirInfo = PathProperty::GetFileDirectory(infoMain->GetScriptPath());
 
 	ELogger::WriteTop(StringUtility::Format(L"メインスクリプト[%s]", infoMain->GetScriptPath().c_str()));
@@ -160,21 +160,19 @@ void StgStageController::Initialize(ref_count_ptr<StgStageStartData> startData)
 	}
 
 	//自機スクリプト
-	ref_count_ptr<StgPlayerObject>::unsync objPlayer = NULL;
-	ref_count_ptr<ScriptInformation> infoPlayer = infoStage_->GetPlayerScriptInformation();
+	std::shared_ptr<StgPlayerObject>::unsync objPlayer = NULL;
+	std::shared_ptr<ScriptInformation> infoPlayer = infoStage_->GetPlayerScriptInformation();
 	std::wstring pathPlayerScript = infoPlayer->GetScriptPath();
 
 	if (pathPlayerScript.size() > 0) {
 		ELogger::WriteTop(StringUtility::Format(L"自機スクリプト[%s]", pathPlayerScript.c_str()));
 		int idPlayer = objectManager->CreatePlayerObject();
-		auto src = GetMainRenderObject(idPlayer);
-		objPlayer = ref_count_ptr<StgPlayerObject>::unsync::DownCast(src);
+		objPlayer = std::shared_ptr<StgPlayerObject>::unsync::DownCast(GetMainRenderObject(idPlayer));
 
 		_int64 idScript = scriptManager_->LoadScript(pathPlayerScript, StgStageScript::TYPE_PLAYER);
 		_SetupReplayTargetCommonDataArea(idScript);
 
-		auto src2 = scriptManager_->GetScript(idScript);
-		ref_count_ptr<StgStagePlayerScript> script = ref_count_ptr<StgStagePlayerScript>::DownCast(src2);
+		std::shared_ptr<StgStagePlayerScript> script = std::shared_ptr<StgStagePlayerScript>::DownCast(scriptManager_->GetScript(idScript));
 		objPlayer->SetScript(script.GetPointer());
 		scriptManager_->SetPlayerScriptID(idScript);
 		scriptManager_->StartScript(idScript);
@@ -222,7 +220,7 @@ void StgStageController::Initialize(ref_count_ptr<StgStageStartData> startData)
 	if (pathBGM.size() > 0) {
 		pathBGM = EPathProperty::ExtendRelativeToFull(dirInfo, pathBGM);
 		ELogger::WriteTop(StringUtility::Format(L"BGM[%s]", pathBGM.c_str()));
-		ref_count_ptr<SoundPlayer> player = DirectSoundManager::GetBase()->GetPlayer(pathBGM);
+		std::shared_ptr<SoundPlayer> player = DirectSoundManager::GetBase()->GetPlayer(pathBGM);
 		if (player != NULL) {
 			player->SetSoundDivision(SoundDivision::DIVISION_BGM);
 			SoundPlayer::PlayStyle style;
@@ -234,7 +232,7 @@ void StgStageController::Initialize(ref_count_ptr<StgStageStartData> startData)
 	//リプレイ関連(スクリプト初期化後)
 	if (!infoStage_->IsReplay()) {
 		//自機情報
-		ref_count_ptr<StgPlayerObject>::unsync objPlayer = GetPlayerObject();
+		std::shared_ptr<StgPlayerObject>::unsync objPlayer = GetPlayerObject();
 		if (objPlayer != NULL) {
 			replayStageData->SetPlayerLife(objPlayer->GetLife());
 			replayStageData->SetPlayerBombCount(objPlayer->GetSpell());
@@ -258,10 +256,10 @@ void StgStageController::CloseScene()
 	//リプレイ
 	if (!infoStage_->IsReplay()) {
 		//キー
-		ref_count_ptr<RecordBuffer> recKey = new RecordBuffer();
+		std::shared_ptr<RecordBuffer> recKey = new RecordBuffer();
 		keyReplayManager_->WriteRecord(*recKey.GetPointer());
 
-		ref_count_ptr<ReplayInformation::StageData> replayStageData = infoStage_->GetReplayData();
+		std::shared_ptr<ReplayInformation::StageData> replayStageData = infoStage_->GetReplayData();
 		replayStageData->SetReplayKeyRecord(recKey);
 
 		//最終フレーム
@@ -273,8 +271,7 @@ void StgStageController::CloseScene()
 }
 void StgStageController::_SetupReplayTargetCommonDataArea(_int64 idScript)
 {
-	auto src = scriptManager_->GetScript(idScript);
-	ref_count_ptr<StgStageScript> script = ref_count_ptr<StgStageScript>::DownCast(src);
+	std::shared_ptr<StgStageScript> script = std::shared_ptr<StgStageScript>::DownCast(scriptManager_->GetScript(idScript));
 	if (script == NULL)
 		return;
 
@@ -285,7 +282,7 @@ void StgStageController::_SetupReplayTargetCommonDataArea(_int64 idScript)
 	if (kindRes != type_data::tk_array)
 		return;
 
-	ref_count_ptr<ReplayInformation::StageData> replayStageData = infoStage_->GetReplayData();
+	std::shared_ptr<ReplayInformation::StageData> replayStageData = infoStage_->GetReplayData();
 	std::set<std::string> listArea;
 	int arrayLength = res.length_as_array();
 	for (int iArray = 0; iArray < arrayLength; iArray++) {
@@ -294,19 +291,19 @@ void StgStageController::_SetupReplayTargetCommonDataArea(_int64 idScript)
 		listArea.insert(area);
 	}
 
-	gstd::ref_count_ptr<ScriptCommonDataManager> scriptCommonDataManager = systemController_->GetCommonDataManager();
+	gstd::shared_ptr<ScriptCommonDataManager> scriptCommonDataManager = systemController_->GetCommonDataManager();
 	if (!infoStage_->IsReplay()) {
 		std::set<std::string>::iterator itrArea = listArea.begin();
 		for (; itrArea != listArea.end(); itrArea++) {
 			std::string area = (*itrArea);
-			ref_count_ptr<ScriptCommonData> commonData = scriptCommonDataManager->GetData(area);
+			std::shared_ptr<ScriptCommonData> commonData = scriptCommonDataManager->GetData(area);
 			replayStageData->SetCommonData(area, commonData);
 		}
 	} else {
 		std::set<std::string>::iterator itrArea = listArea.begin();
 		for (; itrArea != listArea.end(); itrArea++) {
 			std::string area = (*itrArea);
-			ref_count_ptr<ScriptCommonData> commonData = replayStageData->GetCommonData(area);
+			std::shared_ptr<ScriptCommonData> commonData = replayStageData->GetCommonData(area);
 			scriptCommonDataManager->SetData(area, commonData);
 		}
 	}
@@ -315,14 +312,14 @@ void StgStageController::_SetupReplayTargetCommonDataArea(_int64 idScript)
 void StgStageController::Work()
 {
 	EDirectInput* input = EDirectInput::GetInstance();
-	ref_count_ptr<StgSystemInformation> infoSystem = systemController_->GetSystemInformation();
+	std::shared_ptr<StgSystemInformation> infoSystem = systemController_->GetSystemInformation();
 	bool bPackageMode = infoSystem->IsPackageMode();
 
 	bool bPermitRetryKey = !input->IsTargetKeyCode(SDLK_BACKSPACE);
 	if (!bPackageMode && bPermitRetryKey && input->GetKeyState(SDLK_BACKSPACE) == KEY_PUSH) {
 		//リトライ
 		if (!infoStage_->IsReplay()) {
-			ref_count_ptr<StgSystemInformation> infoSystem = systemController_->GetSystemInformation();
+			std::shared_ptr<StgSystemInformation> infoSystem = systemController_->GetSystemInformation();
 			infoSystem->SetRetry();
 			return;
 		}
@@ -352,7 +349,7 @@ void StgStageController::Work()
 			scriptManager_->Work(StgStageScript::TYPE_SHOT);
 			scriptManager_->Work(StgStageScript::TYPE_ITEM);
 
-			ref_count_ptr<StgPlayerObject>::unsync objPlayer = GetPlayerObject();
+			std::shared_ptr<StgPlayerObject>::unsync objPlayer = GetPlayerObject();
 			if (objPlayer != NULL)
 				objPlayer->Move(); //自機だけ先に移動
 			scriptManager_->Work(StgStageScript::TYPE_PLAYER);
@@ -375,7 +372,7 @@ void StgStageController::Work()
 				//リプレイ用情報更新
 				int stageFrame = infoStage_->GetCurrentFrame();
 				if (stageFrame % 60 == 0) {
-					ref_count_ptr<ReplayInformation::StageData> replayStageData = infoStage_->GetReplayData();
+					std::shared_ptr<ReplayInformation::StageData> replayStageData = infoStage_->GetReplayData();
 					float framePerSecond = EFpsController::GetInstance()->GetCurrentFps();
 					replayStageData->AddFramePerSecond(framePerSecond);
 				}
@@ -407,9 +404,9 @@ void StgStageController::RenderToTransitionTexture()
 {
 	DirectGraphics* graphics = DirectGraphics::GetBase();
 	TextureManager* textureManager = ETextureManager::GetInstance();
-	ref_count_ptr<Texture> texture = textureManager->GetTexture(TextureManager::TARGET_TRANSITION);
+	std::shared_ptr<Texture> texture = textureManager->GetTexture(TextureManager::TARGET_TRANSITION);
 
-	ref_count_ptr<StgStageScriptObjectManager> objectManager = GetMainObjectManager();
+	std::shared_ptr<StgStageScriptObjectManager> objectManager = GetMainObjectManager();
 	graphics->SetRenderTarget(texture);
 	graphics->BeginScene(true);
 
@@ -420,17 +417,16 @@ void StgStageController::RenderToTransitionTexture()
 	graphics->SetRenderTarget(NULL);
 }
 
-ref_count_ptr<DxScriptObjectBase>::unsync StgStageController::GetMainRenderObject(int idObject)
+std::shared_ptr<DxScriptObjectBase>::unsync StgStageController::GetMainRenderObject(int idObject)
 {
 	return objectManagerMain_->GetObject(idObject);
 }
-ref_count_ptr<StgPlayerObject>::unsync StgStageController::GetPlayerObject()
+std::shared_ptr<StgPlayerObject>::unsync StgStageController::GetPlayerObject()
 {
 	int idPlayer = objectManagerMain_->GetPlayerObjectID();
 	if (idPlayer == DxScript::ID_INVALID)
 		return NULL;
-	auto src = GetMainRenderObject(idPlayer);
-	return ref_count_ptr<StgPlayerObject>::unsync::DownCast(src);
+	return std::shared_ptr<StgPlayerObject>::unsync::DownCast(GetMainRenderObject(idPlayer));
 }
 
 /**********************************************************
@@ -468,13 +464,13 @@ StgStageInformation::~StgStageInformation()
 void StgStageInformation::SetStgFrameRect(RECT rect, bool bUpdateFocusResetValue)
 {
 	rcStgFrame_ = rect;
-	gstd::ref_count_ptr<D3DXVECTOR2> pos = new D3DXVECTOR2();
+	gstd::shared_ptr<D3DXVECTOR2> pos = new D3DXVECTOR2();
 	pos->x = (rect.right - rect.left) / 2;
 	pos->y = (rect.bottom - rect.top) / 2;
 
 	if (bUpdateFocusResetValue) {
 		DirectGraphics* graphics = DirectGraphics::GetBase();
-		gstd::ref_count_ptr<DxCamera2D> camera2D = graphics->GetCamera2D();
+		gstd::shared_ptr<DxCamera2D> camera2D = graphics->GetCamera2D();
 		camera2D->SetResetFocus(pos);
 		camera2D->Reset();
 	}
@@ -488,12 +484,12 @@ int PseudoSlowInformation::GetFps()
 	int fps = STANDARD_FPS;
 	int target = TARGET_ALL;
 	if (mapDataPlayer_.find(target) != mapDataPlayer_.end()) {
-		ref_count_ptr<SlowData> data = mapDataPlayer_[target];
-		fps = _MIN(fps, data->GetFps());
+		std::shared_ptr<SlowData> data = mapDataPlayer_[target];
+		fps = min(fps, data->GetFps());
 	}
 	if (mapDataEnemy_.find(target) != mapDataEnemy_.end()) {
-		ref_count_ptr<SlowData> data = mapDataEnemy_[target];
-		fps = _MIN(fps, data->GetFps());
+		std::shared_ptr<SlowData> data = mapDataEnemy_[target];
+		fps = min(fps, data->GetFps());
 	}
 	return fps;
 }
@@ -507,12 +503,12 @@ void PseudoSlowInformation::Next()
 	int fps = STANDARD_FPS;
 	int target = TARGET_ALL;
 	if (mapDataPlayer_.find(target) != mapDataPlayer_.end()) {
-		ref_count_ptr<SlowData> data = mapDataPlayer_[target];
-		fps = _MIN(fps, data->GetFps());
+		std::shared_ptr<SlowData> data = mapDataPlayer_[target];
+		fps = min(fps, data->GetFps());
 	}
 	if (mapDataEnemy_.find(target) != mapDataEnemy_.end()) {
-		ref_count_ptr<SlowData> data = mapDataEnemy_[target];
-		fps = _MIN(fps, data->GetFps());
+		std::shared_ptr<SlowData> data = mapDataEnemy_[target];
+		fps = min(fps, data->GetFps());
 	}
 
 	bool bValid = false;
@@ -530,9 +526,9 @@ void PseudoSlowInformation::Next()
 }
 void PseudoSlowInformation::AddSlow(int fps, int owner, int target)
 {
-	fps = _MAX(1, fps);
-	fps = _MIN(STANDARD_FPS, fps);
-	ref_count_ptr<SlowData> data = new SlowData();
+	fps = max(1, fps);
+	fps = min(STANDARD_FPS, fps);
+	std::shared_ptr<SlowData> data = new SlowData();
 	data->SetFps(fps);
 	switch (owner) {
 	case OWNER_PLAYER:

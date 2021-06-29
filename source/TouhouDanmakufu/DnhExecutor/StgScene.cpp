@@ -11,7 +11,7 @@ void EStgSystemController::DoEnd()
 void EStgSystemController::DoRetry()
 {
 	SceneManager* sceneManager = SystemController::GetInstance()->GetSceneManager();
-	ref_count_ptr<StgStageInformation> infoStage = stageController_->GetStageInformation();
+	std::shared_ptr<StgStageInformation> infoStage = stageController_->GetStageInformation();
 	sceneManager->TransStgScene(infoStage->GetMainScriptInformation(), infoStage->GetPlayerScriptInformation(), NULL);
 }
 

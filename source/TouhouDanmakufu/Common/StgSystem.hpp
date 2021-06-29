@@ -26,28 +26,28 @@ public:
 public:
 	StgSystemController();
 	~StgSystemController();
-	void Initialize(ref_count_ptr<StgSystemInformation> infoSystem);
-	void Start(ref_count_ptr<ScriptInformation> infoPlayer, ref_count_ptr<ReplayInformation> infoReplay);
+	void Initialize(std::shared_ptr<StgSystemInformation> infoSystem);
+	void Start(std::shared_ptr<ScriptInformation> infoPlayer, std::shared_ptr<ReplayInformation> infoReplay);
 	void Work();
 	void Render();
 	void RenderScriptObject();
 	void RenderScriptObject(int priMin, int priMax);
 
-	ref_count_ptr<StgSystemInformation>& GetSystemInformation() { return infoSystem_; }
+	std::shared_ptr<StgSystemInformation>& GetSystemInformation() { return infoSystem_; }
 	StgStageController* GetStageController() { return stageController_.GetPointer(); }
 	StgPackageController* GetPackageController() { return packageController_.GetPointer(); }
-	ref_count_ptr<StgControlScriptInformation>& GetControlScriptInformation() { return infoControlScript_; }
+	std::shared_ptr<StgControlScriptInformation>& GetControlScriptInformation() { return infoControlScript_; }
 
-	gstd::ref_count_ptr<ScriptEngineCache> GetScriptEngineCache() { return scriptEngineCache_; }
-	gstd::ref_count_ptr<ScriptCommonDataManager> GetCommonDataManager() { return commonDataManager_; }
+	gstd::shared_ptr<ScriptEngineCache> GetScriptEngineCache() { return scriptEngineCache_; }
+	gstd::shared_ptr<ScriptCommonDataManager> GetCommonDataManager() { return commonDataManager_; }
 
-	void StartStgScene(ref_count_ptr<StgStageInformation> infoStage, ref_count_ptr<ReplayInformation::StageData> replayStageData);
-	void StartStgScene(ref_count_ptr<StgStageStartData> startData);
+	void StartStgScene(std::shared_ptr<StgStageInformation> infoStage, std::shared_ptr<ReplayInformation::StageData> replayStageData);
+	void StartStgScene(std::shared_ptr<StgStageStartData> startData);
 
 	void TransStgEndScene();
 	void TransReplaySaveScene();
 
-	ref_count_ptr<ReplayInformation> CreateReplayInformation();
+	std::shared_ptr<ReplayInformation> CreateReplayInformation();
 	void TerminateScriptAll();
 
 protected:
@@ -55,17 +55,17 @@ protected:
 	virtual void DoRetry() = 0;
 	void _ControlScene();
 
-	ref_count_ptr<StgSystemInformation> infoSystem_;
-	ref_count_ptr<ScriptEngineCache> scriptEngineCache_;
-	gstd::ref_count_ptr<ScriptCommonDataManager> commonDataManager_;
+	std::shared_ptr<StgSystemInformation> infoSystem_;
+	std::shared_ptr<ScriptEngineCache> scriptEngineCache_;
+	gstd::shared_ptr<ScriptCommonDataManager> commonDataManager_;
 
-	ref_count_ptr<StgEndScene> endScene_;
-	ref_count_ptr<StgReplaySaveScene> replaySaveScene_;
+	std::shared_ptr<StgEndScene> endScene_;
+	std::shared_ptr<StgReplaySaveScene> replaySaveScene_;
 
-	ref_count_ptr<StgStageController> stageController_;
+	std::shared_ptr<StgStageController> stageController_;
 
-	ref_count_ptr<StgPackageController> packageController_;
-	ref_count_ptr<StgControlScriptInformation> infoControlScript_;
+	std::shared_ptr<StgPackageController> packageController_;
+	std::shared_ptr<StgControlScriptInformation> infoControlScript_;
 };
 
 /**********************************************************
@@ -104,11 +104,11 @@ public:
 	std::wstring GetReplaySaveSceneScriptPath() { return pathReplaySaveSceneScript_; }
 	void SetReplaySaveSceneScriptPath(std::wstring path) { pathReplaySaveSceneScript_ = path; }
 
-	ref_count_ptr<ScriptInformation> GetMainScriptInformation() { return infoMain_; }
-	void SetMainScriptInformation(ref_count_ptr<ScriptInformation> info) { infoMain_ = info; }
+	std::shared_ptr<ScriptInformation> GetMainScriptInformation() { return infoMain_; }
+	void SetMainScriptInformation(std::shared_ptr<ScriptInformation> info) { infoMain_ = info; }
 
-	ref_count_ptr<ReplayInformation> GetActiveReplayInformation() { return infoReplayActive_; }
-	void SetActiveReplayInformation(ref_count_ptr<ReplayInformation> info) { infoReplayActive_ = info; }
+	std::shared_ptr<ReplayInformation> GetActiveReplayInformation() { return infoReplayActive_; }
+	void SetActiveReplayInformation(std::shared_ptr<ReplayInformation> info) { infoReplayActive_ = info; }
 
 	void SetInvaridRenderPriority(int priMin, int priMax);
 	int GetInvaridRenderPriority_MIN() { return invalidPriMin_; }
@@ -127,8 +127,8 @@ private:
 	std::wstring pathReplaySaveSceneScript_;
 
 	std::list<std::wstring> listError_;
-	ref_count_ptr<ScriptInformation> infoMain_;
-	ref_count_ptr<ReplayInformation> infoReplayActive_; //アクティブリプレイ情報
+	std::shared_ptr<ScriptInformation> infoMain_;
+	std::shared_ptr<ReplayInformation> infoReplayActive_; //アクティブリプレイ情報
 
 	int invalidPriMin_;
 	int invalidPriMax_;

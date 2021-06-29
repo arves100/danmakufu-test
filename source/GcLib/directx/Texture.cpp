@@ -279,9 +279,9 @@ bool TextureManager::_CreateFromFile(std::string path)
 	try {
 		ref_count_ptr<FileReader> reader = FileManager::GetBase()->GetFileReader(StringUtility::ConvertMultiToWide(path, CP_UTF8));
 		if (reader == NULL)
-			throw gstd::wexception(L"ファイルが見つかりません");
+			throw std::runtime_error("ファイルが見つかりません");
 		if (!reader->Open())
-			throw gstd::wexception(L"ファイルが開けません");
+			throw std::runtime_error("ファイルが開けません");
 
 		const auto size = reader->GetFileSize();
 		ByteBuffer buf;
@@ -445,7 +445,7 @@ gstd::ref_count_ptr<Texture> TextureManager::CreateFromFileInLoadThread(std::str
 						if (reader == nullptr)
 							throw gstd::wexception(L"ファイルが見つかりません");
 						if (!reader->Open())
-							throw gstd::wexception(L"ファイルが開けません");
+							throw std::runtime_error("ファイルが開けません");
 
 						int size = reader->GetFileSize();
 						ByteBuffer buf;
@@ -502,7 +502,7 @@ void TextureManager::CallFromLoadThread(ref_count_ptr<FileManager::LoadThreadEve
 		if (texture == NULL)
 			return;
 
-		ref_count_ptr<TextureData> data = texture->data_;
+		std::shared_ptr<TextureData> data = texture->data_;
 		if (data == NULL || data->bLoad_)
 			return;
 
@@ -514,11 +514,11 @@ void TextureManager::CallFromLoadThread(ref_count_ptr<FileManager::LoadThreadEve
 		}
 
 		try {
-			ref_count_ptr<FileReader> reader = FileManager::GetBase()->GetFileReader(path);
+			std::shared_ptr<FileReader> reader = FileManager::GetBase()->GetFileReader(path);
 			if (reader == NULL)
-				throw gstd::wexception(L"ファイルが見つかりません");
+				throw std::runtime_error("ファイルが見つかりません");
 			if (!reader->Open())
-				throw gstd::wexception(L"ファイルが開けません");
+				throw std::runtime_error("ファイルが開けません");
 
 			int size = reader->GetFileSize();
 			ByteBuffer buf;
@@ -545,7 +545,7 @@ void TextureManager::CallFromLoadThread(ref_count_ptr<FileManager::LoadThreadEve
 				NULL,
 				&data->pTexture_);
 			if (FAILED(hr)) {
-				throw gstd::wexception(L"D3DXCreateTextureFromFileInMemoryEx失敗");
+				throw std::runtime_error("D3DXCreateTextureFromFileInMemoryEx失敗");
 			}
 
 			D3DXGetImageInfoFromFileInMemory(buf.GetPointer(), size, &data->infoImage_);

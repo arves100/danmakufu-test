@@ -15,13 +15,13 @@ public:
 	virtual ~StgPackageScriptManager();
 	virtual void Work();
 	virtual void Render();
-	virtual ref_count_ptr<ManagedScript> Create(int type);
+	virtual std::shared_ptr<ManagedScript> Create(int type);
 
-	ref_count_ptr<DxScriptObjectManager> GetObjectManager() { return objectManager_; }
+	std::shared_ptr<DxScriptObjectManager> GetObjectManager() { return objectManager_; }
 
 protected:
 	StgSystemController* systemController_;
-	ref_count_ptr<DxScriptObjectManager> objectManager_;
+	std::shared_ptr<DxScriptObjectManager> objectManager_;
 };
 
 /**********************************************************

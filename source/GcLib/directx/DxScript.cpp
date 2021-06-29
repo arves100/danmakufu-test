@@ -77,19 +77,19 @@ int DxScriptPrimitiveObject::GetVertexCount()
 {
 	return objRender_->GetVertexCount();
 }
-gstd::ref_count_ptr<Texture> DxScriptPrimitiveObject::GetTexture()
+std::shared_ptr<Texture> DxScriptPrimitiveObject::GetTexture()
 {
 	return objRender_->GetTexture();
 }
-void DxScriptPrimitiveObject::SetTexture(gstd::ref_count_ptr<Texture> texture)
+void DxScriptPrimitiveObject::SetTexture(std::shared_ptr<Texture> texture)
 {
 	objRender_->SetTexture(texture);
 }
-gstd::ref_count_ptr<Shader> DxScriptPrimitiveObject::GetShader()
+std::shared_ptr<Shader> DxScriptPrimitiveObject::GetShader()
 {
 	return objRender_->GetShader();
 }
-void DxScriptPrimitiveObject::SetShader(gstd::ref_count_ptr<Shader> shader)
+void DxScriptPrimitiveObject::SetShader(std::shared_ptr<Shader> shader)
 {
 	objRender_->SetShader(shader);
 }
@@ -101,13 +101,13 @@ DxScriptPrimitiveObject2D::DxScriptPrimitiveObject2D()
 {
 	typeObject_ = DxScript::OBJ_PRIMITIVE_2D;
 
-	objRender_ = new RenderObjectTLX();
+	objRender_ = std::make_shared<RenderObjectTLX>();
 	bZWrite_ = false;
 	bZTest_ = false;
 }
 void DxScriptPrimitiveObject2D::Render()
 {
-	RenderObjectTLX* obj = GetObjectPointer();
+	auto obj = GetObjectPointer();
 
 	//フォグを解除する
 	DirectGraphics* graphics = DirectGraphics::GetBase();
@@ -125,7 +125,7 @@ void DxScriptPrimitiveObject2D::Render()
 void DxScriptPrimitiveObject2D::SetRenderState()
 {
 	DirectGraphics* graphics = DirectGraphics::GetBase();
-	RenderObjectTLX* obj = GetObjectPointer();
+	auto obj = GetObjectPointer();
 	obj->SetPosition(position_);
 	obj->SetAngle(angle_);
 	obj->SetScale(scale_);
@@ -137,13 +137,13 @@ void DxScriptPrimitiveObject2D::SetRenderState()
 }
 bool DxScriptPrimitiveObject2D::IsValidVertexIndex(int index)
 {
-	RenderObjectTLX* obj = GetObjectPointer();
+	auto obj = GetObjectPointer();
 	int count = obj->GetVertexCount();
 	return index >= 0 && index < count;
 }
 void DxScriptPrimitiveObject2D::SetColor(int r, int g, int b)
 {
-	RenderObjectTLX* obj = GetObjectPointer();
+	auto obj = GetObjectPointer();
 
 	int count = obj->GetVertexCount();
 	for (int iVert = 0; iVert < count; iVert++) {
@@ -156,7 +156,7 @@ void DxScriptPrimitiveObject2D::SetColor(int r, int g, int b)
 }
 void DxScriptPrimitiveObject2D::SetAlpha(int alpha)
 {
-	RenderObjectTLX* obj = GetObjectPointer();
+	auto obj = GetObjectPointer();
 
 	int count = obj->GetVertexCount();
 	for (int iVert = 0; iVert < count; iVert++) {
@@ -169,21 +169,21 @@ void DxScriptPrimitiveObject2D::SetVertexPosition(int index, float x, float y, f
 {
 	if (!IsValidVertexIndex(index))
 		return;
-	RenderObjectTLX* obj = GetObjectPointer();
+	auto obj = GetObjectPointer();
 	obj->SetVertexPosition(index, x, y, z);
 }
 void DxScriptPrimitiveObject2D::SetVertexUV(int index, float u, float v)
 {
 	if (!IsValidVertexIndex(index))
 		return;
-	RenderObjectTLX* obj = GetObjectPointer();
+	auto obj = GetObjectPointer();
 	obj->SetVertexUV(index, u, v);
 }
 void DxScriptPrimitiveObject2D::SetVertexAlpha(int index, int alpha)
 {
 	if (!IsValidVertexIndex(index))
 		return;
-	RenderObjectTLX* obj = GetObjectPointer();
+	auto obj = GetObjectPointer();
 	VERTEX_TLX* vert = obj->GetVertex(index);
 	D3DCOLOR& color = vert->diffuse_color;
 	color = ColorAccess::SetColorA(color, alpha);
@@ -192,7 +192,7 @@ void DxScriptPrimitiveObject2D::SetVertexColor(int index, int r, int g, int b)
 {
 	if (!IsValidVertexIndex(index))
 		return;
-	RenderObjectTLX* obj = GetObjectPointer();
+	auto obj = GetObjectPointer();
 	VERTEX_TLX* vert = obj->GetVertex(index);
 	D3DCOLOR& color = vert->diffuse_color;
 	color = ColorAccess::SetColorR(color, r);
@@ -201,7 +201,7 @@ void DxScriptPrimitiveObject2D::SetVertexColor(int index, int r, int g, int b)
 }
 void DxScriptPrimitiveObject2D::SetPermitCamera(bool bPermit)
 {
-	RenderObjectTLX* obj = GetObjectPointer();
+	auto obj = GetObjectPointer();
 	obj->SetPermitCamera(bPermit);
 }
 D3DXVECTOR3 DxScriptPrimitiveObject2D::GetVertexPosition(int index)
@@ -209,7 +209,7 @@ D3DXVECTOR3 DxScriptPrimitiveObject2D::GetVertexPosition(int index)
 	D3DXVECTOR3 res(0, 0, 0);
 	if (!IsValidVertexIndex(index))
 		return res;
-	RenderObjectTLX* obj = GetObjectPointer();
+	auto obj = GetObjectPointer();
 	VERTEX_TLX* vert = obj->GetVertex(index);
 
 	float bias = 0.5f;
@@ -226,7 +226,7 @@ D3DXVECTOR3 DxScriptPrimitiveObject2D::GetVertexPosition(int index)
 DxScriptSpriteObject2D::DxScriptSpriteObject2D()
 {
 	typeObject_ = DxScript::OBJ_SPRITE_2D;
-	objRender_ = new Sprite2D();
+	objRender_ = std::make_shared<Sprite2D>();
 }
 void DxScriptSpriteObject2D::Copy(DxScriptSpriteObject2D* src)
 {
@@ -241,9 +241,9 @@ void DxScriptSpriteObject2D::Copy(DxScriptSpriteObject2D* src)
 	scale_ = src->scale_;
 	typeBlend_ = src->typeBlend_;
 
-	Sprite2D* destSprite2D = (Sprite2D*)objRender_.GetPointer();
-	Sprite2D* srcSprite2D = (Sprite2D*)src->objRender_.GetPointer();
-	destSprite2D->Copy(srcSprite2D);
+	auto destSprite2D = std::dynamic_pointer_cast<Sprite2D>(objRender_);
+	auto srcSprite2D = std::dynamic_pointer_cast<Sprite2D>(src->objRender_);
+	destSprite2D->Copy(srcSprite2D.get());
 }
 
 /**********************************************************
@@ -252,7 +252,7 @@ void DxScriptSpriteObject2D::Copy(DxScriptSpriteObject2D* src)
 DxScriptSpriteListObject2D::DxScriptSpriteListObject2D()
 {
 	typeObject_ = DxScript::OBJ_SPRITE_LIST_2D;
-	objRender_ = new SpriteList2D();
+	objRender_ = std::make_shared<SpriteList2D>();
 }
 void DxScriptSpriteListObject2D::SetColor(int r, int g, int b)
 {
@@ -270,7 +270,7 @@ void DxScriptSpriteListObject2D::SetAlpha(int alpha)
 }
 void DxScriptSpriteListObject2D::AddVertex()
 {
-	SpriteList2D* obj = GetSpritePointer();
+	auto obj = GetSpritePointer();
 	obj->SetPosition(position_);
 	obj->SetAngle(angle_);
 	obj->SetScale(scale_);
@@ -278,7 +278,7 @@ void DxScriptSpriteListObject2D::AddVertex()
 }
 void DxScriptSpriteListObject2D::CloseVertex()
 {
-	SpriteList2D* obj = GetSpritePointer();
+	auto obj = GetSpritePointer();
 	obj->CloseVertex();
 
 	position_ = D3DXVECTOR3(0.0f, 0.0f, 0.0f);
@@ -292,15 +292,15 @@ void DxScriptSpriteListObject2D::CloseVertex()
 DxScriptPrimitiveObject3D::DxScriptPrimitiveObject3D()
 {
 	typeObject_ = DxScript::OBJ_PRIMITIVE_3D;
-	objRender_ = new RenderObjectLX();
+	objRender_ = std::make_shared<RenderObjectLX>();
 	bZWrite_ = false;
 	bZTest_ = true;
 	bFogEnable_ = true;
 }
 void DxScriptPrimitiveObject3D::Render()
 {
-	RenderObjectLX* obj = GetObjectPointer();
-	DirectGraphics* graphics = DirectGraphics::GetBase();
+	auto obj = GetObjectPointer();
+	auto graphics = DirectGraphics::GetBase();
 	bool bEnvFogEnable = graphics->IsFogEnable();
 	SetRenderState();
 	obj->Render();
@@ -312,14 +312,14 @@ void DxScriptPrimitiveObject3D::Render()
 void DxScriptPrimitiveObject3D::SetRenderState()
 {
 	if (idRelative_ >= 0) {
-		ref_count_ptr<DxScriptObjectBase>::unsync objRelative = manager_->GetObject(idRelative_);
+		std::shared_ptr<DxScriptObjectBase> objRelative = manager_->GetObject(idRelative_);
 		if (objRelative != NULL) {
 			objRelative->SetRenderState();
-			DxScriptMeshObject* objMesh = dynamic_cast<DxScriptMeshObject*>(objRelative.GetPointer());
+			auto objMesh = std::dynamic_pointer_cast<DxScriptMeshObject>(objRelative);
 			if (objMesh != NULL) {
 				int frameAnime = objMesh->GetAnimeFrame();
-				std::wstring nameAnime = objMesh->GetAnimeName();
-				ref_count_ptr<DxMesh> mesh = objMesh->GetMesh();
+				std::string nameAnime = objMesh->GetAnimeName();
+				std::shared_ptr<DxMesh> mesh = objMesh->GetMesh();
 				D3DXMATRIX mat = mesh->GetAnimationMatrix(nameAnime, frameAnime, nameRelativeBone_);
 				objRender_->SetRalativeMatrix(mat);
 			}
@@ -329,7 +329,7 @@ void DxScriptPrimitiveObject3D::SetRenderState()
 	DirectGraphics* graphics = DirectGraphics::GetBase();
 	bool bEnvFogEnable = graphics->IsFogEnable();
 
-	RenderObjectLX* obj = GetObjectPointer();
+	auto obj = GetObjectPointer();
 	obj->SetPosition(position_);
 	obj->SetAngle(angle_);
 	obj->SetScale(scale_);
@@ -343,13 +343,13 @@ void DxScriptPrimitiveObject3D::SetRenderState()
 }
 bool DxScriptPrimitiveObject3D::IsValidVertexIndex(int index)
 {
-	RenderObjectLX* obj = GetObjectPointer();
+	auto obj = GetObjectPointer();
 	int count = obj->GetVertexCount();
 	return index >= 0 && index < count;
 }
 void DxScriptPrimitiveObject3D::SetColor(int r, int g, int b)
 {
-	RenderObjectLX* obj = GetObjectPointer();
+	auto obj = GetObjectPointer();
 	int count = obj->GetVertexCount();
 	for (int iVert = 0; iVert < count; iVert++) {
 		VERTEX_LX* vert = obj->GetVertex(iVert);
@@ -361,7 +361,7 @@ void DxScriptPrimitiveObject3D::SetColor(int r, int g, int b)
 }
 void DxScriptPrimitiveObject3D::SetAlpha(int alpha)
 {
-	RenderObjectLX* obj = GetObjectPointer();
+	auto obj = GetObjectPointer();
 	int count = obj->GetVertexCount();
 	for (int iVert = 0; iVert < count; iVert++) {
 		VERTEX_LX* vert = obj->GetVertex(iVert);
@@ -373,7 +373,7 @@ void DxScriptPrimitiveObject3D::SetVertexPosition(int index, float x, float y, f
 {
 	if (!IsValidVertexIndex(index))
 		return;
-	RenderObjectLX* obj = GetObjectPointer();
+	auto obj = GetObjectPointer();
 	VERTEX_LX* vert = obj->GetVertex(index);
 	vert->position.x = x;
 	vert->position.y = y;
@@ -383,7 +383,7 @@ void DxScriptPrimitiveObject3D::SetVertexUV(int index, float u, float v)
 {
 	if (!IsValidVertexIndex(index))
 		return;
-	RenderObjectLX* obj = GetObjectPointer();
+	auto obj = GetObjectPointer();
 
 	VERTEX_LX* vert = obj->GetVertex(index);
 	vert->texcoord.x = u;
@@ -393,7 +393,7 @@ void DxScriptPrimitiveObject3D::SetVertexAlpha(int index, int alpha)
 {
 	if (!IsValidVertexIndex(index))
 		return;
-	RenderObjectLX* obj = GetObjectPointer();
+	auto obj = GetObjectPointer();
 	VERTEX_LX* vert = obj->GetVertex(index);
 	D3DCOLOR& color = vert->diffuse_color;
 	color = ColorAccess::SetColorA(color, alpha);
@@ -402,7 +402,7 @@ void DxScriptPrimitiveObject3D::SetVertexColor(int index, int r, int g, int b)
 {
 	if (!IsValidVertexIndex(index))
 		return;
-	RenderObjectLX* obj = GetObjectPointer();
+	auto obj = GetObjectPointer();
 	VERTEX_LX* vert = obj->GetVertex(index);
 	D3DCOLOR& color = vert->diffuse_color;
 	color = ColorAccess::SetColorR(color, r);
@@ -414,7 +414,7 @@ D3DXVECTOR3 DxScriptPrimitiveObject3D::GetVertexPosition(int index)
 	D3DXVECTOR3 res(0, 0, 0);
 	if (!IsValidVertexIndex(index))
 		return res;
-	RenderObjectLX* obj = GetObjectPointer();
+	auto obj = GetObjectPointer();
 	VERTEX_LX* vert = obj->GetVertex(index);
 
 	res.x = vert->position.x;
@@ -429,7 +429,7 @@ D3DXVECTOR3 DxScriptPrimitiveObject3D::GetVertexPosition(int index)
 DxScriptSpriteObject3D::DxScriptSpriteObject3D()
 {
 	typeObject_ = DxScript::OBJ_SPRITE_3D;
-	objRender_ = new Sprite3D();
+	objRender_ = std::make_shared<Sprite3D>();
 }
 /**********************************************************
 //DxScriptTrajectoryObject3D
@@ -437,39 +437,39 @@ DxScriptSpriteObject3D::DxScriptSpriteObject3D()
 DxScriptTrajectoryObject3D::DxScriptTrajectoryObject3D()
 {
 	typeObject_ = DxScript::OBJ_TRAJECTORY_3D;
-	objRender_ = new TrajectoryObject3D();
+	objRender_ = std::make_shared<TrajectoryObject3D>();
 }
 void DxScriptTrajectoryObject3D::Work()
 {
 	if (idRelative_ >= 0) {
-		ref_count_ptr<DxScriptObjectBase>::unsync objRelative = manager_->GetObject(idRelative_);
+		std::shared_ptr<DxScriptObjectBase> objRelative = manager_->GetObject(idRelative_);
 		if (objRelative != NULL) {
 			objRelative->SetRenderState();
-			DxScriptMeshObject* objMesh = dynamic_cast<DxScriptMeshObject*>(objRelative.GetPointer());
+			auto objMesh = std::dynamic_pointer_cast<DxScriptMeshObject>(objRelative);
 			if (objMesh != NULL) {
 				int frameAnime = objMesh->GetAnimeFrame();
-				std::wstring nameAnime = objMesh->GetAnimeName();
-				ref_count_ptr<DxMesh> mesh = objMesh->GetMesh();
+				std::string nameAnime = objMesh->GetAnimeName();
+				std::shared_ptr<DxMesh> mesh = objMesh->GetMesh();
 				D3DXMATRIX matAnime = mesh->GetAnimationMatrix(nameAnime, frameAnime, nameRelativeBone_);
 
-				TrajectoryObject3D* objRender = GetObjectPointer();
+				auto objRender = GetObjectPointer();
 				objRender->AddPoint(matAnime);
 			}
 		}
 	}
-	TrajectoryObject3D* obj = GetObjectPointer();
+	auto obj = GetObjectPointer();
 	obj->Work();
 }
 void DxScriptTrajectoryObject3D::Render()
 {
-	TrajectoryObject3D* obj = GetObjectPointer();
+	auto obj = GetObjectPointer();
 	SetRenderState();
 	obj->Render();
 }
 void DxScriptTrajectoryObject3D::SetRenderState()
 {
 	DirectGraphics* graphics = DirectGraphics::GetBase();
-	TrajectoryObject3D* obj = GetObjectPointer();
+	auto obj = GetObjectPointer();
 	graphics->SetLightingEnable(false);
 	graphics->SetZWriteEnalbe(bZWrite_);
 	graphics->SetZBufferEnable(bZTest_);
@@ -479,7 +479,7 @@ void DxScriptTrajectoryObject3D::SetRenderState()
 void DxScriptTrajectoryObject3D::SetColor(int r, int g, int b)
 {
 	DirectGraphics* graphics = DirectGraphics::GetBase();
-	TrajectoryObject3D* obj = GetObjectPointer();
+	auto obj = GetObjectPointer();
 	obj->SetColor(D3DCOLOR_ARGB(255, r, g, b));
 }
 
@@ -493,7 +493,7 @@ DxScriptMeshObject::DxScriptMeshObject()
 	bZTest_ = true;
 	bFogEnable_ = true;
 	time_ = 0;
-	anime_ = L"";
+	anime_ = "";
 	color_ = D3DCOLOR_ARGB(255, 255, 255, 255);
 	bCoordinate2D_ = false;
 }
@@ -549,7 +549,7 @@ void DxScriptMeshObject::_UpdateMeshState()
 	mesh_->SetScale(scale_);
 	mesh_->SetColor(color_);
 }
-void DxScriptMeshObject::SetShader(gstd::ref_count_ptr<Shader> shader)
+void DxScriptMeshObject::SetShader(std::shared_ptr<Shader> shader)
 {
 	if (mesh_ == NULL)
 		return;
@@ -614,7 +614,7 @@ std::vector<int> DxScriptTextObject::GetTextCountCU()
 	int lineCount = textInfo_->GetLineCount();
 	std::vector<int> listCount;
 	for (int iLine = 0; iLine < lineCount; iLine++) {
-		gstd::ref_count_ptr<DxTextLine> textLine = textInfo_->GetTextLine(iLine);
+		std::shared_ptr<DxTextLine> textLine = textInfo_->GetTextLine(iLine);
 		int count = textLine->GetTextCodeCount();
 		listCount.push_back(count);
 	}
@@ -657,7 +657,7 @@ int DxScriptTextObject::GetTotalHeight()
 	int res = textInfo_->GetTotalHeight();
 	return res;
 }
-void DxScriptTextObject::SetShader(gstd::ref_count_ptr<Shader> shader)
+void DxScriptTextObject::SetShader(std::shared_ptr<Shader> shader)
 {
 	text_.SetShader(shader);
 	bChange_ = true;
@@ -676,7 +676,7 @@ DxSoundObject::~DxSoundObject()
 		return;
 	player_->Delete();
 }
-bool DxSoundObject::Load(std::wstring path)
+bool DxSoundObject::Load(std::string path)
 {
 	DirectSoundManager* manager = DirectSoundManager::GetBase();
 	player_ = manager->GetPlayer(path);
@@ -700,30 +700,30 @@ DxFileObject::DxFileObject()
 DxFileObject::~DxFileObject()
 {
 }
-bool DxFileObject::OpenR(std::wstring path)
+bool DxFileObject::OpenR(std::string path)
 {
-	file_ = new File(path);
+	file_ = std::make_shared<File>(path);
 	bool res = file_->Open();
 	if (!res)
 		file_ = NULL;
 	return res;
 }
-bool DxFileObject::OpenW(std::wstring path)
+bool DxFileObject::OpenW(std::string path)
 {
 	path = PathProperty::Canonicalize(path);
 	path = PathProperty::ReplaceYenToSlash(path);
 
-	std::wstring dir = PathProperty::GetFileDirectory(path);
+	std::string dir = PathProperty::GetFileDirectory(path);
 	File fDir(dir);
 	bool bDir = fDir.CreateDirectory();
 	if (!bDir)
 		return false;
 
-	std::wstring dirModule = PathProperty::GetFileDirectory(path);
+	std::string dirModule = PathProperty::GetFileDirectory(path);
 	if (dir.find(dirModule) == std::wstring::npos)
 		return false;
 
-	file_ = new File(path);
+	file_ = std::make_shared<File>(path);
 	bool res = file_->Create();
 	if (!res)
 		file_ = NULL;
@@ -746,7 +746,7 @@ DxTextFileObject::DxTextFileObject()
 DxTextFileObject::~DxTextFileObject()
 {
 }
-bool DxTextFileObject::OpenR(std::wstring path)
+bool DxTextFileObject::OpenR(std::string path)
 {
 	listLine_.clear();
 	bool res = DxFileObject::OpenR(path);
@@ -779,7 +779,7 @@ bool DxTextFileObject::OpenR(std::wstring path)
 		{
 			pos_++;
 			if (pos_ >= text_->size())
-				throw gstd::wexception();
+				throw std::runtime_error("");
 		}
 	};
 	TextScanner scan(&text);
@@ -816,7 +816,7 @@ bool DxTextFileObject::OpenR(std::wstring path)
 	}
 	return true;
 }
-bool DxTextFileObject::OpenW(std::wstring path)
+bool DxTextFileObject::OpenW(std::string path)
 {
 	bool res = DxFileObject::OpenW(path);
 	return res;
@@ -858,21 +858,21 @@ DxBinaryFileObject::DxBinaryFileObject()
 DxBinaryFileObject::~DxBinaryFileObject()
 {
 }
-bool DxBinaryFileObject::OpenR(std::wstring path)
+bool DxBinaryFileObject::OpenR(std::string path)
 {
 	bool res = DxFileObject::OpenR(path);
 	if (!res)
 		return false;
 
 	int size = file_->GetSize();
-	buffer_ = new gstd::ByteBuffer();
+	buffer_ = std::make_shared<gstd::ByteBuffer>();
 	buffer_->SetSize(size);
 
 	file_->Read(buffer_->GetPointer(), size);
 
 	return true;
 }
-bool DxBinaryFileObject::OpenW(std::wstring path)
+bool DxBinaryFileObject::OpenW(std::string path)
 {
 	return false;
 }
@@ -929,16 +929,16 @@ void DxScriptObjectManager::SetRenderBucketCapacity(int capacity)
 }
 void DxScriptObjectManager::_ArrangeActiveObjectList()
 {
-	std::list<gstd::ref_count_ptr<DxScriptObjectBase>::unsync>::iterator itr;
+	std::list<std::shared_ptr<DxScriptObjectBase>>::iterator itr;
 	for (itr = listActiveObject_.begin(); itr != listActiveObject_.end();) {
-		gstd::ref_count_ptr<DxScriptObjectBase>::unsync obj = (*itr);
+		std::shared_ptr<DxScriptObjectBase> obj = (*itr);
 		if (obj == NULL || obj->IsDeleted() || !obj->IsActive())
 			itr = listActiveObject_.erase(itr);
 		else
 			itr++;
 	}
 }
-int DxScriptObjectManager::AddObject(gstd::ref_count_ptr<DxScriptObjectBase>::unsync obj, bool bActivate)
+int DxScriptObjectManager::AddObject(std::shared_ptr<DxScriptObjectBase> obj, bool bActivate)
 {
 	int res = DxScript::ID_INVALID;
 	if (listUnusedIndex_.size() <= obj_.size() / 2) {
@@ -946,7 +946,7 @@ int DxScriptObjectManager::AddObject(gstd::ref_count_ptr<DxScriptObjectBase>::un
 		int oldSize = obj_.size();
 		int newSize = oldSize * 1.5;
 		SetMaxObject(newSize);
-		Logger::WriteTop(StringUtility::Format(L"DxScriptObjectManagerサイズ拡張[%d->%d]", oldSize, newSize));
+		Logger::WriteTop(StringUtility::Format(u8"DxScriptObjectManagerサイズ拡張[%d->%d]", oldSize, newSize));
 	}
 
 	if (listUnusedIndex_.size() != 0) {
@@ -959,17 +959,17 @@ int DxScriptObjectManager::AddObject(gstd::ref_count_ptr<DxScriptObjectBase>::un
 			listActiveObject_.push_back(obj);
 		}
 		obj->idObject_ = res;
-		obj->manager_ = this;
+		obj->manager_ = std::shared_ptr<DxScriptObjectManager>(this); // todo
 
 		totalObjectCreateCount_++;
 	}
 	return res;
 }
-void DxScriptObjectManager::AddObject(int id, gstd::ref_count_ptr<DxScriptObjectBase>::unsync obj, bool bActivate)
+void DxScriptObjectManager::AddObject(int id, std::shared_ptr<DxScriptObjectBase> obj, bool bActivate)
 {
 	obj_[id] = obj;
 	obj->idObject_ = id;
-	obj->manager_ = this;
+	obj->manager_ = std::shared_ptr<DxScriptObjectManager>(this);
 	if (bActivate) {
 		obj->bActive_ = true;
 		listActiveObject_.push_back(obj);
@@ -986,7 +986,7 @@ void DxScriptObjectManager::AddObject(int id, gstd::ref_count_ptr<DxScriptObject
 }
 void DxScriptObjectManager::ActivateObject(int id, bool bActivate)
 {
-	gstd::ref_count_ptr<DxScriptObjectBase>::unsync obj = GetObject(id);
+	std::shared_ptr<DxScriptObjectBase> obj = GetObject(id);
 	if (obj == NULL || obj->IsDeleted())
 		return;
 
@@ -1007,11 +1007,11 @@ std::vector<int> DxScriptObjectManager::GetValidObjectIdentifier()
 	}
 	return res;
 }
-DxScriptObjectBase* DxScriptObjectManager::GetObjectPointer(int id)
+std::shared_ptr<DxScriptObjectBase> DxScriptObjectManager::GetObjectPointer(int id)
 {
 	if (id < 0 || id >= obj_.size())
 		return NULL;
-	return obj_[id].GetPointer();
+	return obj_[id];
 }
 void DxScriptObjectManager::DeleteObject(int id)
 {
@@ -1036,11 +1036,11 @@ void DxScriptObjectManager::ClearObject()
 		listUnusedIndex_.push_back(iObj);
 	}
 }
-gstd::ref_count_ptr<Shader> DxScriptObjectManager::GetShader(int index)
+std::shared_ptr<Shader> DxScriptObjectManager::GetShader(int index)
 {
 	if (index < 0 || index >= listShader_.size())
 		return NULL;
-	ref_count_ptr<Shader> shader = listShader_[index];
+	std::shared_ptr<Shader> shader = listShader_[index];
 	return shader;
 }
 void DxScriptObjectManager::DeleteObjectByScriptID(_int64 idScript)
@@ -1056,7 +1056,7 @@ void DxScriptObjectManager::DeleteObjectByScriptID(_int64 idScript)
 		DeleteObject(obj_[iObj]->GetObjectID());
 	}
 }
-void DxScriptObjectManager::AddRenderObject(gstd::ref_count_ptr<DxScriptObjectBase>::unsync obj)
+void DxScriptObjectManager::AddRenderObject(std::shared_ptr<DxScriptObjectBase> obj)
 {
 	if (!obj->IsVisible())
 		return;
@@ -1071,9 +1071,9 @@ void DxScriptObjectManager::AddRenderObject(gstd::ref_count_ptr<DxScriptObjectBa
 void DxScriptObjectManager::WorkObject()
 {
 	_ArrangeActiveObjectList();
-	std::list<gstd::ref_count_ptr<DxScriptObjectBase>::unsync>::iterator itr;
+	std::list<std::shared_ptr<DxScriptObjectBase>>::iterator itr;
 	for (itr = listActiveObject_.begin(); itr != listActiveObject_.end(); itr++) {
-		gstd::ref_count_ptr<DxScriptObjectBase>::unsync obj = (*itr);
+		std::shared_ptr<DxScriptObjectBase> obj = (*itr);
 		if (obj == NULL || obj->IsDeleted())
 			continue;
 		obj->Work();
@@ -1081,10 +1081,10 @@ void DxScriptObjectManager::WorkObject()
 
 	//音声再生
 	DirectSoundManager* soundManager = DirectSoundManager::GetBase();
-	std::map<std::wstring, ref_count_ptr<SoundInfo>>::iterator itrSound = mapReservedSound_.begin();
+	std::map<std::string, std::shared_ptr<SoundInfo>>::iterator itrSound = mapReservedSound_.begin();
 	for (; itrSound != mapReservedSound_.end(); itrSound++) {
-		gstd::ref_count_ptr<SoundInfo> info = itrSound->second;
-		gstd::ref_count_ptr<SoundPlayer> player = info->player_;
+		std::shared_ptr<SoundInfo> info = itrSound->second;
+		std::shared_ptr<SoundPlayer> player = info->player_;
 		SoundPlayer::PlayStyle style = info->style_;
 		player->Play(style);
 	}
@@ -1098,12 +1098,12 @@ void DxScriptObjectManager::RenderObject()
 	graphics->SetVertexFog(bFogEnable_, fogColor_, fogStart_, fogEnd_);
 
 	for (int iPri = 0; iPri < objRender_.size(); iPri++) {
-		ref_count_ptr<Shader> shader = listShader_[iPri];
+		std::shared_ptr<Shader> shader = listShader_[iPri];
 		if (shader != NULL) {
 			shader->Begin();
 		}
 
-		std::list<gstd::ref_count_ptr<DxScriptObjectBase>::unsync>::iterator itr;
+		std::list<std::shared_ptr<DxScriptObjectBase>>::iterator itr;
 		for (itr = objRender_[iPri].begin(); itr != objRender_[iPri].end(); itr++) {
 			(*itr)->Render();
 		}
@@ -1116,9 +1116,9 @@ void DxScriptObjectManager::RenderObject()
 }
 void DxScriptObjectManager::PrepareRenderObject()
 {
-	std::list<gstd::ref_count_ptr<DxScriptObjectBase>::unsync>::iterator itr;
+	std::list<std::shared_ptr<DxScriptObjectBase>>::iterator itr;
 	for (itr = listActiveObject_.begin(); itr != listActiveObject_.end(); itr++) {
-		gstd::ref_count_ptr<DxScriptObjectBase>::unsync obj = (*itr);
+		std::shared_ptr<DxScriptObjectBase> obj = (*itr);
 		if (obj == NULL || obj->IsDeleted())
 			continue;
 		if (!obj->IsVisible())
@@ -1132,7 +1132,7 @@ void DxScriptObjectManager::ClearRenderObject()
 		objRender_[iPri].clear();
 	}
 }
-void DxScriptObjectManager::SetShader(gstd::ref_count_ptr<Shader> shader, double min, double max)
+void DxScriptObjectManager::SetShader(std::shared_ptr<Shader> shader, double min, double max)
 {
 	int tPriMin = (int)(min * (listShader_.size() - 1) + 0.5);
 	int tPriMax = (int)(max * (listShader_.size() - 1) + 0.5);
@@ -1151,18 +1151,18 @@ void DxScriptObjectManager::ResetShader(double min, double max)
 	SetShader(NULL, min, max);
 }
 
-void DxScriptObjectManager::ReserveSound(ref_count_ptr<SoundPlayer> player, SoundPlayer::PlayStyle& style)
+void DxScriptObjectManager::ReserveSound(std::shared_ptr<SoundPlayer> player, SoundPlayer::PlayStyle& style)
 {
-	ref_count_ptr<SoundInfo> info = new SoundInfo();
+	std::shared_ptr<SoundInfo> info = std::make_shared<SoundInfo>();
 	info->player_ = player;
 	info->style_ = style;
 
-	std::wstring path = player->GetPath();
+	std::string path = player->GetPath();
 	mapReservedSound_[path] = info;
 }
-void DxScriptObjectManager::DeleteReservedSound(gstd::ref_count_ptr<SoundPlayer> player)
+void DxScriptObjectManager::DeleteReservedSound(std::shared_ptr<SoundPlayer> player)
 {
-	std::wstring path = player->GetPath();
+	std::string path = player->GetPath();
 	mapReservedSound_.erase(path);
 }
 void DxScriptObjectManager::SetFogParam(bool bEnable, D3DCOLOR fogColor, float start, float end)
@@ -1645,7 +1645,7 @@ function const dxFunction[] = {
 DxScript::DxScript()
 {
 	_AddFunction(dxFunction, sizeof(dxFunction) / sizeof(function));
-	objManager_ = new DxScriptObjectManager();
+	objManager_ = std::make_shared<DxScriptObjectManager>();
 }
 DxScript::~DxScript()
 {
@@ -1656,21 +1656,21 @@ void DxScript::_ClearResource()
 	mapTexture_.clear();
 	mapMesh_.clear();
 
-	std::map<std::wstring, gstd::ref_count_ptr<SoundPlayer>>::iterator itrSound;
+	std::map<std::string, std::shared_ptr<SoundPlayer>>::iterator itrSound;
 	for (itrSound = mapSoundPlayer_.begin(); itrSound != mapSoundPlayer_.end(); itrSound++) {
-		SoundPlayer* player = (itrSound->second).GetPointer();
+		auto player = (itrSound->second);
 		player->Delete();
 	}
 	mapSoundPlayer_.clear();
 }
-int DxScript::AddObject(gstd::ref_count_ptr<DxScriptObjectBase>::unsync obj, bool bActivate)
+int DxScript::AddObject(std::shared_ptr<DxScriptObjectBase> obj, bool bActivate)
 {
 	obj->idScript_ = idScript_;
 	return objManager_->AddObject(obj, bActivate);
 }
-gstd::ref_count_ptr<Texture> DxScript::_GetTexture(std::wstring name)
+std::shared_ptr<Texture> DxScript::_GetTexture(std::string name)
 {
-	gstd::ref_count_ptr<Texture> res;
+	std::shared_ptr<Texture> res;
 	if (mapTexture_.find(name) != mapTexture_.end()) {
 		res = mapTexture_[name];
 	}
@@ -1683,13 +1683,13 @@ gstd::value DxScript::Func_InstallFont(gstd::script_machine* machine, int argc, 
 	DxScript* script = (DxScript*)machine->data;
 	DirectSoundManager* manager = DirectSoundManager::GetBase();
 
-	std::wstring path = argv[0].as_string();
+	std::string path = argv[0].as_string();
 	path = PathProperty::GetUnique(path);
 	DxTextRenderer* renderer = DxTextRenderer::GetBase();
 	bool res = false;
 	try {
 		res = renderer->AddFontFromFile(path);
-	} catch (gstd::wexception e) {
+	} catch (std::exception e) {
 		Logger::WriteTop(e.what());
 	}
 	return value(machine->get_engine()->get_boolean_type(), res);
@@ -1701,12 +1701,12 @@ value DxScript::Func_LoadSound(script_machine* machine, int argc, value const* a
 	DxScript* script = (DxScript*)machine->data;
 	DirectSoundManager* manager = DirectSoundManager::GetBase();
 
-	std::wstring path = argv[0].as_string();
+	std::string path = argv[0].as_string();
 	path = PathProperty::GetUnique(path);
 	if (script->mapSoundPlayer_.find(path) != script->mapSoundPlayer_.end())
 		return value(machine->get_engine()->get_boolean_type(), true);
 
-	ref_count_ptr<SoundPlayer> player = manager->GetPlayer(path, true);
+	std::shared_ptr<SoundPlayer> player = manager->GetPlayer(path, true);
 	if (player != NULL) {
 		script->mapSoundPlayer_[path] = player;
 	}
@@ -1717,12 +1717,12 @@ value DxScript::Func_RemoveSound(script_machine* machine, int argc, value const*
 	DxScript* script = (DxScript*)machine->data;
 	DirectSoundManager* manager = DirectSoundManager::GetBase();
 
-	std::wstring path = argv[0].as_string();
+	std::string path = argv[0].as_string();
 	path = PathProperty::GetUnique(path);
 	if (script->mapSoundPlayer_.find(path) == script->mapSoundPlayer_.end())
 		return value();
 
-	ref_count_ptr<SoundPlayer> player = script->mapSoundPlayer_[path];
+	std::shared_ptr<SoundPlayer> player = script->mapSoundPlayer_[path];
 	player->Delete();
 	script->mapSoundPlayer_.erase(path);
 	return value();
@@ -1732,7 +1732,7 @@ value DxScript::Func_PlayBGM(script_machine* machine, int argc, value const* arg
 	DxScript* script = (DxScript*)machine->data;
 	DirectSoundManager* manager = DirectSoundManager::GetBase();
 
-	std::wstring path = argv[0].as_string();
+	std::string path = argv[0].as_string();
 	path = PathProperty::GetUnique(path);
 	if (script->mapSoundPlayer_.find(path) == script->mapSoundPlayer_.end())
 		return value();
@@ -1740,7 +1740,7 @@ value DxScript::Func_PlayBGM(script_machine* machine, int argc, value const* arg
 	double loopStart = argv[1].as_real();
 	double loopEnd = argv[2].as_real();
 
-	ref_count_ptr<SoundPlayer> player = script->mapSoundPlayer_[path];
+	std::shared_ptr<SoundPlayer> player = script->mapSoundPlayer_[path];
 	player->SetSoundDivision(SoundDivision::DIVISION_BGM);
 
 	SoundPlayer::PlayStyle style;
@@ -1756,12 +1756,12 @@ gstd::value DxScript::Func_PlaySE(gstd::script_machine* machine, int argc, gstd:
 	DxScript* script = (DxScript*)machine->data;
 	DirectSoundManager* manager = DirectSoundManager::GetBase();
 
-	std::wstring path = argv[0].as_string();
+	std::string path = argv[0].as_string();
 	path = PathProperty::GetUnique(path);
 	if (script->mapSoundPlayer_.find(path) == script->mapSoundPlayer_.end())
 		return value();
 
-	ref_count_ptr<SoundPlayer> player = script->mapSoundPlayer_[path];
+	std::shared_ptr<SoundPlayer> player = script->mapSoundPlayer_[path];
 	player->SetSoundDivision(SoundDivision::DIVISION_SE);
 
 	SoundPlayer::PlayStyle style;
@@ -1776,12 +1776,12 @@ value DxScript::Func_StopSound(script_machine* machine, int argc, value const* a
 	DxScript* script = (DxScript*)machine->data;
 	DirectSoundManager* manager = DirectSoundManager::GetBase();
 
-	std::wstring path = argv[0].as_string();
+	std::string path = argv[0].as_string();
 	path = PathProperty::GetUnique(path);
 	if (script->mapSoundPlayer_.find(path) == script->mapSoundPlayer_.end())
 		return value();
 
-	ref_count_ptr<SoundPlayer> player = script->mapSoundPlayer_[path];
+	std::shared_ptr<SoundPlayer> player = script->mapSoundPlayer_[path];
 	player->Stop();
 	script->GetObjectManager()->DeleteReservedSound(player);
 	return value();
@@ -1835,9 +1835,9 @@ gstd::value DxScript::Func_SetVirtualKeyState(gstd::script_machine* machine, int
 	if (input != NULL) {
 		int id = (int)(argv[0].as_real());
 		int state = (int)(argv[1].as_real());
-		ref_count_ptr<VirtualKey> vkey = input->GetVirtualKey(id);
-		if (vkey != NULL) {
-			vkey->SetKeyState(state);
+		if (input->HaveKeyMap(id))
+		{
+			input->ForceSetKeyMap(id, state);
 		}
 	}
 	return value();
@@ -1859,11 +1859,11 @@ value DxScript::Func_LoadTexture(script_machine* machine, int argc, value const*
 {
 	DxScript* script = (DxScript*)machine->data;
 	bool res = true;
-	std::wstring path = argv[0].as_string();
+	std::string path = argv[0].as_string();
 	path = PathProperty::GetUnique(path);
 
 	if (script->mapTexture_.find(path) == script->mapTexture_.end()) {
-		ref_count_ptr<Texture> texture = new Texture();
+		std::shared_ptr<Texture> texture = std::make_shared<Texture>();
 		bool res = texture->CreateFromFile(path);
 		if (res) {
 			Lock lock(script->criticalSection_);
@@ -1876,11 +1876,11 @@ value DxScript::Func_LoadTextureInLoadThread(script_machine* machine, int argc, 
 {
 	DxScript* script = (DxScript*)machine->data;
 	bool res = true;
-	std::wstring path = argv[0].as_string();
+	std::string path = argv[0].as_string();
 	path = PathProperty::GetUnique(path);
 
 	if (script->mapTexture_.find(path) == script->mapTexture_.end()) {
-		ref_count_ptr<Texture> texture = new Texture();
+		std::shared_ptr<Texture> texture = std::make_shared<Texture>();
 		bool res = texture->CreateFromFileInLoadThread(path);
 		if (res) {
 			Lock lock(script->criticalSection_);
@@ -1892,7 +1892,7 @@ value DxScript::Func_LoadTextureInLoadThread(script_machine* machine, int argc, 
 value DxScript::Func_RemoveTexture(script_machine* machine, int argc, value const* argv)
 {
 	DxScript* script = (DxScript*)machine->data;
-	std::wstring path = argv[0].as_string();
+	std::string path = argv[0].as_string();
 	path = PathProperty::GetUnique(path);
 	{
 		Lock lock(script->criticalSection_);
@@ -1904,11 +1904,11 @@ value DxScript::Func_GetTextureWidth(script_machine* machine, int argc, value co
 {
 	long double res = 0;
 	DxScript* script = (DxScript*)machine->data;
-	std::wstring path = argv[0].as_string();
+	std::string path = argv[0].as_string();
 	path = PathProperty::GetUnique(path);
 	TextureManager* textureManager = TextureManager::GetBase();
 
-	gstd::ref_count_ptr<TextureData> textureData = textureManager->GetTextureData(path);
+	std::shared_ptr<TextureData> textureData = textureManager->GetTextureData(path);
 	if (textureData != NULL) {
 		D3DXIMAGE_INFO imageInfo = textureData->GetImageInfo();
 		res = imageInfo.Width;
@@ -1919,11 +1919,11 @@ value DxScript::Func_GetTextureHeight(script_machine* machine, int argc, value c
 {
 	long double res = 0;
 	DxScript* script = (DxScript*)machine->data;
-	std::wstring path = argv[0].as_string();
+	std::string path = argv[0].as_string();
 	path = PathProperty::GetUnique(path);
 	TextureManager* textureManager = TextureManager::GetBase();
 
-	gstd::ref_count_ptr<TextureData> textureData = textureManager->GetTextureData(path);
+	std::shared_ptr<TextureData> textureData = textureManager->GetTextureData(path);
 	if (textureData != NULL) {
 		D3DXIMAGE_INFO imageInfo = textureData->GetImageInfo();
 		res = imageInfo.Height;
@@ -1953,10 +1953,10 @@ gstd::value DxScript::Func_CreateRenderTarget(gstd::script_machine* machine, int
 {
 	DxScript* script = (DxScript*)machine->data;
 	bool res = true;
-	std::wstring name = argv[0].as_string();
+	std::string name = argv[0].as_string();
 
 	if (script->mapTexture_.find(name) == script->mapTexture_.end()) {
-		ref_count_ptr<Texture> texture = new Texture();
+		std::shared_ptr<Texture> texture = std::make_shared<Texture>();
 		bool res = texture->CreateRenderTarget(name);
 		if (res) {
 			Lock lock(script->criticalSection_);
@@ -1970,15 +1970,15 @@ gstd::value DxScript::Func_SetRenderTarget(gstd::script_machine* machine, int ar
 	DxScript* script = (DxScript*)machine->data;
 	TextureManager* textureManager = TextureManager::GetBase();
 
-	std::wstring name = argv[0].as_string();
-	ref_count_ptr<Texture> texture = script->_GetTexture(name);
+	std::string name = argv[0].as_string();
+	std::shared_ptr<Texture> texture = script->_GetTexture(name);
 	if (texture == NULL)
 		texture = textureManager->GetTexture(name);
 	if (texture == NULL)
 		return value();
 
 	DirectGraphics* graphics = DirectGraphics::GetBase();
-	ref_count_ptr<Texture> current = graphics->GetRenderTarget();
+	std::shared_ptr<Texture> current = graphics->GetRenderTarget();
 	graphics->SetRenderTarget(texture);
 	graphics->ClearRenderTarget();
 	graphics->SetRenderTarget(current);
@@ -1986,33 +1986,33 @@ gstd::value DxScript::Func_SetRenderTarget(gstd::script_machine* machine, int ar
 }
 gstd::value DxScript::Func_GetTransitionRenderTargetName(gstd::script_machine* machine, int argc, gstd::value const* argv)
 {
-	std::wstring res = TextureManager::TARGET_TRANSITION;
+	std::string res = TextureManager::TARGET_TRANSITION;
 	return value(machine->get_engine()->get_string_type(), res);
 }
 gstd::value DxScript::Func_SaveRenderedTextureA1(gstd::script_machine* machine, int argc, gstd::value const* argv)
 {
 	DxScript* script = (DxScript*)machine->data;
-	std::wstring nameTexture = argv[0].as_string();
-	std::wstring path = argv[1].as_string();
+	std::string nameTexture = argv[0].as_string();
+	std::string path = argv[1].as_string();
 	path = PathProperty::GetUnique(path);
 
 	TextureManager* textureManager = TextureManager::GetBase();
 	DirectGraphics* graphics = DirectGraphics::GetBase();
 
-	ref_count_ptr<Texture> texture = script->_GetTexture(nameTexture);
+	std::shared_ptr<Texture> texture = script->_GetTexture(nameTexture);
 	if (texture == NULL)
 		texture = textureManager->GetTexture(nameTexture);
 
 	if (texture != NULL) {
 		//フォルダ生成
-		std::wstring dir = PathProperty::GetFileDirectory(path);
+		std::string dir = PathProperty::GetFileDirectory(path);
 		File fDir(dir);
 		fDir.CreateDirectory();
 
 		//保存
 		IDirect3DSurface9* pSurface = texture->GetD3DSurface();
 		RECT rect = { 0, 0, graphics->GetScreenWidth(), graphics->GetScreenHeight() };
-		D3DXSaveSurfaceToFile(path.c_str(), D3DXIFF_BMP,
+		D3DXSaveSurfaceToFileW(StringUtility::ConvertMultiToWide(path, CP_UTF8).c_str(), D3DXIFF_BMP,
 			pSurface, NULL, &rect);
 	}
 	return value();
@@ -2021,8 +2021,8 @@ gstd::value DxScript::Func_SaveRenderedTextureA2(gstd::script_machine* machine, 
 {
 	DxScript* script = (DxScript*)machine->data;
 
-	std::wstring nameTexture = argv[0].as_string();
-	std::wstring path = argv[1].as_string();
+	std::string nameTexture = argv[0].as_string();
+	std::string path = argv[1].as_string();
 	path = PathProperty::GetUnique(path);
 
 	int rcLeft = (int)argv[2].as_real();
@@ -2033,19 +2033,19 @@ gstd::value DxScript::Func_SaveRenderedTextureA2(gstd::script_machine* machine, 
 	TextureManager* textureManager = TextureManager::GetBase();
 	DirectGraphics* graphics = DirectGraphics::GetBase();
 
-	ref_count_ptr<Texture> texture = script->_GetTexture(nameTexture);
+	std::shared_ptr<Texture> texture = script->_GetTexture(nameTexture);
 	if (texture == NULL)
 		texture = textureManager->GetTexture(nameTexture);
 	if (texture != NULL) {
 		//フォルダ生成
-		std::wstring dir = PathProperty::GetFileDirectory(path);
+		std::string dir = PathProperty::GetFileDirectory(path);
 		File fDir(dir);
 		fDir.CreateDirectory();
 
 		//保存
 		IDirect3DSurface9* pSurface = texture->GetD3DSurface();
 		RECT rect = { rcLeft, rcTop, rcRight, rcBottom };
-		D3DXSaveSurfaceToFile(path.c_str(), D3DXIFF_BMP,
+		D3DXSaveSurfaceToFileW(StringUtility::ConvertMultiToWide(path, CP_UTF8).c_str(), D3DXIFF_BMP,
 			pSurface, NULL, &rect);
 	}
 	return value();
@@ -2053,7 +2053,7 @@ gstd::value DxScript::Func_SaveRenderedTextureA2(gstd::script_machine* machine, 
 gstd::value DxScript::Func_IsPixelShaderSupported(gstd::script_machine* machine, int argc, gstd::value const* argv)
 {
 	DxScript* script = (DxScript*)machine->data;
-	ref_count_ptr<Shader> shader = NULL;
+	std::shared_ptr<Shader> shader = NULL;
 
 	int major = (int)(argv[0].as_real() + 0.5);
 	int minor = (int)(argv[1].as_real() + 0.5);
@@ -2071,11 +2071,11 @@ gstd::value DxScript::Func_SetShader(gstd::script_machine* machine, int argc, gs
 	if (obj == NULL)
 		return value();
 
-	ref_count_ptr<Shader> shader = obj->GetShader();
+	std::shared_ptr<Shader> shader = obj->GetShader();
 
 	double min = (double)argv[1].as_real();
 	double max = (double)argv[2].as_real();
-	gstd::ref_count_ptr<DxScriptObjectManager> objectManager = script->GetObjectManager();
+	std::shared_ptr<DxScriptObjectManager> objectManager = script->GetObjectManager();
 	objectManager->SetShader(shader, min, max);
 	return value();
 }
@@ -2087,7 +2087,7 @@ gstd::value DxScript::Func_SetShaderI(gstd::script_machine* machine, int argc, g
 	if (obj == NULL)
 		return value();
 
-	ref_count_ptr<Shader> shader = obj->GetShader();
+	std::shared_ptr<Shader> shader = obj->GetShader();
 
 	int size = script->GetObjectManager()->GetRenderBucketCapacity();
 	int min = (int)(argv[1].as_real() + 0.5);
@@ -2096,26 +2096,26 @@ gstd::value DxScript::Func_SetShaderI(gstd::script_machine* machine, int argc, g
 	double priMin = (double)min / (double)(size - 1);
 	double priMax = (double)max / (double)(size - 1);
 
-	gstd::ref_count_ptr<DxScriptObjectManager> objectManager = script->GetObjectManager();
+	std::shared_ptr<DxScriptObjectManager> objectManager = script->GetObjectManager();
 	objectManager->SetShader(shader, priMin, priMax);
 	return value();
 }
 gstd::value DxScript::Func_ResetShader(gstd::script_machine* machine, int argc, gstd::value const* argv)
 {
 	DxScript* script = (DxScript*)machine->data;
-	ref_count_ptr<Shader> shader = NULL;
+	std::shared_ptr<Shader> shader = NULL;
 
 	double min = (double)argv[0].as_real();
 	double max = (double)argv[1].as_real();
 
-	gstd::ref_count_ptr<DxScriptObjectManager> objectManager = script->GetObjectManager();
+	std::shared_ptr<DxScriptObjectManager> objectManager = script->GetObjectManager();
 	objectManager->SetShader(shader, min, max);
 	return value();
 }
 gstd::value DxScript::Func_ResetShaderI(gstd::script_machine* machine, int argc, gstd::value const* argv)
 {
 	DxScript* script = (DxScript*)machine->data;
-	ref_count_ptr<Shader> shader = NULL;
+	std::shared_ptr<Shader> shader = NULL;
 
 	int size = script->GetObjectManager()->GetRenderBucketCapacity();
 	int min = (int)(argv[0].as_real() + 0.5);
@@ -2124,7 +2124,7 @@ gstd::value DxScript::Func_ResetShaderI(gstd::script_machine* machine, int argc,
 	double priMin = (double)min / (double)(size - 1);
 	double priMax = (double)max / (double)(size - 1);
 
-	gstd::ref_count_ptr<DxScriptObjectManager> objectManager = script->GetObjectManager();
+	std::shared_ptr<DxScriptObjectManager> objectManager = script->GetObjectManager();
 	objectManager->SetShader(shader, priMin, priMax);
 	return value();
 }
@@ -2381,11 +2381,11 @@ gstd::value DxScript::Func_GetObjectDistance(gstd::script_machine* machine, int 
 	int id1 = (int)argv[0].as_real();
 	int id2 = (int)argv[1].as_real();
 
-	DxScriptRenderObject* obj1 = dynamic_cast<DxScriptRenderObject*>(script->GetObjectPointer(id1));
+	auto obj1 = std::dynamic_pointer_cast<DxScriptRenderObject>(script->GetObject(id1));
 	if (obj1 == NULL)
 		return value(machine->get_engine()->get_real_type(), (long double)-1);
 
-	DxScriptRenderObject* obj2 = dynamic_cast<DxScriptRenderObject*>(script->GetObjectPointer(id2));
+	auto obj2 = std::dynamic_pointer_cast<DxScriptRenderObject>(script->GetObject(id2));
 	if (obj2 == NULL)
 		return value(machine->get_engine()->get_real_type(), (long double)-1);
 
@@ -2401,12 +2401,12 @@ gstd::value DxScript::Func_GetObject2dPosition(gstd::script_machine* machine, in
 	DxScript* script = (DxScript*)machine->data;
 	int id = (int)argv[0].as_real();
 
-	DxScriptRenderObject* obj = dynamic_cast<DxScriptRenderObject*>(script->GetObjectPointer(id));
+	auto obj = std::dynamic_pointer_cast<DxScriptRenderObject>(script->GetObject(id));
 	if (obj == NULL)
-		script->RaiseError(L"error invalid object");
+		script->RaiseError("error invalid object");
 
 	DirectGraphics* graphics = DirectGraphics::GetBase();
-	gstd::ref_count_ptr<DxCamera> camera = graphics->GetCamera();
+	std::shared_ptr<DxCamera> camera = graphics->GetCamera();
 	D3DXVECTOR3 pos = obj->GetPosition();
 
 	D3DXVECTOR2 point = camera->TransformCoordinateTo2D(pos);
@@ -2427,7 +2427,7 @@ gstd::value DxScript::Func_Get2dPosition(gstd::script_machine* machine, int argc
 	D3DXVECTOR3 pos(px, py, pz);
 
 	DirectGraphics* graphics = DirectGraphics::GetBase();
-	gstd::ref_count_ptr<DxCamera> camera = graphics->GetCamera();
+	std::shared_ptr<DxCamera> camera = graphics->GetCamera();
 	D3DXVECTOR2 point = camera->TransformCoordinateTo2D(pos);
 	std::vector<long double> listRes;
 	listRes.push_back(point.x);
@@ -2535,7 +2535,7 @@ gstd::value DxScript::Func_Obj_GetValue(gstd::script_machine* machine, int argc,
 {
 	DxScript* script = (DxScript*)machine->data;
 	int id = (int)argv[0].as_real();
-	std::wstring key = argv[1].as_string();
+	std::string key = argv[1].as_string();
 
 	DxScriptObjectBase* obj = script->GetObjectPointer(id);
 	if (obj == NULL)
@@ -2548,7 +2548,7 @@ gstd::value DxScript::Func_Obj_GetValueD(gstd::script_machine* machine, int argc
 {
 	DxScript* script = (DxScript*)machine->data;
 	int id = (int)argv[0].as_real();
-	std::wstring key = argv[1].as_string();
+	std::string key = argv[1].as_string();
 	gstd::value def = argv[2];
 
 	DxScriptObjectBase* obj = script->GetObjectPointer(id);
@@ -2565,7 +2565,7 @@ gstd::value DxScript::Func_Obj_SetValue(gstd::script_machine* machine, int argc,
 {
 	DxScript* script = (DxScript*)machine->data;
 	int id = (int)argv[0].as_real();
-	std::wstring key = argv[1].as_string();
+	std::string key = argv[1].as_string();
 	gstd::value val = argv[2];
 
 	DxScriptObjectBase* obj = script->GetObjectPointer(id);
@@ -2579,7 +2579,7 @@ gstd::value DxScript::Func_Obj_DeleteValue(gstd::script_machine* machine, int ar
 {
 	DxScript* script = (DxScript*)machine->data;
 	int id = (int)argv[0].as_real();
-	std::wstring key = argv[1].as_string();
+	std::string key = argv[1].as_string();
 
 	DxScriptObjectBase* obj = script->GetObjectPointer(id);
 	if (obj == NULL)
@@ -2592,7 +2592,7 @@ gstd::value DxScript::Func_Obj_IsValueExists(gstd::script_machine* machine, int 
 {
 	DxScript* script = (DxScript*)machine->data;
 	int id = (int)argv[0].as_real();
-	std::wstring key = argv[1].as_string();
+	std::string key = argv[1].as_string();
 
 	DxScriptObjectBase* obj = script->GetObjectPointer(id);
 	if (obj == NULL)
@@ -2931,7 +2931,7 @@ value DxScript::Func_ObjRender_SetRalativeObject(script_machine* machine, int ar
 		return value();
 
 	int idRelative = (int)argv[1].as_real();
-	std::wstring nameBone = argv[2].as_string();
+	std::string nameBone = argv[2].as_string();
 	obj->SetRelativeObject(idRelative, nameBone);
 	DxScriptObjectBase* objRelative = dynamic_cast<DxScriptObjectBase*>(script->GetObjectPointer(idRelative));
 	if (objRelative == NULL)
@@ -2970,12 +2970,12 @@ gstd::value DxScript::Func_ObjShader_Create(gstd::script_machine* machine, int a
 	DxScript* script = (DxScript*)machine->data;
 	script->CheckRunInMainThread();
 	int type = (int)argv[0].as_real();
-	ref_count_ptr<DxScriptShaderObject>::unsync obj = new DxScriptShaderObject();
+	std::shared_ptr<DxScriptShaderObject> obj = std::make_shared<DxScriptShaderObject>();
 
 	int id = ID_INVALID;
 	if (obj != NULL) {
 		obj->Initialize();
-		obj->manager_ = script->objManager_.GetPointer();
+		obj->manager_ = script->objManager_;
 		id = script->AddObject(obj);
 	}
 	return value(machine->get_engine()->get_real_type(), (long double)id);
@@ -2989,17 +2989,17 @@ gstd::value DxScript::Func_ObjShader_SetShaderF(gstd::script_machine* machine, i
 		return value(machine->get_engine()->get_boolean_type(), false);
 
 	bool res = false;
-	std::wstring path = argv[1].as_string();
+	std::string path = argv[1].as_string();
 	path = PathProperty::GetUnique(path);
 	if (false) {
 
 	} else {
-		ref_count_ptr<Shader> shader = new Shader();
+		std::shared_ptr<Shader> shader = std::make_shared<Shader>();
 		res = shader->CreateFromFile(path);
 		obj->SetShader(shader);
 
 		if (!res) {
-			std::wstring error = ShaderManager::GetBase()->GetLastError();
+			std::string error = ShaderManager::GetBase()->GetLastError();
 			script->RaiseError(error);
 		}
 	}
@@ -3018,7 +3018,7 @@ gstd::value DxScript::Func_ObjShader_SetShaderO(gstd::script_machine* machine, i
 	if (obj2 == NULL)
 		return value(machine->get_engine()->get_boolean_type(), false);
 
-	ref_count_ptr<Shader> shader = obj2->GetShader();
+	std::shared_ptr<Shader> shader = obj2->GetShader();
 	if (shader == NULL)
 		return value(machine->get_engine()->get_boolean_type(), false);
 	obj1->SetShader(shader);
@@ -3042,11 +3042,11 @@ gstd::value DxScript::Func_ObjShader_SetTechnique(gstd::script_machine* machine,
 	if (obj == NULL)
 		return value();
 
-	ref_count_ptr<Shader> shader = obj->GetShader();
+	std::shared_ptr<Shader> shader = obj->GetShader();
 	if (shader == NULL)
 		return value();
 
-	std::string aPath = StringUtility::ConvertWideToMulti(argv[1].as_string());
+	std::string aPath = argv[1].as_string();
 	shader->SetTechnique(aPath);
 	return value();
 }
@@ -3058,11 +3058,11 @@ gstd::value DxScript::Func_ObjShader_SetMatrix(gstd::script_machine* machine, in
 	if (obj == NULL)
 		return value();
 
-	ref_count_ptr<Shader> shader = obj->GetShader();
+	std::shared_ptr<Shader> shader = obj->GetShader();
 	if (shader == NULL)
 		return value();
 
-	std::string name = StringUtility::ConvertWideToMulti(argv[1].as_string());
+	std::string name = argv[1].as_string();
 	gstd::value sMatrix = argv[2];
 	type_data::type_kind kind = sMatrix.get_type()->get_kind();
 	if (kind != type_data::tk_array)
@@ -3091,11 +3091,11 @@ gstd::value DxScript::Func_ObjShader_SetMatrixArray(gstd::script_machine* machin
 	if (obj == NULL)
 		return value();
 
-	ref_count_ptr<Shader> shader = obj->GetShader();
+	std::shared_ptr<Shader> shader = obj->GetShader();
 	if (shader == NULL)
 		return value();
 
-	std::string name = StringUtility::ConvertWideToMulti(argv[1].as_string());
+	std::string name = argv[1].as_string();
 	gstd::value array = argv[2];
 	type_data::type_kind kind = array.get_type()->get_kind();
 	if (kind != type_data::tk_array)
@@ -3134,11 +3134,11 @@ gstd::value DxScript::Func_ObjShader_SetVector(gstd::script_machine* machine, in
 	if (obj == NULL)
 		return value();
 
-	ref_count_ptr<Shader> shader = obj->GetShader();
+	std::shared_ptr<Shader> shader = obj->GetShader();
 	if (shader == NULL)
 		return value();
 
-	std::string name = StringUtility::ConvertWideToMulti(argv[1].as_string());
+	std::string name = argv[1].as_string();
 	D3DXVECTOR4 vect4;
 	vect4.x = (float)argv[2].as_real();
 	vect4.y = (float)argv[3].as_real();
@@ -3155,11 +3155,11 @@ gstd::value DxScript::Func_ObjShader_SetFloat(gstd::script_machine* machine, int
 	if (obj == NULL)
 		return value();
 
-	ref_count_ptr<Shader> shader = obj->GetShader();
+	std::shared_ptr<Shader> shader = obj->GetShader();
 	if (shader == NULL)
 		return value();
 
-	std::string name = StringUtility::ConvertWideToMulti(argv[1].as_string());
+	std::string name = argv[1].as_string();
 	float vValue = (float)argv[2].as_real();
 	shader->SetFloat(name, vValue);
 	return value();
@@ -3172,11 +3172,11 @@ gstd::value DxScript::Func_ObjShader_SetFloatArray(gstd::script_machine* machine
 	if (obj == NULL)
 		return value();
 
-	ref_count_ptr<Shader> shader = obj->GetShader();
+	std::shared_ptr<Shader> shader = obj->GetShader();
 	if (shader == NULL)
 		return value();
 
-	std::string name = StringUtility::ConvertWideToMulti(argv[1].as_string());
+	std::string name = argv[1].as_string();
 	gstd::value array = argv[2];
 	type_data::type_kind kind = array.get_type()->get_kind();
 	if (kind != type_data::tk_array)
@@ -3200,18 +3200,18 @@ gstd::value DxScript::Func_ObjShader_SetTexture(gstd::script_machine* machine, i
 	if (obj == NULL)
 		return value();
 
-	ref_count_ptr<Shader> shader = obj->GetShader();
+	std::shared_ptr<Shader> shader = obj->GetShader();
 	if (shader == NULL)
 		return value();
 
-	std::string name = StringUtility::ConvertWideToMulti(argv[1].as_string());
-	std::wstring path = argv[2].as_string();
+	std::string name = argv[1].as_string();
+	std::string path = argv[2].as_string();
 	path = PathProperty::GetUnique(path);
 
 	if (script->mapTexture_.find(path) != script->mapTexture_.end()) {
 		shader->SetTexture(name, script->mapTexture_[path]);
 	} else {
-		ref_count_ptr<Texture> texture = new Texture();
+		std::shared_ptr<Texture> texture = std::make_shared<Texture>();
 		texture->CreateFromFile(path);
 		shader->SetTexture(name, texture);
 	}
@@ -3224,25 +3224,25 @@ value DxScript::Func_ObjPrimitive_Create(script_machine* machine, int argc, valu
 	DxScript* script = (DxScript*)machine->data;
 	script->CheckRunInMainThread();
 	int type = (int)argv[0].as_real();
-	ref_count_ptr<DxScriptPrimitiveObject>::unsync obj;
+	std::shared_ptr<DxScriptPrimitiveObject> obj;
 	if (type == OBJ_PRIMITIVE_2D) {
-		obj = new DxScriptPrimitiveObject2D();
+		obj = std::make_shared<DxScriptPrimitiveObject2D>();
 	} else if (type == OBJ_SPRITE_2D) {
-		obj = new DxScriptSpriteObject2D();
+		obj = std::make_shared<DxScriptSpriteObject2D>();
 	} else if (type == OBJ_SPRITE_LIST_2D) {
-		obj = new DxScriptSpriteListObject2D();
+		obj = std::make_shared<DxScriptSpriteListObject2D>();
 	} else if (type == OBJ_PRIMITIVE_3D) {
-		obj = new DxScriptPrimitiveObject3D();
+		obj = std::make_shared<DxScriptPrimitiveObject3D>();
 	} else if (type == OBJ_SPRITE_3D) {
-		obj = new DxScriptSpriteObject3D();
+		obj = std::make_shared<DxScriptSpriteObject3D>();
 	} else if (type == OBJ_TRAJECTORY_3D) {
-		obj = new DxScriptTrajectoryObject3D();
+		obj = std::make_shared<DxScriptTrajectoryObject3D>();
 	}
 
 	int id = ID_INVALID;
 	if (obj != NULL) {
 		obj->Initialize();
-		obj->manager_ = script->objManager_.GetPointer();
+		obj->manager_ = script->objManager_;
 		id = script->AddObject(obj);
 	}
 	return value(machine->get_engine()->get_real_type(), (long double)id);
@@ -3275,12 +3275,12 @@ value DxScript::Func_ObjPrimitive_SetTexture(script_machine* machine, int argc, 
 	if (obj == NULL)
 		return value();
 
-	std::wstring path = argv[1].as_string();
+	std::string path = argv[1].as_string();
 	path = PathProperty::GetUnique(path);
 	if (script->mapTexture_.find(path) != script->mapTexture_.end()) {
 		obj->SetTexture(script->mapTexture_[path]);
 	} else {
-		ref_count_ptr<Texture> texture = new Texture();
+		std::shared_ptr<Texture> texture = std::make_shared<Texture>();
 		texture->CreateFromFile(path);
 		obj->SetTexture(texture);
 	}
@@ -3324,7 +3324,7 @@ gstd::value DxScript::Func_ObjPrimitive_SetVertexUVT(gstd::script_machine* machi
 	if (obj == NULL)
 		return value();
 
-	ref_count_ptr<Texture> texture = obj->GetTexture();
+	std::shared_ptr<Texture> texture = obj->GetTexture();
 	if (texture == NULL)
 		return value();
 
@@ -3607,7 +3607,7 @@ value DxScript::Func_ObjTrajectory3D_SetComplementCount(script_machine* machine,
 value DxScript::Func_ObjMesh_Create(script_machine* machine, int argc, value const* argv)
 {
 	DxScript* script = (DxScript*)machine->data;
-	ref_count_ptr<DxScriptMeshObject>::unsync obj = new DxScriptMeshObject();
+	std::shared_ptr<DxScriptMeshObject> obj = std::make_shared<DxScriptMeshObject>();
 	int id = ID_INVALID;
 	if (obj != NULL)
 		id = script->AddObject(obj);
@@ -3621,17 +3621,17 @@ value DxScript::Func_ObjMesh_Load(script_machine* machine, int argc, value const
 	if (obj == NULL)
 		return value();
 
-	ref_count_ptr<DxMesh> mesh;
-	std::wstring path = argv[1].as_string();
+	std::shared_ptr<DxMesh> mesh;
+	std::string path = argv[1].as_string();
 	path = PathProperty::GetUnique(path);
-	std::wstring ext = PathProperty::GetFileExtension(path);
+	std::string ext = PathProperty::GetFileExtension(path);
 
 	bool res = false;
-	if (ext == L".mqo") {
-		mesh = new MetasequoiaMesh();
+	if (ext == ".mqo") {
+		mesh = std::make_shared<MetasequoiaMesh>();
 		res = mesh->CreateFromFile(path);
-	} else if (ext == L".elem") {
-		mesh = new ElfreinaMesh();
+	} else if (ext == ".elem") {
+		mesh = std::make_shared<ElfreinaMesh>();
 		res = mesh->CreateFromFile(path);
 	}
 	if (res) {
@@ -3668,7 +3668,7 @@ value DxScript::Func_ObjMesh_SetAnimation(script_machine* machine, int argc, val
 	if (obj == NULL)
 		return value();
 
-	std::wstring anime = argv[1].as_string();
+	std::string anime = argv[1].as_string();
 	obj->anime_ = anime;
 	obj->time_ = (int)argv[2].as_real();
 
@@ -3691,13 +3691,13 @@ gstd::value DxScript::Func_ObjMesh_SetCoordinate2D(gstd::script_machine* machine
 }
 value DxScript::Func_ObjMesh_GetPath(script_machine* machine, int argc, value const* argv)
 {
-	std::wstring res;
+	std::string res;
 	DxScript* script = (DxScript*)machine->data;
 	int id = (int)argv[0].as_real();
 	DxScriptMeshObject* obj = dynamic_cast<DxScriptMeshObject*>(script->GetObjectPointer(id));
 	if (obj == NULL)
 		return value(machine->get_engine()->get_string_type(), res);
-	DxMesh* mesh = obj->mesh_.GetPointer();
+	std::shared_ptr<DxMesh> mesh = obj->mesh_;
 	if (mesh == NULL)
 		return value(machine->get_engine()->get_string_type(), res);
 	res = mesh->GetPath();
@@ -3708,7 +3708,7 @@ value DxScript::Func_ObjMesh_GetPath(script_machine* machine, int argc, value co
 value DxScript::Func_ObjText_Create(script_machine* machine, int argc, value const* argv)
 {
 	DxScript* script = (DxScript*)machine->data;
-	ref_count_ptr<DxScriptTextObject>::unsync obj = new DxScriptTextObject();
+	std::shared_ptr<DxScriptTextObject> obj = std::make_shared<DxScriptTextObject>();
 	int id = ID_INVALID;
 	if (obj != NULL)
 		id = script->AddObject(obj);
@@ -3721,7 +3721,7 @@ value DxScript::Func_ObjText_SetText(script_machine* machine, int argc, value co
 	DxScriptTextObject* obj = dynamic_cast<DxScriptTextObject*>(script->GetObjectPointer(id));
 	if (obj == NULL)
 		return value();
-	std::wstring wstr = argv[1].as_string();
+	std::string wstr = argv[1].as_string();
 	obj->SetText(wstr);
 	return value();
 }
@@ -3732,7 +3732,7 @@ value DxScript::Func_ObjText_SetFontType(script_machine* machine, int argc, valu
 	DxScriptTextObject* obj = dynamic_cast<DxScriptTextObject*>(script->GetObjectPointer(id));
 	if (obj == NULL)
 		return value();
-	std::wstring wstr = argv[1].as_string();
+	std::string wstr = argv[1].as_string();
 	obj->SetFontType(wstr);
 	return value();
 }
@@ -3933,8 +3933,8 @@ value DxScript::Func_ObjText_GetTextLength(script_machine* machine, int argc, va
 	DxScriptTextObject* obj = dynamic_cast<DxScriptTextObject*>(script->GetObjectPointer(id));
 	if (obj == NULL)
 		return value();
-	std::wstring text = obj->GetText();
-	int res = StringUtility::CountAsciiSizeCharacter(text);
+	std::string text = obj->GetText();
+	int res = /*StringUtility::CountAsciiSizeCharacter(*/ text.length();
 	return value(machine->get_engine()->get_real_type(), (long double)res);
 }
 value DxScript::Func_ObjText_GetTextLengthCU(script_machine* machine, int argc, value const* argv)
@@ -3998,7 +3998,7 @@ gstd::value DxScript::Func_ObjSound_Create(gstd::script_machine* machine, int ar
 	DxScript* script = (DxScript*)machine->data;
 	DirectSoundManager* manager = DirectSoundManager::GetBase();
 
-	ref_count_ptr<DxSoundObject>::unsync obj = new DxSoundObject();
+	std::shared_ptr<DxSoundObject> obj = std::make_shared<DxSoundObject>();
 	int id = script->AddObject(obj);
 	return value(machine->get_engine()->get_real_type(), (long double)id);
 }
@@ -4011,7 +4011,7 @@ gstd::value DxScript::Func_ObjSound_Load(gstd::script_machine* machine, int argc
 		return value();
 	;
 
-	std::wstring path = argv[1].as_string();
+	std::string path = argv[1].as_string();
 	path = PathProperty::GetUnique(path);
 	bool bLoad = obj->Load(path);
 
@@ -4024,7 +4024,7 @@ gstd::value DxScript::Func_ObjSound_Play(gstd::script_machine* machine, int argc
 	DxSoundObject* obj = dynamic_cast<DxSoundObject*>(script->GetObjectPointer(id));
 	if (obj == NULL)
 		return value();
-	ref_count_ptr<SoundPlayer> player = obj->GetPlayer();
+	std::shared_ptr<SoundPlayer> player = obj->GetPlayer();
 	if (player == NULL)
 		return value();
 
@@ -4039,7 +4039,7 @@ gstd::value DxScript::Func_ObjSound_Stop(gstd::script_machine* machine, int argc
 	DxSoundObject* obj = dynamic_cast<DxSoundObject*>(script->GetObjectPointer(id));
 	if (obj == NULL)
 		return value();
-	ref_count_ptr<SoundPlayer> player = obj->GetPlayer();
+	std::shared_ptr<SoundPlayer> player = obj->GetPlayer();
 	if (player == NULL)
 		return value();
 
@@ -4054,7 +4054,7 @@ gstd::value DxScript::Func_ObjSound_SetVolumeRate(gstd::script_machine* machine,
 	DxSoundObject* obj = dynamic_cast<DxSoundObject*>(script->GetObjectPointer(id));
 	if (obj == NULL)
 		return value();
-	ref_count_ptr<SoundPlayer> player = obj->GetPlayer();
+	std::shared_ptr<SoundPlayer> player = obj->GetPlayer();
 	if (player == NULL)
 		return value();
 
@@ -4069,7 +4069,7 @@ gstd::value DxScript::Func_ObjSound_SetPanRate(gstd::script_machine* machine, in
 	DxSoundObject* obj = dynamic_cast<DxSoundObject*>(script->GetObjectPointer(id));
 	if (obj == NULL)
 		return value();
-	ref_count_ptr<SoundPlayer> player = obj->GetPlayer();
+	std::shared_ptr<SoundPlayer> player = obj->GetPlayer();
 	if (player == NULL)
 		return value();
 
@@ -4084,7 +4084,7 @@ gstd::value DxScript::Func_ObjSound_SetFade(gstd::script_machine* machine, int a
 	DxSoundObject* obj = dynamic_cast<DxSoundObject*>(script->GetObjectPointer(id));
 	if (obj == NULL)
 		return value();
-	ref_count_ptr<SoundPlayer> player = obj->GetPlayer();
+	std::shared_ptr<SoundPlayer> player = obj->GetPlayer();
 	if (player == NULL)
 		return value();
 
@@ -4099,7 +4099,7 @@ gstd::value DxScript::Func_ObjSound_SetLoopEnable(gstd::script_machine* machine,
 	DxSoundObject* obj = dynamic_cast<DxSoundObject*>(script->GetObjectPointer(id));
 	if (obj == NULL)
 		return value();
-	ref_count_ptr<SoundPlayer> player = obj->GetPlayer();
+	std::shared_ptr<SoundPlayer> player = obj->GetPlayer();
 	if (player == NULL)
 		return value();
 
@@ -4115,7 +4115,7 @@ gstd::value DxScript::Func_ObjSound_SetLoopTime(gstd::script_machine* machine, i
 	DxSoundObject* obj = dynamic_cast<DxSoundObject*>(script->GetObjectPointer(id));
 	if (obj == NULL)
 		return value();
-	ref_count_ptr<SoundPlayer> player = obj->GetPlayer();
+	std::shared_ptr<SoundPlayer> player = obj->GetPlayer();
 	if (player == NULL)
 		return value();
 
@@ -4134,7 +4134,7 @@ gstd::value DxScript::Func_ObjSound_SetLoopSampleCount(gstd::script_machine* mac
 	DxSoundObject* obj = dynamic_cast<DxSoundObject*>(script->GetObjectPointer(id));
 	if (obj == NULL)
 		return value();
-	ref_count_ptr<SoundPlayer> player = obj->GetPlayer();
+	std::shared_ptr<SoundPlayer> player = obj->GetPlayer();
 	if (player == NULL)
 		return value();
 
@@ -4158,7 +4158,7 @@ gstd::value DxScript::Func_ObjSound_SetRestartEnable(gstd::script_machine* machi
 	DxSoundObject* obj = dynamic_cast<DxSoundObject*>(script->GetObjectPointer(id));
 	if (obj == NULL)
 		return value();
-	ref_count_ptr<SoundPlayer> player = obj->GetPlayer();
+	std::shared_ptr<SoundPlayer> player = obj->GetPlayer();
 	if (player == NULL)
 		return value();
 
@@ -4175,7 +4175,7 @@ gstd::value DxScript::Func_ObjSound_SetSoundDivision(gstd::script_machine* machi
 	DxSoundObject* obj = dynamic_cast<DxSoundObject*>(script->GetObjectPointer(id));
 	if (obj == NULL)
 		return value();
-	ref_count_ptr<SoundPlayer> player = obj->GetPlayer();
+	std::shared_ptr<SoundPlayer> player = obj->GetPlayer();
 	if (player == NULL)
 		return value();
 
@@ -4191,7 +4191,7 @@ gstd::value DxScript::Func_ObjSound_IsPlaying(gstd::script_machine* machine, int
 	DxSoundObject* obj = dynamic_cast<DxSoundObject*>(script->GetObjectPointer(id));
 	if (obj == NULL)
 		return value();
-	ref_count_ptr<SoundPlayer> player = obj->GetPlayer();
+	std::shared_ptr<SoundPlayer> player = obj->GetPlayer();
 	if (player == NULL)
 		return value(machine->get_engine()->get_boolean_type(), false);
 
@@ -4206,7 +4206,7 @@ gstd::value DxScript::Func_ObjSound_GetVolumeRate(gstd::script_machine* machine,
 	DxSoundObject* obj = dynamic_cast<DxSoundObject*>(script->GetObjectPointer(id));
 	if (obj == NULL)
 		return value();
-	ref_count_ptr<SoundPlayer> player = obj->GetPlayer();
+	std::shared_ptr<SoundPlayer> player = obj->GetPlayer();
 	if (player == NULL)
 		return value(machine->get_engine()->get_real_type(), (long double)0);
 
@@ -4221,17 +4221,17 @@ gstd::value DxScript::Func_ObjFile_Create(gstd::script_machine* machine, int arg
 	DxScript* script = (DxScript*)machine->data;
 	//	script->CheckRunInMainThread();
 	int type = (int)argv[0].as_real();
-	ref_count_ptr<DxFileObject>::unsync obj;
+	std::shared_ptr<DxFileObject> obj;
 	if (type == OBJ_FILE_TEXT) {
-		obj = new DxTextFileObject();
+		obj = std::make_shared<DxTextFileObject>();
 	} else if (type == OBJ_FILE_BINARY) {
-		obj = new DxBinaryFileObject();
+		obj = std::make_shared<DxBinaryFileObject>();
 	}
 
 	int id = ID_INVALID;
 	if (obj != NULL) {
 		obj->Initialize();
-		obj->manager_ = script->objManager_.GetPointer();
+		obj->manager_ = script->objManager_;
 		id = script->AddObject(obj);
 	}
 	return value(machine->get_engine()->get_real_type(), (long double)id);
@@ -4244,7 +4244,7 @@ gstd::value DxScript::Func_ObjFile_Open(gstd::script_machine* machine, int argc,
 	if (obj == NULL)
 		return value(machine->get_engine()->get_boolean_type(), false);
 
-	std::wstring path = argv[1].as_string();
+	std::string path = argv[1].as_string();
 	path = PathProperty::GetUnique(path);
 	bool res = obj->OpenR(path);
 	return value(machine->get_engine()->get_boolean_type(), res);
@@ -4257,7 +4257,7 @@ gstd::value DxScript::Func_ObjFile_OpenNW(gstd::script_machine* machine, int arg
 	if (obj == NULL)
 		return value(machine->get_engine()->get_boolean_type(), false);
 
-	std::wstring path = argv[1].as_string();
+	std::string path = argv[1].as_string();
 	path = PathProperty::GetUnique(path);
 	bool res = obj->OpenW(path);
 	return value(machine->get_engine()->get_boolean_type(), res);
@@ -4281,7 +4281,7 @@ gstd::value DxScript::Func_ObjFile_GetSize(gstd::script_machine* machine, int ar
 	if (obj == NULL)
 		return value(machine->get_engine()->get_real_type(), (long double)0);
 
-	gstd::ref_count_ptr<File> file = obj->GetFile();
+	std::shared_ptr<File> file = obj->GetFile();
 	int res = file != NULL ? file->GetSize() : 0;
 	return value(machine->get_engine()->get_real_type(), (long double)res);
 }
@@ -4304,12 +4304,11 @@ gstd::value DxScript::Func_ObjFileT_GetLineText(gstd::script_machine* machine, i
 	int id = (int)argv[0].as_real();
 	DxTextFileObject* obj = dynamic_cast<DxTextFileObject*>(script->GetObjectPointer(id));
 	if (obj == NULL)
-		return value(machine->get_engine()->get_string_type(), std::wstring());
+		return value(machine->get_engine()->get_string_type(), std::string());
 
 	int pos = (int)argv[1].as_real();
 	std::string line = obj->GetLine(pos);
-	std::wstring res = to_wide(line);
-	return value(machine->get_engine()->get_string_type(), res);
+	return value(machine->get_engine()->get_string_type(), line);
 }
 gstd::value DxScript::Func_ObjFileT_SplitLineText(gstd::script_machine* machine, int argc, gstd::value const* argv)
 {
@@ -4317,10 +4316,10 @@ gstd::value DxScript::Func_ObjFileT_SplitLineText(gstd::script_machine* machine,
 	int id = (int)argv[0].as_real();
 	DxTextFileObject* obj = dynamic_cast<DxTextFileObject*>(script->GetObjectPointer(id));
 	if (obj == NULL)
-		return value(machine->get_engine()->get_string_type(), std::wstring());
+		return value(machine->get_engine()->get_string_type(), std::string());
 
 	int pos = (int)argv[1].as_real();
-	std::string delim = to_mbcs(argv[2].as_string());
+	std::string delim = argv[2].as_string();
 	std::string line = obj->GetLine(pos);
 	std::vector<std::string> list = StringUtility::Split(line, delim);
 
@@ -4335,7 +4334,7 @@ gstd::value DxScript::Func_ObjFileT_AddLine(gstd::script_machine* machine, int a
 	if (obj == NULL)
 		return value();
 
-	std::string str = to_mbcs(argv[1].as_string());
+	std::string str = argv[1].as_string();
 	obj->AddLine(str);
 	return value();
 }
@@ -4384,7 +4383,7 @@ gstd::value DxScript::Func_ObjFileB_GetPointer(gstd::script_machine* machine, in
 	if (obj == NULL)
 		return value(machine->get_engine()->get_real_type(), (long double)-1);
 
-	gstd::ref_count_ptr<gstd::ByteBuffer> buffer = obj->GetBuffer();
+	std::shared_ptr<gstd::ByteBuffer> buffer = obj->GetBuffer();
 	long double res = buffer->GetOffset();
 	return value(machine->get_engine()->get_real_type(), res);
 }
@@ -4397,7 +4396,7 @@ gstd::value DxScript::Func_ObjFileB_Seek(gstd::script_machine* machine, int argc
 		return gstd::value();
 
 	int pos = (int)argv[1].as_real();
-	gstd::ref_count_ptr<gstd::ByteBuffer> buffer = obj->GetBuffer();
+	std::shared_ptr<gstd::ByteBuffer> buffer = obj->GetBuffer();
 	buffer->Seek(pos);
 	return gstd::value();
 }
@@ -4411,7 +4410,7 @@ gstd::value DxScript::Func_ObjFileB_ReadBoolean(gstd::script_machine* machine, i
 	if (!obj->IsReadableSize(1))
 		script->RaiseError(gstd::ErrorUtility::GetErrorMessage(ErrorUtility::ERROR_END_OF_FILE));
 
-	gstd::ref_count_ptr<gstd::ByteBuffer> buffer = obj->GetBuffer();
+	std::shared_ptr<gstd::ByteBuffer> buffer = obj->GetBuffer();
 	bool res = buffer->ReadBoolean();
 	return value(machine->get_engine()->get_boolean_type(), res);
 }
@@ -4425,7 +4424,7 @@ gstd::value DxScript::Func_ObjFileB_ReadByte(gstd::script_machine* machine, int 
 	if (!obj->IsReadableSize(1))
 		script->RaiseError(gstd::ErrorUtility::GetErrorMessage(ErrorUtility::ERROR_END_OF_FILE));
 
-	gstd::ref_count_ptr<gstd::ByteBuffer> buffer = obj->GetBuffer();
+	std::shared_ptr<gstd::ByteBuffer> buffer = obj->GetBuffer();
 	long double res = buffer->ReadCharacter();
 	return value(machine->get_engine()->get_real_type(), res);
 }
@@ -4439,7 +4438,7 @@ gstd::value DxScript::Func_ObjFileB_ReadShort(gstd::script_machine* machine, int
 	if (!obj->IsReadableSize(2))
 		script->RaiseError(gstd::ErrorUtility::GetErrorMessage(ErrorUtility::ERROR_END_OF_FILE));
 
-	gstd::ref_count_ptr<gstd::ByteBuffer> buffer = obj->GetBuffer();
+	std::shared_ptr<gstd::ByteBuffer> buffer = obj->GetBuffer();
 	short bv = buffer->ReadShort();
 	if (obj->GetByteOrder() == ByteOrder::ENDIAN_BIG)
 		ByteOrder::Reverse(&bv, sizeof(bv));
@@ -4457,7 +4456,7 @@ gstd::value DxScript::Func_ObjFileB_ReadInteger(gstd::script_machine* machine, i
 	if (!obj->IsReadableSize(4))
 		script->RaiseError(gstd::ErrorUtility::GetErrorMessage(ErrorUtility::ERROR_END_OF_FILE));
 
-	gstd::ref_count_ptr<gstd::ByteBuffer> buffer = obj->GetBuffer();
+	std::shared_ptr<gstd::ByteBuffer> buffer = obj->GetBuffer();
 	int bv = buffer->ReadInteger();
 	if (obj->GetByteOrder() == ByteOrder::ENDIAN_BIG)
 		ByteOrder::Reverse(&bv, sizeof(bv));
@@ -4475,7 +4474,7 @@ gstd::value DxScript::Func_ObjFileB_ReadLong(gstd::script_machine* machine, int 
 	if (!obj->IsReadableSize(8))
 		script->RaiseError(gstd::ErrorUtility::GetErrorMessage(ErrorUtility::ERROR_END_OF_FILE));
 
-	gstd::ref_count_ptr<gstd::ByteBuffer> buffer = obj->GetBuffer();
+	std::shared_ptr<gstd::ByteBuffer> buffer = obj->GetBuffer();
 	_int64 bv = buffer->ReadInteger64();
 	if (obj->GetByteOrder() == ByteOrder::ENDIAN_BIG)
 		ByteOrder::Reverse(&bv, sizeof(bv));
@@ -4492,7 +4491,7 @@ gstd::value DxScript::Func_ObjFileB_ReadFloat(gstd::script_machine* machine, int
 	if (!obj->IsReadableSize(4))
 		script->RaiseError(gstd::ErrorUtility::GetErrorMessage(ErrorUtility::ERROR_END_OF_FILE));
 
-	gstd::ref_count_ptr<gstd::ByteBuffer> buffer = obj->GetBuffer();
+	std::shared_ptr<gstd::ByteBuffer> buffer = obj->GetBuffer();
 	long double res = 0;
 	if (obj->GetByteOrder() == ByteOrder::ENDIAN_BIG) {
 		int bv = buffer->ReadInteger();
@@ -4512,7 +4511,7 @@ gstd::value DxScript::Func_ObjFileB_ReadDouble(gstd::script_machine* machine, in
 	if (!obj->IsReadableSize(8))
 		script->RaiseError(gstd::ErrorUtility::GetErrorMessage(ErrorUtility::ERROR_END_OF_FILE));
 
-	gstd::ref_count_ptr<gstd::ByteBuffer> buffer = obj->GetBuffer();
+	std::shared_ptr<gstd::ByteBuffer> buffer = obj->GetBuffer();
 	long double res = 0;
 	if (obj->GetByteOrder() == ByteOrder::ENDIAN_BIG) {
 		_int64 bv = buffer->ReadInteger64();
@@ -4528,31 +4527,31 @@ gstd::value DxScript::Func_ObjFileB_ReadString(gstd::script_machine* machine, in
 	int id = (int)argv[0].as_real();
 	DxBinaryFileObject* obj = dynamic_cast<DxBinaryFileObject*>(script->GetObjectPointer(id));
 	if (obj == NULL)
-		return value(machine->get_engine()->get_string_type(), std::wstring());
+		return value(machine->get_engine()->get_string_type(), std::string());
 
 	int readSize = (int)argv[1].as_real();
 	if (!obj->IsReadableSize(readSize))
 		script->RaiseError(gstd::ErrorUtility::GetErrorMessage(ErrorUtility::ERROR_END_OF_FILE));
 
-	ref_count_ptr<gstd::ByteBuffer> data = new gstd::ByteBuffer();
+	std::shared_ptr<gstd::ByteBuffer> data = std::make_shared<gstd::ByteBuffer>();
 	data->SetSize(readSize);
 
-	gstd::ref_count_ptr<gstd::ByteBuffer> buffer = obj->GetBuffer();
+	std::shared_ptr<gstd::ByteBuffer> buffer = obj->GetBuffer();
 	buffer->Read(data->GetPointer(), readSize);
 
-	std::wstring res;
+	std::string res;
 	int code = obj->GetCodePage();
 	if (code == CODE_ACP || code == CODE_UTF8) {
 		std::string str;
 		str.resize(readSize);
 		memcpy(&str[0], data->GetPointer(), readSize);
 
-		if (code == CODE_UTF8) {
-			std::wstring wstr = StringUtility::ConvertMultiToWide(str, code);
-			str = StringUtility::ConvertWideToMulti(wstr, CP_ACP);
-		}
-		res = to_wide(str);
-	} else if (code == CODE_UTF16LE || code == CODE_UTF16BE) {
+		res = str;
+	}
+	else
+		throw new std::runtime_error("Invalid codepage");
+
+	/*else if (code == CODE_UTF16LE || code == CODE_UTF16BE) {
 		int strSize = readSize / 2 * 2;
 		int wsize = strSize / 2;
 		if (code == CODE_UTF16BE) {
@@ -4568,8 +4567,9 @@ gstd::value DxScript::Func_ObjFileB_ReadString(gstd::script_machine* machine, in
 		memcpy(&res[0], data->GetPointer(), readSize);
 
 		std::string str = StringUtility::ConvertWideToMulti(res);
-		res = to_wide(str);
-	}
+		res = str;
+	}*/
+	
 	return value(machine->get_engine()->get_string_type(), res);
 }
 

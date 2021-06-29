@@ -25,7 +25,7 @@ private:
 		ITEM_DIRECTORY,
 		ITEM_QUIT,
 	};
-	ref_count_ptr<Sprite2D> spriteBack_;
+	std::shared_ptr<Sprite2D> spriteBack_;
 
 public:
 	TitleScene();
@@ -41,7 +41,7 @@ public:
 	void Render();
 
 private:
-	ref_count_ptr<DxTextRenderObject> objText_;
+	std::shared_ptr<DxTextRenderObject> objText_;
 	POINT pos_;
 
 	TitleScene* _GetTitleScene() { return (TitleScene*)menu_; }

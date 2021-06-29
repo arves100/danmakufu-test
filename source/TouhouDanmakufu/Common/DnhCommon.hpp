@@ -52,14 +52,14 @@ public:
 	std::wstring GetReplayName() { return replayName_; }
 	void SetReplayName(std::wstring name) { replayName_ = name; }
 
-	std::vector<ref_count_ptr<ScriptInformation>> CreatePlayerScriptInformationList();
+	std::vector<std::shared_ptr<ScriptInformation>> CreatePlayerScriptInformationList();
 
 public:
-	static ref_count_ptr<ScriptInformation> CreateScriptInformation(std::wstring pathScript, bool bNeedHeader = true);
-	static ref_count_ptr<ScriptInformation> CreateScriptInformation(std::wstring pathScript, std::wstring pathArchive, std::string source, bool bNeedHeader = true);
+	static std::shared_ptr<ScriptInformation> CreateScriptInformation(std::wstring pathScript, bool bNeedHeader = true);
+	static std::shared_ptr<ScriptInformation> CreateScriptInformation(std::wstring pathScript, std::wstring pathArchive, std::string source, bool bNeedHeader = true);
 
-	static std::vector<ref_count_ptr<ScriptInformation>> CreateScriptInformationList(std::wstring path, bool bNeedHeader = true);
-	static std::vector<ref_count_ptr<ScriptInformation>> FindPlayerScriptInformationList(std::wstring dir);
+	static std::vector<std::shared_ptr<ScriptInformation>> CreateScriptInformationList(std::wstring path, bool bNeedHeader = true);
+	static std::vector<std::shared_ptr<ScriptInformation>> FindPlayerScriptInformationList(std::wstring dir);
 	static bool IsExcludeExtention(std::wstring ext);
 
 private:
@@ -85,10 +85,10 @@ private:
 
 class ScriptInformation::Sort {
 public:
-	BOOL operator()(const ref_count_ptr<ScriptInformation>& lf, const ref_count_ptr<ScriptInformation>& rf)
+	BOOL operator()(const std::shared_ptr<ScriptInformation>& lf, const std::shared_ptr<ScriptInformation>& rf)
 	{
-		ref_count_ptr<ScriptInformation> lsp = lf;
-		ref_count_ptr<ScriptInformation> rsp = rf;
+		std::shared_ptr<ScriptInformation> lsp = lf;
+		std::shared_ptr<ScriptInformation> rsp = rf;
 		ScriptInformation* lp = (ScriptInformation*)lsp.GetPointer();
 		ScriptInformation* rp = (ScriptInformation*)rsp.GetPointer();
 		std::wstring lPath = lp->GetScriptPath();
@@ -100,10 +100,10 @@ public:
 };
 
 struct ScriptInformation::PlayerListSort {
-	BOOL operator()(const ref_count_ptr<ScriptInformation>& lf, const ref_count_ptr<ScriptInformation>& rf)
+	BOOL operator()(const std::shared_ptr<ScriptInformation>& lf, const std::shared_ptr<ScriptInformation>& rf)
 	{
-		ref_count_ptr<ScriptInformation> lsp = lf;
-		ref_count_ptr<ScriptInformation> rsp = rf;
+		std::shared_ptr<ScriptInformation> lsp = lf;
+		std::shared_ptr<ScriptInformation> rsp = rf;
 		std::wstring lPath = lsp->GetScriptPath();
 		std::wstring rPath = rsp->GetScriptPath();
 		BOOL res = CompareString(LOCALE_SYSTEM_DEFAULT, NORM_IGNORECASE,
@@ -168,7 +168,7 @@ public:
 
 	int GetPadIndex() { return padIndex_; }
 	void SetPadIndex(int index) { padIndex_ = index; }
-	ref_count_ptr<VirtualKey> GetVirtualKey(int id);
+	std::shared_ptr<VirtualKey> GetVirtualKey(int id);
 
 	bool IsLogWindow() { return bLogWindow_; }
 	void SetLogWindow(bool b) { bLogWindow_ = b; }
@@ -188,7 +188,7 @@ private:
 	int fpsType_;
 
 	int padIndex_;
-	std::map<int, ref_count_ptr<VirtualKey>> mapKey_;
+	std::map<int, std::shared_ptr<VirtualKey>> mapKey_;
 
 	bool bLogWindow_;
 	bool bLogFile_;

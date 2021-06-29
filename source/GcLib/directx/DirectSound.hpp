@@ -54,7 +54,8 @@ public:
 		SD_AWAVE, //圧縮wave waveヘッダmp3
 		SD_UNKNOWN,
 	};
-gstd::ref_count_ptr<SoundPlayer> _CreatePlayer(std::wstring path);
+	
+	std::shared_ptr<SoundPlayer> _CreatePlayer(std::string path);
 
 public:
 	DirectSoundManager();
@@ -66,13 +67,13 @@ public:
 	IDirectSound8* GetDirectSound() { return pDirectSound_; }
 	gstd::CriticalSection& GetLock() { return lock_; }
 
-	gstd::ref_count_ptr<SoundPlayer> GetPlayer(std::wstring path, bool bCreateAlways = false);
-	gstd::ref_count_ptr<SoundDivision> CreateSoundDivision(int index);
-	gstd::ref_count_ptr<SoundDivision> GetSoundDivision(int index);
-	gstd::ref_count_ptr<SoundInfo> GetSoundInfo(std::wstring path);
+	std::shared_ptr<SoundPlayer> GetPlayer(std::string path, bool bCreateAlways = false);
+	SoundDivision& CreateSoundDivision(int index);
+	SoundDivision GetSoundDivision(int index);
+	SoundInfo GetSoundInfo(std::string path);
 
-	bool AddSoundInfoFromFile(std::wstring path);
-	std::vector<gstd::ref_count_ptr<SoundInfo>> GetSoundInfoList();
+	bool AddSoundInfoFromFile(std::string path);
+	//std::vector<SoundInfo> GetSoundInfoList();
 	void SetFadeDeleteAll();
 
 protected:
@@ -80,11 +81,11 @@ protected:
 	IDirectSoundBuffer8* pDirectSoundBuffer_;
 	gstd::CriticalSection lock_;
 	SoundManageThread* threadManage_;
-	std::map<std::wstring, std::list<gstd::ref_count_ptr<SoundPlayer>>> mapPlayer_;
-	std::map<int, gstd::ref_count_ptr<SoundDivision>> mapDivision_;
-	std::map<std::wstring, gstd::ref_count_ptr<SoundInfo>> mapInfo_;
+	std::map<std::string, std::list<std::shared_ptr<SoundPlayer>>> mapPlayer_;
+	std::map<int, SoundDivision> mapDivision_;
+	std::map<std::string, SoundInfo> mapInfo_;
 
-	gstd::ref_count_ptr<SoundPlayer> _GetPlayer(std::wstring path);
+	std::shared_ptr<SoundPlayer> _GetPlayer(std::string path);
 
 private:
 	static DirectSoundManager* thisBase_;
@@ -96,8 +97,8 @@ class DirectSoundManager::SoundManageThread : public gstd::Thread, public gstd::
 	friend DirectSoundManager;
 
 protected:
-	int timeCurrent_;
-	int timePrevious_;
+	Uint32 timeCurrent_;
+	Uint32 timePrevious_;
 
 	SoundManageThread(DirectSoundManager* manager);
 	void _Run();
@@ -111,6 +112,7 @@ protected:
 	**********************************************************/
 class SoundDivision {
 public:
+	friend DirectSoundManager;
 	enum {
 		DIVISION_BGM = 0,
 		DIVISION_SE,
@@ -122,14 +124,16 @@ public:
 	virtual ~SoundDivision();
 	void SetVolumeRate(double rate) { rateVolume_ = rate; }
 	double GetVolumeRate() { return rateVolume_; }
+	bool IsValid() { return valid_; }
 
 protected:
 	double rateVolume_; //音量割合(0-100)
+	bool valid_;
 };
 
 /**********************************************************
-	//SoundInfo
-	**********************************************************/
+//SoundInfo
+**********************************************************/
 class SoundInfo {
 	friend DirectSoundManager;
 
@@ -138,16 +142,19 @@ public:
 	{
 		timeLoopStart_ = 0;
 		timeLoopEnd_ = 0;
+		valid_ = false;
 	}
 	virtual ~SoundInfo(){};
-	std::wstring GetName() { return name_; }
-	std::wstring GetTitle() { return title_; }
-	double GetLoopStartTime() { return timeLoopStart_; }
-	double GetLoopEndTime() { return timeLoopEnd_; }
+	std::string GetName() const { return name_; }
+	std::string GetTitle() const { return title_; }
+	double GetLoopStartTime() const  { return timeLoopStart_; }
+	double GetLoopEndTime() const  { return timeLoopEnd_; }
+	bool IsValid() const { return valid_; }
 
 private:
-	std::wstring name_;
-	std::wstring title_;
+	bool valid_;
+	std::string name_;
+	std::string title_;
 	double timeLoopStart_;
 	double timeLoopEnd_;
 };
@@ -168,10 +175,10 @@ public:
 public:
 	SoundPlayer();
 	virtual ~SoundPlayer();
-	std::wstring GetPath() { return path_; }
+	std::string GetPath() { return path_; }
 	gstd::CriticalSection& GetLock() { return lock_; }
 	virtual void Restore() { pDirectSoundBuffer_->Restore(); }
-	void SetSoundDivision(gstd::ref_count_ptr<SoundDivision> div);
+	void SetSoundDivision(SoundDivision div);
 	void SetSoundDivision(int index);
 
 	virtual bool Play();
@@ -191,11 +198,11 @@ public:
 
 protected:
 	DirectSoundManager* manager_;
-	std::wstring path_;
+	std::string path_;
 	gstd::CriticalSection lock_;
 	IDirectSoundBuffer8* pDirectSoundBuffer_;
-	gstd::ref_count_ptr<gstd::FileReader> reader_;
-	gstd::ref_count_ptr<SoundDivision> division_;
+	std::shared_ptr<gstd::FileReader> reader_;
+	SoundDivision division_;
 
 	WAVEFORMATEX formatWave_;
 	bool bLoop_; //ループ有無
@@ -209,7 +216,7 @@ protected:
 	double rateVolume_; //音量割合(0-100)
 	double rateVolumeFadePerSec_; //フェード時の音量低下割合
 
-	virtual bool _CreateBuffer(gstd::ref_count_ptr<gstd::FileReader> reader) = 0;
+	virtual bool _CreateBuffer(std::shared_ptr<gstd::FileReader> reader) = 0;
 	virtual void _SetSoundInfo();
 	static int _GetValumeAsDirectSoundDecibel(float rate);
 };
@@ -287,7 +294,7 @@ public:
 	virtual bool Seek(double time);
 
 protected:
-	virtual bool _CreateBuffer(gstd::ref_count_ptr<gstd::FileReader> reader);
+	virtual bool _CreateBuffer(std::shared_ptr<gstd::FileReader> reader);
 };
 
 /**********************************************************
@@ -301,7 +308,7 @@ public:
 protected:
 	int posWaveStart_;
 	int posWaveEnd_;
-	virtual bool _CreateBuffer(gstd::ref_count_ptr<gstd::FileReader> reader);
+	virtual bool _CreateBuffer(std::shared_ptr<gstd::FileReader> reader);
 	virtual void _CopyBuffer(LPVOID pMem, DWORD dwSize);
 };
 
@@ -318,7 +325,7 @@ protected:
 	OggVorbis_File fileOgg_;
 	ov_callbacks oggCallBacks_;
 
-	virtual bool _CreateBuffer(gstd::ref_count_ptr<gstd::FileReader> reader);
+	virtual bool _CreateBuffer(std::shared_ptr<gstd::FileReader> reader);
 	virtual void _CopyBuffer(LPVOID pMem, DWORD dwSize);
 
 	static size_t _ReadOgg(void* ptr, size_t size, size_t nmemb, void* source);
@@ -345,9 +352,9 @@ protected:
 	int posMp3DataEnd_;
 	DWORD waveDataSize_;
 	double timeCurrent_;
-	gstd::ref_count_ptr<gstd::ByteBuffer> bufDecode_;
+	std::unique_ptr<gstd::ByteBuffer> bufDecode_;
 
-	virtual bool _CreateBuffer(gstd::ref_count_ptr<gstd::FileReader> reader);
+	virtual bool _CreateBuffer(std::shared_ptr<gstd::FileReader> reader);
 	virtual void _CopyBuffer(LPVOID pMem, DWORD dwSize);
 	int _ReadAcmStream(char* pBuffer, int size);
 };

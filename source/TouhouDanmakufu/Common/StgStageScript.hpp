@@ -18,21 +18,21 @@ public:
 	virtual void SetError(std::wstring error);
 	virtual bool IsError();
 
-	gstd::ref_count_ptr<StgStageScriptObjectManager> GetObjectManager() { return objManager_; }
-	virtual ref_count_ptr<ManagedScript> Create(int type);
+	gstd::shared_ptr<StgStageScriptObjectManager> GetObjectManager() { return objManager_; }
+	virtual std::shared_ptr<ManagedScript> Create(int type);
 
 	_int64 GetPlayerScriptID() { return idPlayerScript_; }
 	void SetPlayerScriptID(_int64 id) { idPlayerScript_ = id; }
 	_int64 GetItemScriptID() { return idItemScript_; }
 	void SetItemScriptID(_int64 id) { idItemScript_ = id; }
-	ref_count_ptr<ManagedScript> GetItemScript();
+	std::shared_ptr<ManagedScript> GetItemScript();
 	_int64 GetShotScriptID() { return idShotScript_; }
 	void SetShotScriptID(_int64 id) { idShotScript_ = id; }
-	ref_count_ptr<ManagedScript> GetShotScript();
+	std::shared_ptr<ManagedScript> GetShotScript();
 
 protected:
 	StgStageController* stageController_;
-	ref_count_ptr<StgStageScriptObjectManager> objManager_;
+	std::shared_ptr<StgStageScriptObjectManager> objManager_;
 
 	_int64 idPlayerScript_;
 	_int64 idItemScript_;
@@ -155,7 +155,7 @@ public:
 	StgStageScript(StgStageController* stageController);
 	virtual ~StgStageScript();
 
-	ref_count_ptr<StgStageScriptObjectManager> GetStgObjectManager();
+	std::shared_ptr<StgStageScriptObjectManager> GetStgObjectManager();
 
 	//STG共通関数：共通データ
 	static gstd::value Func_SaveCommonDataAreaToReplayFile(gstd::script_machine* machine, int argc, gstd::value const* argv);

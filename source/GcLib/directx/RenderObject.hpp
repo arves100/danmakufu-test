@@ -23,7 +23,7 @@ class RenderBlock {
 public:
 	RenderBlock();
 	virtual ~RenderBlock();
-	void SetRenderFunction(gstd::ref_count_ptr<RenderStateFunction> func) { func_ = func; }
+	void SetRenderFunction(std::shared_ptr<RenderStateFunction> func) { func_ = func; }
 	virtual void Render();
 
 	virtual void CalculateZValue() = 0;
@@ -31,16 +31,16 @@ public:
 	void SetZValue(float pos) { posSortKey_ = pos; }
 	virtual bool IsTranslucent() = 0; //Zソート対象に使用
 
-	void SetRenderObject(gstd::ref_count_ptr<RenderObject> obj) { obj_ = obj; }
-	gstd::ref_count_ptr<RenderObject> GetRenderObject() { return obj_; }
+	void SetRenderObject(std::shared_ptr<RenderObject> obj) { obj_ = obj; }
+	std::shared_ptr<RenderObject> GetRenderObject() { return obj_; }
 	void SetPosition(D3DXVECTOR3& pos) { position_ = pos; }
 	void SetAngle(D3DXVECTOR3& angle) { angle_ = angle; }
 	void SetScale(D3DXVECTOR3& scale) { scale_ = scale; }
 
 protected:
 	float posSortKey_;
-	gstd::ref_count_ptr<RenderStateFunction> func_;
-	gstd::ref_count_ptr<RenderObject> obj_;
+	std::shared_ptr<RenderStateFunction> func_;
+	std::shared_ptr<RenderObject> obj_;
 
 	D3DXVECTOR3 position_; //移動先座標
 	D3DXVECTOR3 angle_; //回転角度
@@ -51,11 +51,11 @@ class RenderBlocks {
 public:
 	RenderBlocks(){};
 	virtual ~RenderBlocks(){};
-	void Add(gstd::ref_count_ptr<RenderBlock> block) { listBlock_.push_back(block); }
-	std::list<gstd::ref_count_ptr<RenderBlock>>& GetList() { return listBlock_; }
+	void Add(std::shared_ptr<RenderBlock> block) { listBlock_.push_back(block); }
+	std::list<std::shared_ptr<RenderBlock>>& GetList() { return listBlock_; }
 
 protected:
-	std::list<gstd::ref_count_ptr<RenderBlock>> listBlock_;
+	std::list<std::shared_ptr<RenderBlock>> listBlock_;
 };
 
 /**********************************************************
@@ -73,17 +73,17 @@ public:
 	RenderManager();
 	virtual ~RenderManager();
 	virtual void Render();
-	void AddBlock(gstd::ref_count_ptr<RenderBlock> block);
-	void AddBlock(gstd::ref_count_ptr<RenderBlocks> blocks);
+	void AddBlock(std::shared_ptr<RenderBlock> block);
+	void AddBlock(std::shared_ptr<RenderBlocks> blocks);
 
 protected:
-	std::list<gstd::ref_count_ptr<RenderBlock>> listBlockOpaque_;
-	std::list<gstd::ref_count_ptr<RenderBlock>> listBlockTranslucent_;
+	std::list<std::shared_ptr<RenderBlock>> listBlockOpaque_;
+	std::list<std::shared_ptr<RenderBlock>> listBlockTranslucent_;
 };
 
 class RenderManager::ComparatorRenderBlockTranslucent {
 public:
-	bool operator()(gstd::ref_count_ptr<RenderBlock> l, gstd::ref_count_ptr<RenderBlock> r)
+	bool operator()(std::shared_ptr<RenderBlock> l, std::shared_ptr<RenderBlock> r)
 	{
 		return l->GetZValue() > r->GetZValue();
 	}
@@ -118,7 +118,7 @@ private:
 		FUNC_TEXTURE_FILTER,
 	};
 
-	std::map<FUNC_TYPE, gstd::ref_count_ptr<gstd::ByteBuffer>> mapFuncRenderState_;
+	std::map<FUNC_TYPE, std::shared_ptr<gstd::ByteBuffer>> mapFuncRenderState_;
 };
 
 class Matrices {
@@ -872,12 +872,12 @@ public:
 public:
 	DxMeshData();
 	virtual ~DxMeshData();
-	void SetName(std::wstring name) { name_ = name; }
-	std::wstring& GetName() { return name_; }
-	virtual bool CreateFromFileReader(gstd::ref_count_ptr<gstd::FileReader> reader) = 0;
+	void SetName(std::string name) { name_ = name; }
+	std::string& GetName() { return name_; }
+	virtual bool CreateFromFileReader(std::shared_ptr<gstd::FileReader> reader) = 0;
 
 protected:
-	std::wstring name_;
+	std::string name_;
 	DxMeshManager* manager_;
 	volatile bool bLoad_;
 };
@@ -889,14 +889,14 @@ public:
 	DxMesh();
 	virtual ~DxMesh();
 	virtual void Release();
-	bool CreateFromFile(std::wstring path);
-	virtual bool CreateFromFileReader(gstd::ref_count_ptr<gstd::FileReader> reader) = 0;
-	virtual bool CreateFromFileInLoadThread(std::wstring path, int type);
-	virtual bool CreateFromFileInLoadThread(std::wstring path) = 0;
-	virtual std::wstring GetPath() = 0;
+	bool CreateFromFile(std::string path);
+	virtual bool CreateFromFileReader(std::shared_ptr<gstd::FileReader> reader) = 0;
+	virtual bool CreateFromFileInLoadThread(std::string path, int type);
+	virtual bool CreateFromFileInLoadThread(std::string path) = 0;
+	virtual std::string GetPath() = 0;
 
 	virtual void Render() = 0;
-	virtual void Render(std::wstring nameAnime, int time) { Render(); }
+	virtual void Render(std::string nameAnime, int time) { Render(); }
 	void SetPosition(D3DXVECTOR3 pos) { position_ = pos; }
 	void SetPosition(float x, float y, float z)
 	{
@@ -929,15 +929,15 @@ public:
 	bool IsCoordinate2D() { return bCoordinate2D_; }
 	void SetCoordinate2D(bool b) { bCoordinate2D_ = b; }
 
-	gstd::ref_count_ptr<RenderBlocks> CreateRenderBlocks() { return NULL; }
-	virtual D3DXMATRIX GetAnimationMatrix(std::wstring nameAnime, double time, std::wstring nameBone)
+	std::shared_ptr<RenderBlocks> CreateRenderBlocks() { return NULL; }
+	virtual D3DXMATRIX GetAnimationMatrix(std::string nameAnime, double time, std::string nameBone)
 	{
 		D3DXMATRIX mat;
 		D3DXMatrixIdentity(&mat);
 		return mat;
 	}
-	gstd::ref_count_ptr<Shader> GetShader() { return shader_; }
-	void SetShader(gstd::ref_count_ptr<Shader> shader) { shader_ = shader; }
+	std::shared_ptr<Shader> GetShader() { return shader_; }
+	void SetShader(std::shared_ptr<Shader> shader) { shader_ = shader; }
 
 protected:
 	D3DXVECTOR3 position_; //移動先座標
@@ -945,11 +945,11 @@ protected:
 	D3DXVECTOR3 scale_; //拡大率
 	D3DCOLOR color_;
 	bool bCoordinate2D_; //2D座標指定
-	gstd::ref_count_ptr<Shader> shader_;
+	std::shared_ptr<Shader> shader_;
 
-	gstd::ref_count_ptr<DxMeshData> data_;
-	gstd::ref_count_ptr<DxMeshData> _GetFromManager(std::wstring name);
-	void _AddManager(std::wstring name, gstd::ref_count_ptr<DxMeshData> data);
+	std::shared_ptr<DxMeshData> data_;
+	std::shared_ptr<DxMeshData> _GetFromManager(std::string name);
+	void _AddManager(std::string name, std::shared_ptr<DxMeshData> data);
 };
 
 /**********************************************************
@@ -969,24 +969,24 @@ public:
 	gstd::CriticalSection& GetLock() { return lock_; }
 
 	virtual void Clear();
-	virtual void Add(std::wstring name, gstd::ref_count_ptr<DxMesh> mesh); //参照を保持します
-	virtual void Release(std::wstring name); //保持している参照を解放します
-	virtual bool IsDataExists(std::wstring name);
+	virtual void Add(std::string name, std::shared_ptr<DxMesh> mesh); //参照を保持します
+	virtual void Release(std::string name); //保持している参照を解放します
+	virtual bool IsDataExists(std::string name);
 
-	gstd::ref_count_ptr<DxMesh> CreateFromFileInLoadThread(std::wstring path, int type);
-	virtual void CallFromLoadThread(gstd::ref_count_ptr<gstd::FileManager::LoadThreadEvent> event);
+	std::shared_ptr<DxMesh> CreateFromFileInLoadThread(std::string path, int type);
+	virtual void CallFromLoadThread(std::unique_ptr<gstd::FileManager::LoadThreadEvent>& event);
 
-	void SetInfoPanel(gstd::ref_count_ptr<DxMeshInfoPanel> panel) { panelInfo_ = panel; }
+	void SetInfoPanel(std::shared_ptr<DxMeshInfoPanel> panel) { panelInfo_ = panel; }
 
 protected:
 	gstd::CriticalSection lock_;
-	std::map<std::wstring, gstd::ref_count_ptr<DxMesh>> mapMesh_;
-	std::map<std::wstring, gstd::ref_count_ptr<DxMeshData>> mapMeshData_;
-	gstd::ref_count_ptr<DxMeshInfoPanel> panelInfo_;
+	std::map<std::string, std::shared_ptr<DxMesh>> mapMesh_;
+	std::map<std::string, std::shared_ptr<DxMeshData>> mapMeshData_;
+	std::shared_ptr<DxMeshInfoPanel> panelInfo_;
 
-	void _AddMeshData(std::wstring name, gstd::ref_count_ptr<DxMeshData> data);
-	gstd::ref_count_ptr<DxMeshData> _GetMeshData(std::wstring name);
-	void _ReleaseMeshData(std::wstring name);
+	void _AddMeshData(std::string name, std::shared_ptr<DxMeshData> data);
+	std::shared_ptr<DxMeshData> _GetMeshData(std::string name);
+	void _ReleaseMeshData(std::string name);
 
 private:
 	static DxMeshManager* thisBase_;

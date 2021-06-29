@@ -8,7 +8,7 @@
 #endif
 
 //include
-
+#ifdef _WIN32
 #include <mmreg.h> //for acm
 #include <msacm.h> //for acm
 
@@ -20,14 +20,6 @@
 
 #include <vorbis/codec.h>
 #include <vorbis/vorbisfile.h>
-
-// TODO: DEFINE NOMINMAX AND GET RID OF THIS ON WINDOWS
-#ifdef min
-#undef min
-#endif
-#ifdef max
-#undef max
-#endif
 
 // BGFX
 #include <bx/bx.h>

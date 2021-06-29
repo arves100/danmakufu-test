@@ -61,7 +61,7 @@ public:
 
 private:
 	int fastModeKey_;
-	ref_count_ptr<FpsController> controller_;
+	std::shared_ptr<FpsController> controller_;
 };
 
 /**********************************************************

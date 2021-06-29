@@ -7,27 +7,27 @@ using namespace gstd;
 //Thread
 Thread::Thread()
 {
-	hThread_ = NULL;
+	hThread_ = nullptr;
 	idThread_ = 0;
-	status_ = STOP;
+	status_ = Status::Stop;
 }
 Thread::~Thread()
 {
 	this->Stop();
 	this->Join();
-	if (hThread_ != NULL) {
-		::CloseHandle(hThread_);
-		hThread_ = NULL;
+	if (hThread_ != nullptr) {
+		SDL_DetachThread(hThread_);
+		hThread_ = nullptr;
 		idThread_ = 0;
 	}
 }
-unsigned int __stdcall Thread::_StaticRun(LPVOID data)
+int Thread::_StaticRun(void* data)
 {
 	try {
 		Thread* thread = reinterpret_cast<Thread*>(data);
-		thread->status_ = RUN;
+		thread->status_ = Status::Run;
 		thread->_Run();
-		thread->status_ = STOP;
+		thread->status_ = Status::Stop;
 	} catch (...) {
 		//エラーは無視
 	}
@@ -35,104 +35,117 @@ unsigned int __stdcall Thread::_StaticRun(LPVOID data)
 }
 void Thread::Start()
 {
-	if (status_ != STOP) {
+	if (status_ != Status::Stop) {
 		this->Stop();
 		this->Join();
 	}
 
-	hThread_ = (HANDLE)_beginthreadex(NULL, 0, _StaticRun, (void*)this, 0, &idThread_);
+	char threadName[28];
+	sprintf(threadName, "DanmakufuThread_%08p", this);
+
+	hThread_ = SDL_CreateThread(_StaticRun, threadName, (void*)this);
+
+	if (hThread_ != nullptr)
+	{
+		idThread_ = SDL_GetThreadID(hThread_);
+		status_ = Status::Run;
+	}
 }
 void Thread::Stop()
 {
-	if (status_ == RUN)
-		status_ = REQUEST_STOP;
+	if (status_ == Status::Run)
+		status_ = Status::RequestStop;
 }
 bool Thread::IsStop()
 {
-	return hThread_ == NULL || status_ == STOP;
+	return hThread_ == nullptr || status_ == Status::Stop;
 }
-DWORD Thread::Join(int mills)
+void Thread::Join()
 {
-	DWORD res = WAIT_OBJECT_0;
-
-	if (hThread_ != NULL) {
-		res = ::WaitForSingleObject(hThread_, mills);
-	}
-
-	if (hThread_ != NULL) {
-		if (res != WAIT_TIMEOUT)
-			::CloseHandle(hThread_); //タイムアウトの場合クローズできない
-		hThread_ = NULL;
+	if (hThread_ != nullptr) {
+		int ret;
+		SDL_WaitThread(hThread_, &ret);
+		hThread_ = nullptr;
 		idThread_ = 0;
-		status_ = STOP;
+		status_ = Status::Stop;
 	}
-	return res;
 }
 
 //================================================================
 //CriticalSection
 CriticalSection::CriticalSection()
 {
-	idThread_ = NULL;
+	idThread_ = 0;
 	countLock_ = 0;
-	::InitializeCriticalSection(&cs_);
+	cs_ = SDL_CreateMutex();
 }
 CriticalSection::~CriticalSection()
 {
-	::DeleteCriticalSection(&cs_);
+	if (cs_ != nullptr)
+		SDL_DestroyMutex(cs_);
+	cs_ = nullptr;
 }
 void CriticalSection::Enter()
 {
-	if (::GetCurrentThreadId() == idThread_) { //カレントスレッド
+	if (SDL_ThreadID() == idThread_) { //カレントスレッド
 		countLock_++;
 		return;
 	}
 
-	::EnterCriticalSection(&cs_);
+	SDL_LockMutex(cs_);
 	countLock_ = 1;
-	idThread_ = ::GetCurrentThreadId();
+	idThread_ = SDL_ThreadID();
 }
 void CriticalSection::Leave()
 {
-	if (::GetCurrentThreadId() == idThread_) {
+	if (SDL_ThreadID() == idThread_) {
 		countLock_--;
 		if (countLock_ != 0)
 			return;
 		if (countLock_ < 0)
-			throw gstd::wexception(L"CriticalSection：Lockしていません");
+			throw std::runtime_error(u8"CriticalSection：Lockしていません");
 	} else {
-		throw gstd::wexception(L"CriticalSection：LockしていないのにUnlockしようとしました");
+		throw std::runtime_error(u8"CriticalSection：LockしていないのにUnlockしようとしました");
 	}
-	idThread_ = NULL;
-	::LeaveCriticalSection(&cs_);
+	idThread_ = 0;
+	SDL_UnlockMutex(cs_);
 }
 
 //================================================================
 //ThreadSignal
-ThreadSignal::ThreadSignal(bool bManualReset)
+ThreadSignal::ThreadSignal()
 {
-	BOOL bManual = bManualReset ? TRUE : FALSE;
-	hEvent_ = ::CreateEvent(NULL, bManual, FALSE, NULL);
+	pCond_ = SDL_CreateCond();
+	pMutex_ = SDL_CreateMutex();
 }
 ThreadSignal::~ThreadSignal()
 {
-	::CloseHandle(hEvent_);
-}
-DWORD ThreadSignal::Wait(int mills)
-{
-	DWORD res = WAIT_OBJECT_0;
-
-	if (hEvent_ != NULL) {
-		res = ::WaitForSingleObject(hEvent_, mills);
+	if (pCond_)
+	{
+		SDL_DestroyCond(pCond_);
+		pCond_ = nullptr;
 	}
 
-	return res;
+	if (pMutex_)
+	{
+		SDL_DestroyMutex(pMutex_);
+		pMutex_ = nullptr;
+	}
+
 }
-void ThreadSignal::SetSignal(bool bOn)
+void ThreadSignal::Wait(Uint32 mills)
 {
-	if (bOn) {
-		::SetEvent(hEvent_);
-	} else {
-		::ResetEvent(hEvent_);
+	while (SDL_CondWaitTimeout(pCond_, pMutex_, mills) == 0);
+	SDL_UnlockMutex(pMutex_);
+}
+
+void ThreadSignal::SetSignal(bool bLock)
+{
+	if (bLock)
+		SDL_LockMutex(pMutex_);
+	else
+	{
+		SDL_CondSignal(pCond_);
+		SDL_UnlockMutex(pMutex_);
 	}
 }

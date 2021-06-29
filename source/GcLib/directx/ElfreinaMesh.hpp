@@ -23,17 +23,17 @@ public:
 public:
 	ElfreinaMeshData();
 	~ElfreinaMeshData();
-	bool CreateFromFileReader(gstd::ref_count_ptr<gstd::FileReader> reader);
-	std::vector<gstd::ref_count_ptr<Bone>>& GetBones() { return bone_; }
+	bool CreateFromFileReader(std::shared_ptr<gstd::FileReader> reader);
+	std::vector<std::shared_ptr<Bone>>& GetBones() { return bone_; }
 
 protected:
-	std::wstring path_;
-	std::vector<gstd::ref_count_ptr<Mesh>> mesh_;
-	std::vector<gstd::ref_count_ptr<Bone>> bone_;
-	std::vector<gstd::ref_count_ptr<Material>> material_;
-	std::map<std::wstring, gstd::ref_count_ptr<AnimationData>> anime_;
+	std::string path_;
+	std::vector<std::shared_ptr<Mesh>> mesh_;
+	std::vector<std::shared_ptr<Bone>> bone_;
+	std::vector<std::shared_ptr<Material>> material_;
+	std::map<std::string, std::shared_ptr<AnimationData>> anime_;
 
-	std::map<std::wstring, int> mapBoneNameIndex_;
+	std::map<std::string, int> mapBoneNameIndex_;
 
 	void _ReadMeshContainer(gstd::Scanner& scanner);
 	void _ReadMaterials(gstd::Scanner& scanner, Material& material);
@@ -43,7 +43,7 @@ protected:
 	int _ReadNode(gstd::Scanner& scanner, int parent);
 
 	void _ReadAnimationList(gstd::Scanner& scanner);
-	gstd::ref_count_ptr<AnimationData> _ReadAnimationData(gstd::Scanner& scanner);
+	std::shared_ptr<AnimationData> _ReadAnimationData(gstd::Scanner& scanner);
 	void _ReadBoneAnimation(gstd::Scanner& scanner, AnimationData& anime);
 	void _ReadBoneAnimationPart(gstd::Scanner& scanner, AnimationData& anime);
 };
@@ -65,7 +65,7 @@ public:
 	D3DXMATRIX& GetInitPostureMatrix() { return matInitPosture_; }
 
 protected:
-	std::wstring name_;
+	std::string name_;
 	D3DXMATRIX matOffset_;
 	D3DXMATRIX matInitPosture_;
 
@@ -82,9 +82,9 @@ public:
 	virtual ~Material(){};
 
 protected:
-	std::wstring name_;
+	std::string name_;
 	D3DMATERIAL9 mat_;
-	gstd::ref_count_ptr<Texture> texture_;
+	std::shared_ptr<Texture> texture_;
 };
 class ElfreinaMeshData::Mesh : public RenderObjectB4NX {
 	friend ElfreinaMeshData;
@@ -94,11 +94,11 @@ public:
 	Mesh();
 	virtual ~Mesh();
 	virtual void Render();
-	gstd::ref_count_ptr<RenderBlock> CreateRenderBlock();
+	std::shared_ptr<RenderBlock> CreateRenderBlock();
 
 protected:
-	std::wstring name_;
-	gstd::ref_count_ptr<Material> material_;
+	std::string name_;
+	std::shared_ptr<Material> material_;
 	int indexWeightForCalucZValue_;
 
 private:
@@ -115,16 +115,16 @@ class ElfreinaMeshData::AnimationData {
 public:
 	AnimationData(){};
 	virtual ~AnimationData(){};
-	gstd::ref_count_ptr<Matrices> CreateBoneAnimationMatrix(double time, ElfreinaMeshData* mesh);
+	std::shared_ptr<Matrices> CreateBoneAnimationMatrix(double time, std::shared_ptr<ElfreinaMeshData> mesh);
 
 protected:
-	std::wstring name_;
+	std::string name_;
 	int timeTotal_;
 	int framePerSecond_;
 	bool bLoop_;
-	std::vector<gstd::ref_count_ptr<ElfreinaMeshData::BoneAnimationPart>> animeBone_;
+	std::vector<std::shared_ptr<ElfreinaMeshData::BoneAnimationPart>> animeBone_;
 
-	void _CreateBoneAnimationMatrix(int time, ElfreinaMeshData* mesh, gstd::ref_count_ptr<Matrices> matrix, int indexOwn, D3DXMATRIX& matrixParentAnime);
+	void _CreateBoneAnimationMatrix(int time, std::shared_ptr<ElfreinaMeshData> mesh, std::shared_ptr<Matrices> matrix, int indexOwn, D3DXMATRIX& matrixParentAnime);
 	D3DXMATRIX _CalculateMatrix(double time, int index);
 };
 class ElfreinaMeshData::BoneAnimationPart {
@@ -156,20 +156,20 @@ class ElfreinaMesh : public DxMesh {
 public:
 	ElfreinaMesh() {}
 	virtual ~ElfreinaMesh() {}
-	virtual bool CreateFromFileReader(gstd::ref_count_ptr<gstd::FileReader> reader);
-	virtual bool CreateFromFileInLoadThread(std::wstring path);
-	virtual std::wstring GetPath();
+	virtual bool CreateFromFileReader(std::shared_ptr<gstd::FileReader> reader);
+	virtual bool CreateFromFileInLoadThread(std::string path);
+	virtual std::string GetPath();
 	virtual void Render();
-	virtual void Render(std::wstring nameAnime, int time);
+	virtual void Render(std::string nameAnime, int time);
 
-	gstd::ref_count_ptr<RenderBlocks> CreateRenderBlocks();
-	gstd::ref_count_ptr<RenderBlocks> CreateRenderBlocks(std::wstring nameAnime, double time);
+	std::shared_ptr<RenderBlocks> CreateRenderBlocks();
+	std::shared_ptr<RenderBlocks> CreateRenderBlocks(std::string nameAnime, double time);
 
-	gstd::ref_count_ptr<Matrices> CreateAnimationMatrix(std::wstring nameAnime, double time);
-	virtual D3DXMATRIX GetAnimationMatrix(std::wstring nameAnime, double time, std::wstring nameBone);
+	std::shared_ptr<Matrices> CreateAnimationMatrix(std::string nameAnime, double time);
+	virtual D3DXMATRIX GetAnimationMatrix(std::string nameAnime, double time, std::string nameBone);
 
 protected:
-	double _CalcFrameToTime(double time, gstd::ref_count_ptr<ElfreinaMeshData::AnimationData> anime);
+	double _CalcFrameToTime(double time, std::shared_ptr<ElfreinaMeshData::AnimationData> anime);
 };
 
 } // namespace directx

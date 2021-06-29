@@ -2,10 +2,12 @@
 
 using namespace gstd;
 
+#include <ctime>
+
 /**********************************************************
 //Logger
 **********************************************************/
-Logger* Logger::top_ = NULL;
+Logger* Logger::top_ = nullptr;
 Logger::Logger()
 {
 }
@@ -13,22 +15,26 @@ Logger::~Logger()
 {
 	listLogger_.clear();
 	if (top_ == this)
-		top_ = NULL;
+		top_ = nullptr;
 }
-void Logger::_WriteChild(SYSTEMTIME& time, std::wstring str)
+void Logger::_WriteChild(struct tm* time, std::string str)
 {
 	_Write(time, str);
-	std::list<ref_count_ptr<Logger>>::iterator itr = listLogger_.begin();
+	std::list<std::shared_ptr<Logger>>::iterator itr = listLogger_.begin();
 	for (; itr != listLogger_.end(); itr++) {
 		(*itr)->_Write(time, str);
 	}
 }
 
-void Logger::Write(std::wstring str)
+void Logger::Write(std::string str)
 {
-	SYSTEMTIME systemTime;
-	GetLocalTime(&systemTime);
-	this->_WriteChild(systemTime, str);
+	time_t rawtime;
+	struct tm* timeinfo;
+
+	time(&rawtime);
+	timeinfo = localtime(&rawtime);
+
+	this->_WriteChild(timeinfo, str);
 }
 
 /**********************************************************
@@ -56,17 +62,17 @@ void FileLogger::Clear()
 }
 bool FileLogger::Initialize(bool bEnable)
 {
-	return this->Initialize(L"", bEnable);
+	return this->Initialize("", bEnable);
 }
-bool FileLogger::Initialize(std::wstring path, bool bEnable)
+bool FileLogger::Initialize(std::string path, bool bEnable)
 {
 	bEnable_ = bEnable;
 	if (path.size() == 0) {
-		path = PathProperty::GetModuleDirectory() + PathProperty::GetModuleName() + std::wstring(L".log");
+		path = PathProperty::GetModuleDirectory() + PathProperty::GetModuleName() + std::string(".log");
 	}
 	return this->SetPath(path);
 }
-bool FileLogger::SetPath(std::wstring path)
+bool FileLogger::SetPath(std::string path)
 {
 	if (!bEnable_)
 		return false;
@@ -78,7 +84,7 @@ bool FileLogger::SetPath(std::wstring path)
 		_CreateFile(file);
 	}
 
-	path2_ = path_ + L"_";
+	path2_ = path_ + "_";
 	return true;
 }
 void FileLogger::_CreateFile(File& file)
@@ -89,32 +95,36 @@ void FileLogger::_CreateFile(File& file)
 	file.WriteCharacter((unsigned char)0xFF);
 	file.WriteCharacter((unsigned char)0xFE);
 }
-void FileLogger::_Write(SYSTEMTIME& time, std::wstring str)
+void FileLogger::_Write(struct tm* time, std::string str)
 {
 	if (!bEnable_)
 		return;
 
 	{
 		Lock lock(lock_);
-		std::wstring strTime = StringUtility::Format(L"%.4d/%.2d/%.2d %.2d:%.2d:%.2d.%.3d ", time.wYear, time.wMonth, time.wDay, time.wHour, time.wMinute, time.wSecond, time.wMilliseconds);
+		std::string strTime = StringUtility::Format("%.4d/%.2d/%.2d %.2d:%.2d:%.2d ", time->tm_year + 1900, time->tm_mon + 1, time->tm_mday, time->tm_hour, time->tm_min, time->tm_sec);
 
 		File file(path_);
-		if (!file.Open(File::WRITE))
+		if (!file.Open(File::AccessType::Write))
 			return;
 
-		std::wstring out = strTime;
+		std::string out = strTime;
 		out += str;
-		out += L"\r\n";
+		out += "\r\n";
 
 		int pos = file.GetSize();
 		file.Seek(pos);
-		file.Write(&out[0], StringUtility::GetByteSize(out));
+		file.Write(&out[0], out.size());
 
 		bool bOverSize = file.GetSize() > sizeMax_;
 		file.Close();
 
 		if (bOverSize) {
-			::MoveFileEx(path_.c_str(), path2_.c_str(), MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH);
+#ifdef _WIN32
+			::MoveFileEx(StringUtility::ConvertMultiToWide(path_, CP_UTF8).c_str(), StringUtility::ConvertMultiToWide(path2_, CP_UTF8).c_str(), MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH);
+#else
+			// TODO: Linux only
+#endif
 			File file1(path_);
 			_CreateFile(file1);
 		}

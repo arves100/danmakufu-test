@@ -26,22 +26,22 @@ public:
 	virtual ~StgIntersectionManager();
 	void Work();
 
-	void AddTarget(ref_count_ptr<StgIntersectionTarget>::unsync target);
-	void AddEnemyTargetToShot(ref_count_ptr<StgIntersectionTarget>::unsync target);
-	void AddEnemyTargetToPlayer(ref_count_ptr<StgIntersectionTarget>::unsync target);
+	void AddTarget(std::shared_ptr<StgIntersectionTarget>::unsync target);
+	void AddEnemyTargetToShot(std::shared_ptr<StgIntersectionTarget>::unsync target);
+	void AddEnemyTargetToPlayer(std::shared_ptr<StgIntersectionTarget>::unsync target);
 	std::vector<StgIntersectionTargetPoint>* GetAllEnemyTargetPoint() { return &listEnemyTargetPoint_; }
 
 	void CheckDeletedObject(std::string funcName);
 
-	static bool IsIntersected(ref_count_ptr<StgIntersectionTarget>::unsync& target1, ref_count_ptr<StgIntersectionTarget>::unsync& target2);
+	static bool IsIntersected(std::shared_ptr<StgIntersectionTarget>::unsync& target1, std::shared_ptr<StgIntersectionTarget>::unsync& target2);
 	static bool IsIntersected(DxCircle& circle, DxWidthLine& line);
 	static bool IsIntersected(DxWidthLine& line1, DxWidthLine& line2);
 
 private:
-	virtual void _ResetPoolObject(gstd::ref_count_ptr<StgIntersectionTarget>::unsync& obj);
-	virtual gstd::ref_count_ptr<StgIntersectionTarget>::unsync _CreatePoolObject(int type);
+	virtual void _ResetPoolObject(gstd::shared_ptr<StgIntersectionTarget>::unsync& obj);
+	virtual gstd::shared_ptr<StgIntersectionTarget>::unsync _CreatePoolObject(int type);
 
-	std::vector<ref_count_ptr<StgIntersectionSpace>> listSpace_;
+	std::vector<std::shared_ptr<StgIntersectionSpace>> listSpace_;
 	std::vector<StgIntersectionTargetPoint> listEnemyTargetPoint_;
 	std::vector<StgIntersectionTargetPoint> listEnemyTargetPointNext_;
 };
@@ -63,21 +63,21 @@ public:
 	StgIntersectionSpace();
 	virtual ~StgIntersectionSpace();
 	bool Initialize(int level, int left, int top, int right, int bottom);
-	bool RegistTarget(int type, ref_count_ptr<StgIntersectionTarget>::unsync& target);
-	bool RegistTargetA(ref_count_ptr<StgIntersectionTarget>::unsync& target) { return RegistTarget(TYPE_A, target); }
-	bool RegistTargetB(ref_count_ptr<StgIntersectionTarget>::unsync& target) { return RegistTarget(TYPE_B, target); }
+	bool RegistTarget(int type, std::shared_ptr<StgIntersectionTarget>::unsync& target);
+	bool RegistTargetA(std::shared_ptr<StgIntersectionTarget>::unsync& target) { return RegistTarget(TYPE_A, target); }
+	bool RegistTargetB(std::shared_ptr<StgIntersectionTarget>::unsync& target) { return RegistTarget(TYPE_B, target); }
 	void ClearTarget();
-	ref_count_ptr<StgIntersectionCheckList>::unsync CreateIntersectionCheckList();
+	std::shared_ptr<StgIntersectionCheckList>::unsync CreateIntersectionCheckList();
 
 protected:
 	unsigned int _GetMortonNumber(float left, float top, float right, float bottom);
 	unsigned int _BitSeparate32(unsigned int n);
 	unsigned short _Get2DMortonNumber(unsigned short x, unsigned short y);
 	unsigned int _GetPointElem(float pos_x, float pos_y);
-	void _WriteIntersectionCheckList(int indexSpace, ref_count_ptr<StgIntersectionCheckList>::unsync& listCheck, std::vector<std::vector<ref_count_ptr<StgIntersectionTarget>::unsync>>& listStack);
+	void _WriteIntersectionCheckList(int indexSpace, std::shared_ptr<StgIntersectionCheckList>::unsync& listCheck, std::vector<std::vector<std::shared_ptr<StgIntersectionTarget>::unsync>>& listStack);
 
 	// Cell TARGETA/B listTarget
-	std::vector<std::vector<std::vector<ref_count_ptr<StgIntersectionTarget>::unsync>>> listCell_;
+	std::vector<std::vector<std::vector<std::shared_ptr<StgIntersectionTarget>::unsync>>> listCell_;
 	int listCountLevel_[MAX_LEVEL + 1]; // 各レベルのセル数
 	double spaceWidth_; // 領域のX軸幅
 	double spaceHeight_; // 領域のY軸幅
@@ -87,7 +87,7 @@ protected:
 	double unitHeight_; // 最小レベル空間の高単位
 	int countCell_; // 空間の数
 	int unitLevel_; // 最下位レベル
-	ref_count_ptr<StgIntersectionCheckList>::unsync listCheck_;
+	std::shared_ptr<StgIntersectionCheckList>::unsync listCheck_;
 };
 
 class StgIntersectionCheckList {
@@ -97,7 +97,7 @@ public:
 
 	void Clear() { count_ = 0; }
 	int GetCheckCount() { return count_; }
-	void Add(ref_count_ptr<StgIntersectionTarget>::unsync& targetA, ref_count_ptr<StgIntersectionTarget>::unsync& targetB)
+	void Add(std::shared_ptr<StgIntersectionTarget>::unsync& targetA, std::shared_ptr<StgIntersectionTarget>::unsync& targetB)
 	{
 		if (listTargetA_.size() <= count_) {
 			listTargetA_.push_back(targetA);
@@ -108,23 +108,23 @@ public:
 		}
 		count_++;
 	}
-	ref_count_ptr<StgIntersectionTarget>::unsync GetTargetA(int index)
+	std::shared_ptr<StgIntersectionTarget>::unsync GetTargetA(int index)
 	{
-		ref_count_ptr<StgIntersectionTarget>::unsync res = listTargetA_[index];
+		std::shared_ptr<StgIntersectionTarget>::unsync res = listTargetA_[index];
 		listTargetA_[index] = NULL;
 		return res;
 	}
-	ref_count_ptr<StgIntersectionTarget>::unsync GetTargetB(int index)
+	std::shared_ptr<StgIntersectionTarget>::unsync GetTargetB(int index)
 	{
-		ref_count_ptr<StgIntersectionTarget>::unsync res = listTargetB_[index];
+		std::shared_ptr<StgIntersectionTarget>::unsync res = listTargetB_[index];
 		listTargetB_[index] = NULL;
 		return res;
 	}
 
 private:
 	int count_;
-	std::vector<ref_count_ptr<StgIntersectionTarget>::unsync> listTargetA_;
-	std::vector<ref_count_ptr<StgIntersectionTarget>::unsync> listTargetB_;
+	std::vector<std::shared_ptr<StgIntersectionTarget>::unsync> listTargetA_;
+	std::vector<std::shared_ptr<StgIntersectionTarget>::unsync> listTargetB_;
 };
 
 class StgIntersectionObject {
@@ -135,7 +135,7 @@ public:
 		intersectedCount_ = 0;
 	}
 	virtual ~StgIntersectionObject() {}
-	virtual void Intersect(ref_count_ptr<StgIntersectionTarget>::unsync ownTarget, ref_count_ptr<StgIntersectionTarget>::unsync otherTarget) = 0;
+	virtual void Intersect(std::shared_ptr<StgIntersectionTarget>::unsync ownTarget, std::shared_ptr<StgIntersectionTarget>::unsync otherTarget) = 0;
 	void ClearIntersected()
 	{
 		bIntersected_ = false;
@@ -157,20 +157,20 @@ public:
 	std::vector<int>& GetIntersectedIdList() { return listIntersectedID_; }
 
 	void ClearIntersectionRelativeTarget();
-	void AddIntersectionRelativeTarget(ref_count_ptr<StgIntersectionTarget>::unsync target);
-	ref_count_ptr<StgIntersectionTarget>::unsync GetIntersectionRelativeTarget(int index) { return listRelativeTarget_[index]; }
+	void AddIntersectionRelativeTarget(std::shared_ptr<StgIntersectionTarget>::unsync target);
+	std::shared_ptr<StgIntersectionTarget>::unsync GetIntersectionRelativeTarget(int index) { return listRelativeTarget_[index]; }
 
 	void UpdateIntersectionRelativeTarget(int posX, int posY, double angle);
 	void RegistIntersectionRelativeTarget(StgIntersectionManager* manager);
 	int GetIntersectionRelativeTargetCount() { return listRelativeTarget_.size(); }
 	int GetDxScriptObjectID();
 
-	virtual std::vector<ref_count_ptr<StgIntersectionTarget>::unsync> GetIntersectionTargetList() { return std::vector<ref_count_ptr<StgIntersectionTarget>::unsync>(); }
+	virtual std::vector<std::shared_ptr<StgIntersectionTarget>::unsync> GetIntersectionTargetList() { return std::vector<std::shared_ptr<StgIntersectionTarget>::unsync>(); }
 
 protected:
 	bool bIntersected_; //衝突判定
 	int intersectedCount_;
-	std::vector<ref_count_ptr<StgIntersectionTarget>::unsync> listRelativeTarget_;
+	std::vector<std::shared_ptr<StgIntersectionTarget>::unsync> listRelativeTarget_;
 	std::vector<DxCircle> listOrgCircle_;
 	std::vector<DxWidthLine> listOrgLine_;
 	std::vector<int> listIntersectedID_;

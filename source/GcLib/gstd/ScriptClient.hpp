@@ -16,12 +16,16 @@ class ScriptCommonDataManager;
 /**********************************************************
 //ScriptException
 **********************************************************/
-class ScriptException : public gstd::wexception {
+class ScriptException : public std::exception {
 public:
 	ScriptException()
-		: gstd::wexception(L""){};
-	ScriptException(std::wstring str)
-		: gstd::wexception(str.c_str()){};
+		: message_("") {}
+	ScriptException(std::string str)
+		: message_(str.c_str()) {};
+
+	const char* what() const noexcept override { return message_.c_str(); }
+private:
+	std::string message_;
 };
 
 /**********************************************************
@@ -32,22 +36,22 @@ public:
 	ScriptEngineData();
 	virtual ~ScriptEngineData();
 
-	void SetPath(std::wstring path) { path_ = path; }
-	std::wstring GetPath() { return path_; }
+	void SetPath(std::string path) { path_ = path; }
+	std::string GetPath() { return path_; }
 	void SetSource(std::vector<char>& source);
 	std::vector<char>& GetSource() { return source_; }
 	int GetEncoding() { return encoding_; }
-	void SetEngine(gstd::ref_count_ptr<script_engine> engine) { engine_ = engine; }
-	gstd::ref_count_ptr<script_engine> GetEngine() { return engine_; }
-	gstd::ref_count_ptr<ScriptFileLineMap> GetScriptFileLineMap() { return mapLine_; }
-	void SetScriptFileLineMap(gstd::ref_count_ptr<ScriptFileLineMap> mapLine) { mapLine_ = mapLine; }
+	void SetEngine(std::unique_ptr<script_engine>& engine) { engine_ = std::move(engine); }
+	std::shared_ptr<script_engine>& GetEngine() { return engine_; }
+	std::shared_ptr<ScriptFileLineMap>& GetScriptFileLineMap() { return mapLine_; }
+	void SetScriptFileLineMap(std::shared_ptr<ScriptFileLineMap> mapLine) { mapLine_ = mapLine; }
 
 protected:
-	std::wstring path_;
+	std::string path_;
 	int encoding_;
 	std::vector<char> source_;
-	gstd::ref_count_ptr<script_engine> engine_;
-	gstd::ref_count_ptr<ScriptFileLineMap> mapLine_;
+	std::shared_ptr<script_engine> engine_;
+	std::shared_ptr<ScriptFileLineMap> mapLine_;
 };
 
 /**********************************************************
@@ -59,12 +63,12 @@ public:
 	virtual ~ScriptEngineCache();
 	void Clear();
 
-	void AddCache(std::wstring name, ref_count_ptr<ScriptEngineData> data);
-	ref_count_ptr<ScriptEngineData> GetCache(std::wstring name);
-	bool IsExists(std::wstring name);
+	void AddCache(std::string name, std::shared_ptr<ScriptEngineData> data);
+	std::shared_ptr<ScriptEngineData> GetCache(std::string name);
+	bool IsExists(std::string name);
 
 protected:
-	std::map<std::wstring, ref_count_ptr<ScriptEngineData>> cache_;
+	std::map<std::string, std::shared_ptr<ScriptEngineData>> cache_;
 };
 
 /**********************************************************
@@ -83,22 +87,22 @@ public:
 public:
 	ScriptClientBase();
 	virtual ~ScriptClientBase();
-	void SetScriptEngineCache(gstd::ref_count_ptr<ScriptEngineCache> cache) { cache_ = cache; }
-	gstd::ref_count_ptr<ScriptEngineData> GetEngine() { return engine_; }
-	virtual bool SetSourceFromFile(std::wstring path);
+	void SetScriptEngineCache(std::unique_ptr<ScriptEngineCache>& cache) { cache_ = std::move(cache); }
+	std::shared_ptr<ScriptEngineData>& GetEngine() { return engine_; }
+	virtual bool SetSourceFromFile(std::string path);
 	virtual void SetSource(std::vector<char>& source);
 	virtual void SetSource(std::string source);
 
-	std::wstring GetPath() { return engine_->GetPath(); }
-	void SetPath(std::wstring path) { engine_->SetPath(path); }
+	std::string GetPath() { return engine_->GetPath(); }
+	void SetPath(std::string path) { engine_->SetPath(path); }
 
 	virtual void Compile();
 	virtual bool Run();
 	virtual bool Run(std::string target);
 	bool IsEventExists(std::string name);
-	void RaiseError(std::wstring error) { _RaiseError(machine_->get_error_line(), error); }
-	void Terminate(std::wstring error) { machine_->terminate(error); }
-	_int64 GetScriptID() { return idScript_; }
+	void RaiseError(std::string error) { _RaiseError(machine_->get_error_line(), error); }
+	void Terminate(std::string error) { machine_->terminate(error); }
+	int64_t GetScriptID() { return idScript_; }
 	int GetThreadCount();
 
 	void AddArgumentValue(value v) { listValueArg_.push_back(v); }
@@ -108,10 +112,8 @@ public:
 	value CreateRealValue(long double r);
 	value CreateBooleanValue(bool b);
 	value CreateStringValue(std::string s);
-	value CreateStringValue(std::wstring s);
 	value CreateRealArrayValue(std::vector<long double>& list);
 	value CreateStringArrayValue(std::vector<std::string>& list);
-	value CreateStringArrayValue(std::vector<std::wstring>& list);
 	value CreateValueArrayValue(std::vector<value>& list);
 	bool IsRealValue(value& v);
 	bool IsBooleanValue(value& v);
@@ -119,7 +121,7 @@ public:
 	bool IsRealArrayValue(value& v);
 
 	void CheckRunInMainThread();
-	ScriptCommonDataManager* GetCommonDataManager() { return commonDataManager_.GetPointer(); }
+	std::unique_ptr<ScriptCommonDataManager>& GetCommonDataManager() { return commonDataManager_; }
 
 	//共通関数：スクリプト引数結果
 	static value Func_GetScriptArgument(script_machine* machine, int argc, value const* argv);
@@ -185,15 +187,15 @@ public:
 
 protected:
 	bool bError_;
-	gstd::ref_count_ptr<ScriptEngineCache> cache_;
-	gstd::ref_count_ptr<ScriptEngineData> engine_;
+	std::unique_ptr<ScriptEngineCache> cache_;
+	std::shared_ptr<ScriptEngineData> engine_;
 	script_machine* machine_;
 
 	std::vector<function> func_;
-	ref_count_ptr<MersenneTwister> mt_;
-	gstd::ref_count_ptr<ScriptCommonDataManager> commonDataManager_;
-	int mainThreadID_;
-	_int64 idScript_;
+	std::unique_ptr<MersenneTwister> mt_;
+	std::unique_ptr<ScriptCommonDataManager> commonDataManager_;
+	SDL_threadID mainThreadID_;
+	int64_t idScript_;
 
 	gstd::CriticalSection criticalSection_;
 
@@ -204,11 +206,11 @@ protected:
 	void _AddFunction(const function* f, int count);
 	void _RaiseErrorFromEngine();
 	void _RaiseErrorFromMachine();
-	void _RaiseError(int line, std::wstring message);
-	std::wstring _GetErrorLineSource(int line);
+	void _RaiseError(int line, std::string message);
+	std::string _GetErrorLineSource(int line);
 	virtual std::vector<char> _Include(std::vector<char>& source);
 	virtual bool _CreateEngine();
-	std::wstring _ExtendPath(std::wstring path);
+	std::string _ExtendPath(std::string path);
 };
 
 /**********************************************************
@@ -221,15 +223,15 @@ public:
 		int lineEnd_;
 		int lineStartOriginal_;
 		int lineEndOriginal_;
-		std::wstring path_;
+		std::string path_;
 	};
 
 public:
 	ScriptFileLineMap();
 	virtual ~ScriptFileLineMap();
-	void AddEntry(std::wstring path, int lineAdd, int lineCount);
+	void AddEntry(std::string path, int lineAdd, int lineCount);
 	Entry GetEntry(int line);
-	std::wstring GetPath(int line);
+	std::string GetPath(int line);
 	std::list<Entry> GetEntryList() { return listEntry_; }
 
 protected:
@@ -251,8 +253,8 @@ public:
 	bool IsExists(std::string name);
 	void CreateArea(std::string name);
 	void CopyArea(std::string nameDest, std::string nameSrc);
-	gstd::ref_count_ptr<ScriptCommonData> GetData(std::string name);
-	void SetData(std::string name, gstd::ref_count_ptr<ScriptCommonData> commonData);
+	std::shared_ptr<ScriptCommonData> GetData(std::string name);
+	void SetData(std::string name, std::shared_ptr<ScriptCommonData> commonData);
 	std::vector<std::string> GetKeyList();
 
 	gstd::CriticalSection& GetLock() { return lock_; }
@@ -260,7 +262,7 @@ public:
 protected:
 	gstd::CriticalSection lock_;
 	std::string nameAreaDefailt_;
-	std::map<std::string, gstd::ref_count_ptr<ScriptCommonData>> mapData_;
+	std::map<std::string, std::shared_ptr<ScriptCommonData>> mapData_;
 };
 
 /**********************************************************
@@ -275,7 +277,7 @@ public:
 	gstd::value GetValue(std::string name);
 	void SetValue(std::string name, gstd::value v);
 	void DeleteValue(std::string name);
-	void Copy(gstd::ref_count_ptr<ScriptCommonData> dataSrc);
+	void Copy(std::shared_ptr<ScriptCommonData> dataSrc);
 	std::vector<std::string> GetKeyList();
 
 	void ReadRecord(gstd::RecordBuffer& record);

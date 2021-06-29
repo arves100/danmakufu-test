@@ -33,10 +33,10 @@ class ScriptSelectScene : public TaskBase , public MenuTask
 		class Sort;
 
 	private:
-		ref_count_ptr<ScriptSelectModel> model_;
-		ref_count_ptr<Sprite2D> spriteBack_;
-		ref_count_ptr<Sprite2D> spriteImage_;
-		std::vector<ref_count_ptr<DxTextRenderObject> > objMenuText_;
+		std::shared_ptr<ScriptSelectModel> model_;
+		std::shared_ptr<Sprite2D> spriteBack_;
+		std::shared_ptr<Sprite2D> spriteImage_;
+		std::vector<std::shared_ptr<DxTextRenderObject> > objMenuText_;
 		int frameSelect_;
 
 		virtual void _ChangePage();
@@ -49,9 +49,9 @@ class ScriptSelectScene : public TaskBase , public MenuTask
 		virtual void Clear();
 
 		int GetType();
-		void SetModel(ref_count_ptr<ScriptSelectModel> model);
+		void SetModel(std::shared_ptr<ScriptSelectModel> model);
 		void ClearModel();
-		void AddMenuItem(std::list<ref_count_ptr<ScriptSelectSceneMenuItem> > &listItem);
+		void AddMenuItem(std::list<std::shared_ptr<ScriptSelectSceneMenuItem> > &listItem);
 
 };
 
@@ -71,25 +71,25 @@ class ScriptSelectSceneMenuItem : public MenuItem
 	private:
 		int type_;
 		std::wstring path_;
-		ref_count_ptr<ScriptInformation> info_;
+		std::shared_ptr<ScriptInformation> info_;
 		ScriptSelectScene* _GetScriptSelectScene(){return (ScriptSelectScene*)menu_;}
 
 	public:
-		ScriptSelectSceneMenuItem(int type, std::wstring path, ref_count_ptr<ScriptInformation> info);
+		ScriptSelectSceneMenuItem(int type, std::wstring path, std::shared_ptr<ScriptInformation> info);
 		~ScriptSelectSceneMenuItem();
 
 		int GetType(){return type_;}
 		std::wstring GetPath(){return path_;}
-		ref_count_ptr<ScriptInformation> GetScriptInformation(){return info_;}
+		std::shared_ptr<ScriptInformation> GetScriptInformation(){return info_;}
 };
 
 class ScriptSelectScene::Sort
 {
 	public:
-	BOOL operator()(const ref_count_ptr<MenuItem>& lf, const ref_count_ptr<MenuItem>& rf)
+	BOOL operator()(const std::shared_ptr<MenuItem>& lf, const std::shared_ptr<MenuItem>& rf)
 	{
-		ref_count_ptr<MenuItem> lsp = lf;
-		ref_count_ptr<MenuItem> rsp = rf;
+		std::shared_ptr<MenuItem> lsp = lf;
+		std::shared_ptr<MenuItem> rsp = rf;
 		ScriptSelectSceneMenuItem* lp = (ScriptSelectSceneMenuItem*)lsp.GetPointer();
 		ScriptSelectSceneMenuItem* rp = (ScriptSelectSceneMenuItem*)rsp.GetPointer();
 
@@ -143,11 +143,11 @@ class ScriptSelectFileModel : public ScriptSelectModel , public Thread
 		std::wstring pathWait_;
 		int timeLastUpdate_;
 
-		std::list<ref_count_ptr<ScriptSelectSceneMenuItem> > listItem_;
+		std::list<std::shared_ptr<ScriptSelectSceneMenuItem> > listItem_;
 		virtual void _Run();
 		virtual void _SearchScript(std::wstring dir);
 		void _CreateMenuItem(std::wstring path);
-		bool _IsValidScriptInformation(ref_count_ptr<ScriptInformation> info);
+		bool _IsValidScriptInformation(std::shared_ptr<ScriptInformation> info);
 		int _ConvertTypeInfoToItem(int typeInfo);
 	public:
 		ScriptSelectFileModel(int type, std::wstring dir);
@@ -174,17 +174,17 @@ class PlayTypeSelectScene : public TaskBase , public MenuTask
 		};
 
 	private:
-		ref_count_ptr<ScriptInformation> info_;
-		ref_count_ptr<ReplayInformationManager> replayInfoManager_;
+		std::shared_ptr<ScriptInformation> info_;
+		std::shared_ptr<ReplayInformationManager> replayInfoManager_;
 
 	public:
-		PlayTypeSelectScene(ref_count_ptr<ScriptInformation> info);
+		PlayTypeSelectScene(std::shared_ptr<ScriptInformation> info);
 		void Work();
 		void Render();
 };
 class PlayTypeSelectMenuItem : public TextLightUpMenuItem
 {
-		ref_count_ptr<DxTextRenderObject> objText_;
+		std::shared_ptr<DxTextRenderObject> objText_;
 		POINT pos_;
 
 		PlayTypeSelectScene* _GetTitleScene(){return (PlayTypeSelectScene*)menu_;}
@@ -208,30 +208,30 @@ class PlayerSelectScene : public TaskBase , public MenuTask
 		};
 
 	private:
-		ref_count_ptr<Sprite2D> spriteBack_;
-		ref_count_ptr<Sprite2D> spriteImage_;
-		ref_count_ptr<ScriptInformation> info_;
-		std::vector<ref_count_ptr<ScriptInformation> > listPlayer_;
+		std::shared_ptr<Sprite2D> spriteBack_;
+		std::shared_ptr<Sprite2D> spriteImage_;
+		std::shared_ptr<ScriptInformation> info_;
+		std::vector<std::shared_ptr<ScriptInformation> > listPlayer_;
 		int frameSelect_;
 
 		virtual void _ChangePage(){frameSelect_ = 0;};
 	public:
-		PlayerSelectScene(ref_count_ptr<ScriptInformation> info);
+		PlayerSelectScene(std::shared_ptr<ScriptInformation> info);
 		void Work();
 		void Render();
 };
 class PlayerSelectMenuItem : public TextLightUpMenuItem
 {
-		ref_count_ptr<ScriptInformation> info_;
+		std::shared_ptr<ScriptInformation> info_;
 
 		PlayerSelectScene* _GetTitleScene(){return (PlayerSelectScene*)menu_;}
 	public:
-		PlayerSelectMenuItem(ref_count_ptr<ScriptInformation> info);
+		PlayerSelectMenuItem(std::shared_ptr<ScriptInformation> info);
 		virtual ~PlayerSelectMenuItem();
 		void Work();
 		void Render();
 
-		ref_count_ptr<ScriptInformation> GetScriptInformation(){return info_;}
+		std::shared_ptr<ScriptInformation> GetScriptInformation(){return info_;}
 };
 
 

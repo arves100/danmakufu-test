@@ -53,7 +53,7 @@ public:
 
 	virtual void Work();
 	void Move();
-	virtual void Intersect(ref_count_ptr<StgIntersectionTarget>::unsync ownTarget, ref_count_ptr<StgIntersectionTarget>::unsync otherTarget);
+	virtual void Intersect(std::shared_ptr<StgIntersectionTarget>::unsync ownTarget, std::shared_ptr<StgIntersectionTarget>::unsync otherTarget);
 	void CallSpell();
 
 	virtual void SetX(double x)
@@ -67,12 +67,12 @@ public:
 		DxScriptRenderObject::SetY(y);
 	}
 
-	ref_count_ptr<StgPlayerInformation> GetPlayerInformation() { return infoPlayer_; }
-	void SetPlayerInforamtion(ref_count_ptr<StgPlayerInformation> info) { infoPlayer_ = info; }
-	ref_count_ptr<StgPlayerSpellManageObject>::unsync GetSpellManageObject() { return objSpell_; }
+	std::shared_ptr<StgPlayerInformation> GetPlayerInformation() { return infoPlayer_; }
+	void SetPlayerInforamtion(std::shared_ptr<StgPlayerInformation> info) { infoPlayer_ = info; }
+	std::shared_ptr<StgPlayerSpellManageObject>::unsync GetSpellManageObject() { return objSpell_; }
 
 	StgStagePlayerScript* GetPlayerScript() { return script_; }
-	ref_count_ptr<StgPlayerObject>::unsync GetOwnObject();
+	std::shared_ptr<StgPlayerObject>::unsync GetOwnObject();
 	double GetX() { return posX_; }
 	double GetY() { return posY_; }
 	double GetFastSpeed() { return speedFast_; }
@@ -117,8 +117,8 @@ protected:
 
 	StgStageController* stageController_;
 	StgStagePlayerScript* script_;
-	ref_count_ptr<StgPlayerInformation> infoPlayer_;
-	ref_count_ptr<StgPlayerSpellManageObject>::unsync objSpell_;
+	std::shared_ptr<StgPlayerInformation> infoPlayer_;
+	std::shared_ptr<StgPlayerSpellManageObject>::unsync objSpell_;
 
 	double speedFast_;
 	double speedSlow_;
@@ -170,7 +170,7 @@ class StgPlayerSpellObject : public DxScriptPrimitiveObject2D, public StgInterse
 public:
 	StgPlayerSpellObject(StgStageController* stageController);
 	virtual void Work();
-	virtual void Intersect(ref_count_ptr<StgIntersectionTarget>::unsync ownTarget, ref_count_ptr<StgIntersectionTarget>::unsync otherTarget);
+	virtual void Intersect(std::shared_ptr<StgIntersectionTarget>::unsync ownTarget, std::shared_ptr<StgIntersectionTarget>::unsync otherTarget);
 
 	double GetDamage() { return damage_; }
 	void SetDamage(double damage) { damage_ = damage; }

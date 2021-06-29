@@ -61,14 +61,14 @@ long MersenneTwister::GetInt(long min, long max)
 	std::uniform_int_distribution<int> new_param(min, max);
 	return new_param(actualTwister);
 }
-_int64 MersenneTwister::GetInt64()
+int64_t MersenneTwister::GetInt64()
 {
-	std::uniform_int_distribution<_int64> new_param(0, maxInt64);
+	std::uniform_int_distribution<int64_t> new_param(0, maxInt64);
 	return new_param(actualTwister);
 }
-_int64 MersenneTwister::GetInt64(_int64 min, _int64 max)
+int64_t MersenneTwister::GetInt64(int64_t min, int64_t max)
 {
-	std::uniform_int_distribution<_int64> new_param(min, max);
+	std::uniform_int_distribution<int64_t> new_param(min, max);
 	return new_param(actualTwister);
 }
 long double MersenneTwister::GetReal()

@@ -38,19 +38,19 @@ public:
 	void SetSpeedX(double speedX);
 	void SetSpeedY(double sppedY);
 
-	ref_count_ptr<StgMovePattern>::unsync GetPattern() { return pattern_; }
-	void SetPattern(ref_count_ptr<StgMovePattern>::unsync pattern) { pattern_ = pattern; }
-	void AddPattern(int frameDelay, ref_count_ptr<StgMovePattern>::unsync pattern);
+	std::shared_ptr<StgMovePattern>::unsync GetPattern() { return pattern_; }
+	void SetPattern(std::shared_ptr<StgMovePattern>::unsync pattern) { pattern_ = pattern; }
+	void AddPattern(int frameDelay, std::shared_ptr<StgMovePattern>::unsync pattern);
 
 protected:
 	double posX_;
 	double posY_;
-	ref_count_ptr<StgMovePattern>::unsync pattern_;
+	std::shared_ptr<StgMovePattern>::unsync pattern_;
 
 	int framePattern_;
-	std::map<int, ref_count_ptr<StgMovePattern>::unsync> mapPattern_;
+	std::map<int, std::shared_ptr<StgMovePattern>::unsync> mapPattern_;
 	virtual void _Move();
-	void _AttachReservedPattern(ref_count_ptr<StgMovePattern>::unsync pattern);
+	void _AttachReservedPattern(std::shared_ptr<StgMovePattern>::unsync pattern);
 
 private:
 	StgStageController* stageController_;
@@ -91,7 +91,7 @@ protected:
 	int idShotData_; //弾画像ID(弾オブジェクト専用)
 
 	StgStageController* _GetStageController() { return target_->stageController_; }
-	ref_count_ptr<StgMoveObject>::unsync _GetMoveObject(int id);
+	std::shared_ptr<StgMoveObject>::unsync _GetMoveObject(int id);
 	virtual void _Activate() {}
 };
 

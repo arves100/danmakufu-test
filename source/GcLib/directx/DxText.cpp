@@ -57,8 +57,10 @@ bool DxChar::Create(int code, Font& winFont, DxFont& dxFont)
 	if (dxFont.GetLogFont().lfHeight <= 12)
 		uFormat = GGO_BITMAP;
 	DWORD size = ::GetGlyphOutline(hDC, code, uFormat, &gm, 0, NULL, &mat);
-	ref_count_ptr<BYTE> ptr = new BYTE[size];
-	::GetGlyphOutline(hDC, code, uFormat, &gm, size, ptr.GetPointer(), &mat);
+	std::vector<BYTE> ptr;
+	ptr.reserve(size);
+	ptr.resize(size);
+	::GetGlyphOutline(hDC, code, uFormat, &gm, size, ptr.data(), &mat);
 
 	// デバイスコンテキストとフォントハンドルの解放
 	::SelectObject(hDC, oldFont);
@@ -230,7 +232,7 @@ bool DxChar::Create(int code, Font& winFont, DxFont& dxFont)
 	}
 	pTexture->UnlockRect(0);
 
-	texture_ = new Texture();
+	texture_ = std::make_shared<Texture>();
 	texture_->SetTexture(pTexture);
 
 	width_ = gm.gmCellIncX + widthBorder * 2;
@@ -274,9 +276,9 @@ void DxCharCache::Clear()
 	mapKeyPri_.clear();
 	mapCache_.clear();
 }
-ref_count_ptr<DxChar> DxCharCache::GetChar(DxCharCacheKey& key)
+std::shared_ptr<DxChar> DxCharCache::GetChar(DxCharCacheKey& key)
 {
-	gstd::ref_count_ptr<DxChar> res;
+	std::shared_ptr<DxChar> res;
 	bool bExist = mapCache_.find(key) != mapCache_.end();
 	if (bExist) {
 		res = mapCache_[key];
@@ -300,7 +302,7 @@ ref_count_ptr<DxChar> DxCharCache::GetChar(DxCharCacheKey& key)
 	return res;
 }
 
-void DxCharCache::AddChar(DxCharCacheKey& key, ref_count_ptr<DxChar> value)
+void DxCharCache::AddChar(DxCharCacheKey& key, std::shared_ptr<DxChar> value)
 {
 	bool bExist = mapCache_.find(key) != mapCache_.end();
 	if (bExist)
@@ -327,32 +329,32 @@ void DxCharCache::AddChar(DxCharCacheKey& key, ref_count_ptr<DxChar> value)
 **********************************************************/
 const int DxTextScanner::TOKEN_TAG_START = DxTextToken::TK_OPENB;
 const int DxTextScanner::TOKEN_TAG_END = DxTextToken::TK_CLOSEB;
-const std::wstring DxTextScanner::TAG_START = L"[";
-const std::wstring DxTextScanner::TAG_END = L"]";
-const std::wstring DxTextScanner::TAG_NEW_LINE = L"r";
-const std::wstring DxTextScanner::TAG_RUBY = L"ruby";
-const std::wstring DxTextScanner::TAG_FONT = L"font";
-const wchar_t CHAR_TAG_START = L'[';
-const wchar_t CHAR_TAG_END = L']';
-DxTextScanner::DxTextScanner(wchar_t* str, int charCount)
+const std::string DxTextScanner::TAG_START = "[";
+const std::string DxTextScanner::TAG_END = "]";
+const std::string DxTextScanner::TAG_NEW_LINE = "r";
+const std::string DxTextScanner::TAG_RUBY = "ruby";
+const std::string DxTextScanner::TAG_FONT = "font";
+const char CHAR_TAG_START = '[';
+const char CHAR_TAG_END = ']';
+DxTextScanner::DxTextScanner(char* str, int charCount)
 {
-	std::vector<wchar_t> buf;
+	std::vector<char> buf;
 	buf.resize(charCount);
 	if (buf.size() != 0) {
-		memcpy(&buf[0], str, charCount * sizeof(wchar_t));
+		memcpy(&buf[0], str, charCount * sizeof(char));
 	}
 
 	buf.push_back(L'\0');
 	Init(buf);
 }
-DxTextScanner::DxTextScanner(std::wstring str)
+DxTextScanner::DxTextScanner(std::string str)
 {
-	std::vector<wchar_t> buf;
+	std::vector<char> buf;
 	buf.resize(str.size() + 1);
-	memcpy(&buf[0], str.c_str(), (str.size() + 1) * sizeof(wchar_t));
-	Init(buf);
+	memcpy(&buf[0], str.c_str(), (str.size() + 1) * sizeof(char));
+	this->DxTextScanner::DxTextScanner(buf);
 }
-DxTextScanner::DxTextScanner(std::vector<wchar_t>& buf)
+DxTextScanner::DxTextScanner(std::vector<char>& buf)
 {
 	Init(buf);
 }
@@ -373,49 +375,49 @@ DxTextScanner::~DxTextScanner()
 wchar_t DxTextScanner::_NextChar()
 {
 	if (HasNext() == false) {
-		std::wstring source;
+		std::string source;
 		source.resize(buffer_.size());
-		memcpy(&source[0], &buffer_[0], source.size() * sizeof(wchar_t));
-		std::wstring log = StringUtility::Format(L"_NextChar(Text):すでに文字列終端です -> %s", source.c_str());
+		memcpy(&source[0], &buffer_[0], source.size() * sizeof(char));
+		std::string log = StringUtility::Format(u8"_NextChar(Text):すでに文字列終端です -> %s", source.c_str());
 		_RaiseError(log);
 	}
 
 	pointer_++;
 
-	if (*pointer_ == L'\n')
+	if (*pointer_ == '\n')
 		line_++;
 	return *pointer_;
 }
 void DxTextScanner::_SkipComment()
 {
 	while (true) {
-		std::vector<wchar_t>::iterator posStart = pointer_;
+		std::vector<char>::iterator posStart = pointer_;
 		_SkipSpace();
 
-		wchar_t ch = *pointer_;
+		char ch = *pointer_;
 
-		if (ch == L'/') { //コメントアウト処理
-			std::vector<wchar_t>::iterator tPos = pointer_;
+		if (ch == '/') { //コメントアウト処理
+			std::vector<char>::iterator tPos = pointer_;
 			ch = _NextChar();
 			if (ch == L'/') { // "//"
 				while (true) {
 					ch = _NextChar();
-					if (ch == L'\r' || ch == L'\n')
+					if (ch == '\r' || ch == '\n')
 						break;
 				}
-			} else if (ch == L'*') { // "/*"-"*/"
+			} else if (ch == '*') { // "/*"-"*/"
 				while (true) {
 					ch = _NextChar();
-					if (ch == L'*') {
+					if (ch == '*') {
 						ch = _NextChar();
-						if (ch == L'/')
+						if (ch == '/')
 							break;
 					}
 				}
 				ch = _NextChar();
 			} else {
 				pointer_ = tPos;
-				ch = L'/';
+				ch = '/';
 			}
 		}
 
@@ -426,16 +428,16 @@ void DxTextScanner::_SkipComment()
 }
 void DxTextScanner::_SkipSpace()
 {
-	wchar_t ch = *pointer_;
+	char ch = *pointer_;
 	while (true) {
-		if (ch != L' ' && ch != L'\t')
+		if (ch != ' ' && ch != '\t')
 			break;
 		ch = _NextChar();
 	}
 }
-void DxTextScanner::_RaiseError(std::wstring str)
+void DxTextScanner::_RaiseError(std::string str)
 {
-	throw gstd::wexception(str.c_str());
+	throw std::exception(str.c_str());
 }
 bool DxTextScanner::_IsTextStartSign()
 {
@@ -443,10 +445,11 @@ bool DxTextScanner::_IsTextStartSign()
 		return false;
 
 	bool res = false;
-	wchar_t ch = *pointer_;
+	char ch = *pointer_;
 
-	if (false && ch == L'\\') {
-		std::vector<wchar_t>::iterator pos = pointer_;
+#if 0
+	if (ch == '\\') {
+		std::vector<char>::iterator pos = pointer_;
 		ch = _NextChar(); //次のタグまで進める
 		bool bLess = ch == CHAR_TAG_START;
 		if (!bLess) {
@@ -455,7 +458,9 @@ bool DxTextScanner::_IsTextStartSign()
 		} else {
 			res = !bLess;
 		}
-	} else {
+	} else 
+#endif
+	{
 		bool bLess = ch == CHAR_TAG_START;
 		res = !bLess;
 	}
@@ -465,20 +470,20 @@ bool DxTextScanner::_IsTextStartSign()
 bool DxTextScanner::_IsTextScan()
 {
 	bool res = false;
-	wchar_t ch = _NextChar();
+	char ch = _NextChar();
 	if (!HasNext()) {
 		return false;
-	} else if (ch == L'/') {
+	} else if (ch == '/') {
 		ch = *(pointer_ + 1);
-		if (ch == L'/' || ch == L'*')
+		if (ch == '/' || ch == '*')
 			res = false;
-	} else if (false && ch == L'\\') {
+	} else if (false && ch == '\\') {
 		ch = _NextChar(); //次のタグまで進める
 		res = true;
 	} else {
 		bool bGreater = ch == CHAR_TAG_END;
 		if (bGreater) {
-			_RaiseError(L"テキスト中にタグ終了文字が存在しました");
+			_RaiseError(u8"テキスト中にタグ終了文字が存在しました");
 		}
 		bool bNotLess = ch != CHAR_TAG_START;
 		res = bNotLess;
@@ -492,23 +497,23 @@ DxTextToken& DxTextScanner::GetToken()
 DxTextToken& DxTextScanner::Next()
 {
 	if (!HasNext()) {
-		std::wstring source;
+		std::string source;
 		source.resize(buffer_.size());
-		memcpy(&source[0], &buffer_[0], source.size() * sizeof(wchar_t));
-		std::wstring log = StringUtility::Format(L"Next(Text):すでに終端です -> %s", source.c_str());
+		memcpy(&source[0], &buffer_[0], source.size() * sizeof(char));
+		std::string log = StringUtility::Format(u8"Next(Text):すでに終端です -> %s", source.c_str());
 		_RaiseError(log);
 	}
 
 	_SkipComment(); //コメントをとばします
 
-	wchar_t ch = *pointer_;
-	if (ch == L'\0') {
-		token_ = DxTextToken(DxTextToken::TK_EOF, L"\0");
+	char ch = *pointer_;
+	if (ch == '\0') {
+		token_ = DxTextToken(DxTextToken::TK_EOF, "\0");
 		return token_;
 	}
 
 	DxTextToken::Type type = DxTextToken::TK_UNKNOWN;
-	std::vector<wchar_t>::iterator posStart = pointer_; //先頭を保存
+	std::vector<char>::iterator posStart = pointer_; //先頭を保存
 
 	if (_IsTextStartSign()) {
 		ch = *pointer_;
@@ -524,150 +529,150 @@ DxTextToken& DxTextScanner::Next()
 		// else _RaiseError("Next:すでに文字列終端です");
 
 		type = DxTextToken::TK_TEXT;
-		std::wstring text = std::wstring(posStart, pointer_);
-		text = StringUtility::ReplaceAll(text, L"\\", L"");
+		std::string text = std::string(posStart, pointer_);
+		text = StringUtility::ReplaceAll(text, "\\", "");
 		token_ = DxTextToken(type, text);
 	} else {
 		switch (ch) {
-		case L'\0':
+		case '\0':
 			type = DxTextToken::TK_EOF;
 			break; //終端
-		case L',':
+		case ',':
 			_NextChar();
 			type = DxTextToken::TK_COMMA;
 			break;
-		case L'=':
+		case '=':
 			_NextChar();
 			type = DxTextToken::TK_EQUAL;
 			break;
-		case L'(':
+		case '(':
 			_NextChar();
 			type = DxTextToken::TK_OPENP;
 			break;
-		case L')':
+		case ')':
 			_NextChar();
 			type = DxTextToken::TK_CLOSEP;
 			break;
-		case L'[':
+		case '[':
 			_NextChar();
 			type = DxTextToken::TK_OPENB;
 			break;
-		case L']':
+		case ']':
 			_NextChar();
 			type = DxTextToken::TK_CLOSEB;
 			break;
-		case L'{':
+		case '{':
 			_NextChar();
 			type = DxTextToken::TK_OPENC;
 			break;
-		case L'}':
+		case '}':
 			_NextChar();
 			type = DxTextToken::TK_CLOSEC;
 			break;
-		case L'*':
+		case '*':
 			_NextChar();
 			type = DxTextToken::TK_ASTERISK;
 			break;
-		case L'/':
+		case '/':
 			_NextChar();
 			type = DxTextToken::TK_SLASH;
 			break;
-		case L':':
+		case ':':
 			_NextChar();
 			type = DxTextToken::TK_COLON;
 			break;
-		case L';':
+		case ';':
 			_NextChar();
 			type = DxTextToken::TK_SEMICOLON;
 			break;
-		case L'~':
+		case '~':
 			_NextChar();
 			type = DxTextToken::TK_TILDE;
 			break;
-		case L'!':
+		case '!':
 			_NextChar();
 			type = DxTextToken::TK_EXCLAMATION;
 			break;
-		case L'#':
+		case '#':
 			_NextChar();
 			type = DxTextToken::TK_SHARP;
 			break;
-		case L'<':
+		case '<':
 			_NextChar();
 			type = DxTextToken::TK_LESS;
 			break;
-		case L'>':
+		case '>':
 			_NextChar();
 			type = DxTextToken::TK_GREATER;
 			break;
 
-		case L'"': {
+		case '"': {
 			ch = _NextChar(); //1つ進めて
-			wchar_t pre = ch;
+			char pre = ch;
 			while (true) {
-				if (ch == L'"' && pre != L'\\')
+				if (ch == '"' && pre != '\\')
 					break;
 				pre = ch;
 				ch = _NextChar(); //次のダブルクオーテーションまで進める
 			}
 
-			if (ch == L'"')
+			if (ch == '"')
 				_NextChar(); //ダブルクオーテーションだったら1つ進める
 			else
-				_RaiseError(L"Next(Text):すでに文字列終端です");
+				_RaiseError(u8"Next(Text):すでに文字列終端です");
 			type = DxTextToken::TK_STRING;
 			break;
 		}
 
-		case L'\r':
-		case L'\n': //改行
+		case '\r':
+		case '\n': //改行
 			//改行がいつまでも続くようなのも1つの改行として扱う
-			while (ch == L'\r' || ch == L'\n')
+			while (ch == '\r' || ch == '\n')
 				ch = _NextChar();
 			type = DxTextToken::TK_NEWLINE;
 			break;
 
-		case L'+':
-		case L'-': {
-			if (ch == L'+') {
+		case '+':
+		case '-': {
+			if (ch == '+') {
 				ch = _NextChar();
 				type = DxTextToken::TK_PLUS;
 
-			} else if (ch == L'-') {
+			} else if (ch == '-') {
 				ch = _NextChar();
 				type = DxTextToken::TK_MINUS;
 			}
 
-			if (!iswdigit(ch))
+			if (!isdigit(ch))
 				break; //次が数字でないなら抜ける
 		}
 
 		default: {
-			if (iswdigit(ch)) {
+			if (isdigit(ch)) {
 				//整数か実数
-				while (iswdigit(ch))
+				while (isdigit(ch))
 					ch = _NextChar(); //数字だけの間ポインタを進める
 				type = DxTextToken::TK_INT;
-				if (ch == L'.') {
+				if (ch == '.') {
 					//実数か整数かを調べる。小数点があったら実数
 					ch = _NextChar();
-					while (iswdigit(ch))
+					while (isdigit(ch))
 						ch = _NextChar(); //数字だけの間ポインタを進める
 					type = DxTextToken::TK_REAL;
 				}
 
-				if (ch == L'E' || ch == L'e') {
+				if (ch == 'E' || ch == 'e') {
 					//1E-5みたいなケース
-					std::vector<wchar_t>::iterator pos = pointer_;
+					std::vector<CHAR>::iterator pos = pointer_;
 					ch = _NextChar();
-					while (iswdigit(ch) || ch == L'-')
+					while (isdigit(ch) || ch == '-')
 						ch = _NextChar(); //数字だけの間ポインタを進める
 					type = DxTextToken::TK_REAL;
 				}
 
-			} else if (iswalpha(ch) || ch == L'_') {
+			} else if (isalpha(ch) || ch == '_') {
 				//たぶん識別子
-				while (iswalpha(ch) || iswdigit(ch) || ch == L'_')
+				while (isalpha(ch) || isdigit(ch) || ch == '_')
 					ch = _NextChar(); //たぶん識別子な間ポインタを進める
 				type = DxTextToken::TK_ID;
 			} else {
@@ -684,11 +689,11 @@ DxTextToken& DxTextScanner::Next()
 
 		if (type == DxTextToken::TK_STRING) {
 			//\を除去
-			std::wstring src = std::wstring(posStart, pointer_);
-			std::wstring str = StringUtility::ReplaceAll(src, L"\\\"", L"\"");
+			auto str2 = std::string(posStart, pointer_);
+			std::string str = StringUtility::ReplaceAll(str2, "\\\"", "\"");
 			token_ = DxTextToken(type, str);
 		} else {
-			token_ = DxTextToken(type, std::wstring(posStart, pointer_));
+			token_ = DxTextToken(type, std::string(posStart, pointer_));
 		}
 	}
 
@@ -696,19 +701,19 @@ DxTextToken& DxTextScanner::Next()
 }
 bool DxTextScanner::HasNext()
 {
-	return pointer_ != buffer_.end() && *pointer_ != L'\0' && token_.GetType() != DxTextToken::TK_EOF;
+	return pointer_ != buffer_.end() && *pointer_ != '\0' && token_.GetType() != DxTextToken::TK_EOF;
 }
 void DxTextScanner::CheckType(DxTextToken& tok, int type)
 {
 	if (tok.type_ != type) {
-		std::wstring str = StringUtility::Format(L"CheckType error[%s]:", tok.element_.c_str());
+		std::string str = StringUtility::Format("CheckType error[%s]:", tok.element_.c_str());
 		_RaiseError(str);
 	}
 }
-void DxTextScanner::CheckIdentifer(DxTextToken& tok, std::wstring id)
+void DxTextScanner::CheckIdentifer(DxTextToken& tok, std::string id)
 {
 	if (tok.type_ != DxTextToken::TK_ID || tok.GetIdentifier() != id) {
-		std::wstring str = StringUtility::Format(L"CheckID error[%s]:", tok.element_.c_str());
+		std::string str = StringUtility::Format("CheckID error[%s]:", tok.element_.c_str());
 		_RaiseError(str);
 	}
 }
@@ -719,23 +724,23 @@ int DxTextScanner::GetCurrentLine()
 int DxTextScanner::SearchCurrentLine()
 {
 	int line = 1;
-	wchar_t* pbuf = &(*buffer_.begin());
-	wchar_t* ebuf = &(*pointer_);
+	char* pbuf = &(*buffer_.begin());
+	char* ebuf = &(*pointer_);
 	while (true) {
 		if (pbuf >= ebuf)
 			break;
-		else if (*pbuf == L'\n')
+		else if (*pbuf == '\n')
 			line++;
 
 		pbuf++;
 	}
 	return line;
 }
-std::vector<wchar_t>::iterator DxTextScanner::GetCurrentPointer()
+std::vector<char>::iterator DxTextScanner::GetCurrentPointer()
 {
 	return pointer_;
 }
-void DxTextScanner::SetCurrentPointer(std::vector<wchar_t>::iterator pos)
+void DxTextScanner::SetCurrentPointer(std::vector<char>::iterator pos)
 {
 	pointer_ = pos;
 }
@@ -743,29 +748,29 @@ int DxTextScanner::GetCurrentPosition()
 {
 	if (buffer_.size() == 0)
 		return 0;
-	wchar_t* pos = (wchar_t*)&*pointer_;
+	char* pos = (char*)&*pointer_;
 	return pos - &buffer_[0];
 }
 
 //DxTextToken
-std::wstring& DxTextToken::GetIdentifier()
+std::string& DxTextToken::GetIdentifier()
 {
 	if (type_ != TK_ID) {
-		throw gstd::wexception(L"DxTextToken::GetIdentifier:データのタイプが違います");
+		throw std::exception(u8"DxTextToken::GetIdentifier:データのタイプが違います");
 	}
 	return element_;
 }
-std::wstring DxTextToken::GetString()
+std::string DxTextToken::GetString()
 {
 	if (type_ != TK_STRING) {
-		throw gstd::wexception(L"DxTextToken::GetString:データのタイプが違います");
+		throw std::exception(u8"DxTextToken::GetString:データのタイプが違います");
 	}
 	return element_.substr(1, element_.size() - 2);
 }
 int DxTextToken::GetInteger()
 {
 	if (type_ != TK_INT) {
-		throw gstd::wexception(L"DxTextToken::GetInterger:データのタイプが違います");
+		throw std::exception(u8"DxTextToken::GetInterger:データのタイプが違います");
 	}
 	int res = StringUtility::ToInteger(element_);
 	return res;
@@ -773,7 +778,7 @@ int DxTextToken::GetInteger()
 double DxTextToken::GetReal()
 {
 	if (type_ != TK_REAL && type_ != TK_INT) {
-		throw gstd::wexception(L"DxTextToken::GetReal:データのタイプが違います");
+		throw std::exception(u8"DxTextToken::GetReal:データのタイプが違います");
 	}
 
 	double res = StringUtility::ToDouble(element_);
@@ -785,7 +790,7 @@ bool DxTextToken::GetBoolean()
 	if (type_ == TK_REAL && type_ == TK_INT) {
 		res = GetReal() == 1;
 	} else {
-		res = element_ == L"true";
+		res = element_ == "true";
 	}
 	return res;
 }
@@ -837,7 +842,7 @@ void DxTextRenderObject::Render()
 		std::list<ObjectData>::iterator itr = listData_.begin();
 		for (; itr != listData_.end(); itr++) {
 			ObjectData obj = *itr;
-			gstd::ref_count_ptr<Sprite2D> sprite = obj.sprite;
+			std::shared_ptr<Sprite2D> sprite = obj.sprite;
 			RECT_D rcDest = sprite->GetDestinationRect();
 			rect.left = _MIN(rect.left, rcDest.left);
 			rect.top = _MIN(rect.top, rcDest.top);
@@ -852,7 +857,7 @@ void DxTextRenderObject::Render()
 	for (; itr != listData_.end(); itr++) {
 		ObjectData obj = *itr;
 		POINT bias = obj.bias;
-		gstd::ref_count_ptr<Sprite2D> sprite = obj.sprite;
+		std::shared_ptr<Sprite2D> sprite = obj.sprite;
 		sprite->SetColorRGB(color_);
 		sprite->SetAlpha(ColorAccess::GetColorA(color_));
 		RECT_D rcDestCopy = sprite->GetDestinationRect();
@@ -883,14 +888,14 @@ void DxTextRenderObject::Render()
 		sprite->SetDestinationRect(rcDestCopy);
 	}
 }
-void DxTextRenderObject::AddRenderObject(gstd::ref_count_ptr<Sprite2D> obj)
+void DxTextRenderObject::AddRenderObject(std::shared_ptr<Sprite2D> obj)
 {
 	ObjectData data;
 	ZeroMemory(&data.bias, sizeof(POINT));
 	data.sprite = obj;
 	listData_.push_back(data);
 }
-void DxTextRenderObject::AddRenderObject(gstd::ref_count_ptr<DxTextRenderObject> obj, POINT bias)
+void DxTextRenderObject::AddRenderObject(std::shared_ptr<DxTextRenderObject> obj, POINT bias)
 {
 	std::list<ObjectData>::iterator itr = obj->listData_.begin();
 	for (; itr != obj->listData_.end(); itr++) {
@@ -913,23 +918,27 @@ bool DxTextRenderer::Initialize()
 	if (thisBase_ != NULL)
 		return false;
 
-	winFont_.CreateFont(Font::GOTHIC, 20, true);
+	winFont_.CreateFontW(Font::GOTHIC, 20, true);
 
 	thisBase_ = this;
 	return true;
 }
-SIZE DxTextRenderer::_GetTextSize(HDC hDC, wchar_t* pText)
+SIZE DxTextRenderer::_GetTextSize(HDC hDC, const char* pText, int size)
+{
+	return _GetTextSize(hDC, StringUtility::ConvertMultiToWide(pText, CP_UTF8).c_str(), size);
+}
+SIZE DxTextRenderer::_GetTextSize(HDC hDC, const wchar_t* pText, int size)
 {
 	//文字コード
 	int charCount = 1;
 	int code = 0;
 
 	//文字サイズ計算
-	SIZE size;
-	::GetTextExtentPoint32(hDC, pText, charCount, &size);
-	return size;
+	SIZE ssize;
+	::GetTextExtentPoint32W(hDC, pText, charCount, &ssize);
+	return ssize;
 }
-ref_count_ptr<DxTextLine> DxTextRenderer::_GetTextInfoSub(std::wstring text, DxText* dxText, DxTextInfo* textInfo, ref_count_ptr<DxTextLine> textLine, HDC& hDC, int& totalWidth, int& totalHeight)
+std::shared_ptr<DxTextLine> DxTextRenderer::_GetTextInfoSub(std::string text, std::shared_ptr<DxText> dxText, std::shared_ptr<DxTextInfo> textInfo, std::shared_ptr<DxTextLine> textLine, HDC& hDC, int& totalWidth, int& totalHeight)
 {
 	DxFont& dxFont = dxText->GetFont();
 	int sidePitch = dxText->GetSidePitch();
@@ -939,12 +948,12 @@ ref_count_ptr<DxTextLine> DxTextRenderer::_GetTextInfoSub(std::wstring text, DxT
 	int widthBorder = dxFont.GetBorderType() != DxFont::BORDER_NONE ? dxFont.GetBorderWidth() : 0;
 	textLine->SetSidePitch(sidePitch);
 
-	const std::wstring strFirstForbid = L"」、。";
+	const std::string strFirstForbid = "」、。";
 
-	wchar_t* pText = const_cast<wchar_t*>(text.data());
-	wchar_t* eText = const_cast<wchar_t*>(text.data() + text.size());
+	char* pText = const_cast<char*>(text.data());
+	char* eText = const_cast<char*>(text.data() + text.size());
 	while (true) {
-		if (*pText == L'\0' || pText >= eText)
+		if (*pText == '\0' || pText >= eText)
 			break;
 
 		//文字コード
@@ -954,14 +963,14 @@ ref_count_ptr<DxTextLine> DxTextRenderer::_GetTextInfoSub(std::wstring text, DxT
 		//禁則処理
 		SIZE sizeNext;
 		ZeroMemory(&sizeNext, sizeof(SIZE));
-		wchar_t* pNextChar = pText + charCount;
+		char* pNextChar = pText + charCount;
 		if (pNextChar < eText) {
 			//次の文字
-			std::wstring strNext = L"";
+			std::string strNext = "";
 			strNext.resize(1);
-			memcpy(&strNext[0], pNextChar, strNext.size() * sizeof(wchar_t));
+			memcpy(&strNext[0], pNextChar, strNext.size() * sizeof(char));
 
-			bool bFirstForbid = strFirstForbid.find(strNext) != std::wstring::npos;
+			bool bFirstForbid = strFirstForbid.find(strNext) != std::string::npos;
 			if (bFirstForbid)
 				sizeNext = _GetTextSize(hDC, pNextChar);
 		}
@@ -975,7 +984,7 @@ ref_count_ptr<DxTextLine> DxTextRenderer::_GetTextInfoSub(std::wstring text, DxT
 			totalWidth = _MAX(totalWidth, textLine->width_);
 			totalHeight += textLine->height_ + linePitch;
 			textInfo->AddTextLine(textLine);
-			textLine = new DxTextLine();
+			textLine = std::make_shared<DxTextLine>();
 			textLine->SetSidePitch(sidePitch);
 			continue;
 		}
@@ -991,18 +1000,18 @@ ref_count_ptr<DxTextLine> DxTextRenderer::_GetTextInfoSub(std::wstring text, DxT
 	}
 	return textLine;
 }
-gstd::ref_count_ptr<DxTextInfo> DxTextRenderer::GetTextInfo(DxText* dxText)
+std::shared_ptr<DxTextInfo> DxTextRenderer::GetTextInfo(std::shared_ptr<DxText> dxText)
 {
 	SetFont(dxText->dxFont_.GetLogFont());
-	DxTextInfo* res = new DxTextInfo();
-	std::wstring& text = dxText->GetText();
+	auto res = std::make_shared<DxTextInfo>();
+	std::string& text = dxText->GetText();
 	DxFont& dxFont = dxText->GetFont();
 	int linePitch = dxText->GetLinePitch();
 	int widthMax = dxText->GetMaxWidth();
 	int heightMax = dxText->GetMaxHeight();
 	RECT margin = dxText->GetMargin();
 
-	ref_count_ptr<Font> fontTemp;
+	std::shared_ptr<Font> fontTemp;
 
 	HDC hDC = ::GetDC(NULL);
 	HFONT oldFont = (HFONT)SelectObject(hDC, winFont_.GetHandle());
@@ -1011,7 +1020,7 @@ gstd::ref_count_ptr<DxTextInfo> DxTextRenderer::GetTextInfo(DxText* dxText)
 	int totalWidth = 0;
 	int totalHeight = 0;
 	int widthBorder = dxFont.GetBorderType() != DxFont::BORDER_NONE ? dxFont.GetBorderWidth() : 0;
-	ref_count_ptr<DxTextLine> textLine = new DxTextLine();
+	std::shared_ptr<DxTextLine> textLine = std::make_shared<DxTextLine>();
 	textLine->width_ = margin.left;
 
 	if (dxText->IsSyntacticAnalysis()) {
@@ -1030,9 +1039,9 @@ gstd::ref_count_ptr<DxTextInfo> DxTextRenderer::GetTextInfo(DxText* dxText)
 			DxTextToken& tok = scan.Next();
 			int typeToken = tok.GetType();
 			if (typeToken == DxTextToken::TK_TEXT) {
-				std::wstring text = tok.GetElement();
+				std::string text = tok.GetElement();
 				text = _ReplaceRenderText(text);
-				if (text.size() == 0 || text == L"")
+				if (text.size() == 0 || text == "")
 					continue;
 
 				textLine = _GetTextInfoSub(text, dxText, res, textLine, hDC, totalWidth, totalHeight);
@@ -1041,12 +1050,12 @@ gstd::ref_count_ptr<DxTextInfo> DxTextRenderer::GetTextInfo(DxText* dxText)
 			} else if (typeToken == DxTextScanner::TOKEN_TAG_START) {
 				int indexTag = textLine->code_.size();
 				tok = scan.Next();
-				std::wstring element = tok.GetElement();
+				std::string element = tok.GetElement();
 				if (element == DxTextScanner::TAG_NEW_LINE) {
 					//改行
 					if (textLine->height_ == 0) {
 						//空文字の場合も空白文字で高さを計算する
-						textLine = _GetTextInfoSub(L" ", dxText, res, textLine, hDC, totalWidth, totalHeight);
+						textLine = _GetTextInfoSub(" ", dxText, res, textLine, hDC, totalWidth, totalHeight);
 					}
 
 					if (textLine != NULL) {
@@ -1055,44 +1064,43 @@ gstd::ref_count_ptr<DxTextInfo> DxTextRenderer::GetTextInfo(DxText* dxText)
 						res->AddTextLine(textLine);
 					}
 
-					textLine = new DxTextLine();
+					textLine = std::make_shared<DxTextLine>();
 				} else if (element == DxTextScanner::TAG_RUBY) {
-					ref_count_ptr<DxTextTag_Ruby> tag = new DxTextTag_Ruby();
+					std::shared_ptr<DxTextTag_Ruby> tag = std::make_shared <DxTextTag_Ruby>();
 					tag->SetTagIndex(indexTag);
 
 					while (true) {
 						tok = scan.Next();
 						if (tok.GetType() == DxTextScanner::TOKEN_TAG_END)
 							break;
-						std::wstring str = tok.GetElement();
-						if (str == L"rb") {
+						std::string str = tok.GetElement();
+						if (str == "rb") {
 							scan.CheckType(scan.Next(), DxTextToken::TK_EQUAL);
-							std::wstring text = scan.Next().GetString();
+							std::string text = scan.Next().GetString();
 							tag->SetText(text);
-						} else if (str == L"rt") {
+						} else if (str == "rt") {
 							scan.CheckType(scan.Next(), DxTextToken::TK_EQUAL);
-							std::wstring text = scan.Next().GetString();
+							std::string text = scan.Next().GetString();
 							tag->SetRuby(text);
 						}
 					}
 
 					int linePos = res->GetLineCount();
 					int codeCount = textLine->GetTextCodes().size();
-					std::wstring text = tag->GetText();
-					ref_count_ptr<DxTextLine> textLineRuby = textLine;
+					std::string text = tag->GetText();
+					std::shared_ptr<DxTextLine> textLineRuby = textLine;
 					textLine = _GetTextInfoSub(text, dxText, res, textLine, hDC, totalWidth, totalHeight);
 
-					SIZE sizeText;
-					::GetTextExtentPoint32(hDC, &text[0], text.size(), &sizeText);
+					SIZE sizeText = _GetTextSize(hDC, &text[0], text.size());
 					int rubyWidth = dxText->GetFontSize() / 2;
-					std::wstring sRuby = tag->GetRuby();
-					int rubyCount = StringUtility::CountAsciiSizeCharacter(sRuby);
+					std::string sRuby = tag->GetRuby();
+					int rubyCount = sRuby.length();
 					if (rubyCount > 0) {
 						int rubyPitch = _MAX(sizeText.cx / rubyCount - rubyWidth, 0);
 						int rubyMarginLeft = rubyPitch / 2;
 						tag->SetLeftMargin(rubyMarginLeft);
 
-						gstd::ref_count_ptr<DxText> dxTextRuby = new DxText();
+						std::shared_ptr<DxText> dxTextRuby = std::make_shared<DxText>();
 						dxTextRuby->SetText(tag->GetRuby());
 						dxTextRuby->SetFont(dxFont);
 						dxTextRuby->SetPosition(dxText->GetPosition());
@@ -1117,7 +1125,7 @@ gstd::ref_count_ptr<DxTextInfo> DxTextRenderer::GetTextInfo(DxText* dxText)
 					}
 
 				} else if (element == DxTextScanner::TAG_FONT) {
-					DxTextTag_Font* tag = new DxTextTag_Font();
+					auto tag = std::make_shared<DxTextTag_Font>();
 					DxFont font = dxText->GetFont();
 					LOGFONT logFont = font.GetLogFont();
 					tag->SetTagIndex(indexTag);
@@ -1127,10 +1135,10 @@ gstd::ref_count_ptr<DxTextInfo> DxTextRenderer::GetTextInfo(DxText* dxText)
 						tok = scan.Next();
 						if (tok.GetType() == DxTextScanner::TOKEN_TAG_END)
 							break;
-						std::wstring str = tok.GetElement();
-						if (str == L"clear") {
+						std::string str = tok.GetElement();
+						if (str == "clear") {
 							bClear = true;
-						} else if (str == L"size") {
+						} else if (str == "size") {
 							scan.CheckType(scan.Next(), DxTextToken::TK_EQUAL);
 							int size = scan.Next().GetInteger();
 							logFont.lfHeight = size;
@@ -1143,7 +1151,7 @@ gstd::ref_count_ptr<DxTextInfo> DxTextRenderer::GetTextInfo(DxText* dxText)
 						oldFont = (HFONT)SelectObject(hDC, winFont_.GetHandle());
 					} else {
 						widthBorder = font.GetBorderType() != DxFont::BORDER_NONE ? font.GetBorderWidth() : 0;
-						fontTemp = new Font();
+						fontTemp = std::make_shared<Font>();
 						fontTemp->CreateFontIndirect(logFont);
 						font.SetLogFont(logFont);
 						oldFont = (HFONT)SelectObject(hDC, fontTemp->GetHandle());
@@ -1151,7 +1159,7 @@ gstd::ref_count_ptr<DxTextInfo> DxTextRenderer::GetTextInfo(DxText* dxText)
 					tag->SetFont(font);
 					textLine->tag_.push_back(tag);
 				} else {
-					std::wstring text = DxTextScanner::TAG_START;
+					std::string text = DxTextScanner::TAG_START;
 					text += tok.GetElement();
 					while (true) {
 						if (tok.GetType() == DxTextScanner::TOKEN_TAG_END)
@@ -1160,7 +1168,7 @@ gstd::ref_count_ptr<DxTextInfo> DxTextRenderer::GetTextInfo(DxText* dxText)
 						text += tok.GetElement();
 					}
 					text = _ReplaceRenderText(text);
-					if (text.size() == 0 || text == L"")
+					if (text.size() == 0 || text == "")
 						continue;
 
 					textLine = _GetTextInfoSub(text, dxText, res, textLine, hDC, totalWidth, totalHeight);
@@ -1170,7 +1178,7 @@ gstd::ref_count_ptr<DxTextInfo> DxTextRenderer::GetTextInfo(DxText* dxText)
 			}
 		}
 	} else {
-		std::wstring& text = dxText->GetText();
+		std::string& text = dxText->GetText();
 		text = _ReplaceRenderText(text);
 		if (text.size() > 0) {
 			textLine = _GetTextInfoSub(text, dxText, res, textLine, hDC, totalWidth, totalHeight);
@@ -1184,19 +1192,19 @@ gstd::ref_count_ptr<DxTextInfo> DxTextRenderer::GetTextInfo(DxText* dxText)
 	::ReleaseDC(NULL, hDC);
 	return res;
 }
-std::wstring DxTextRenderer::_ReplaceRenderText(std::wstring& text)
+std::string DxTextRenderer::_ReplaceRenderText(std::string& text)
 {
-	text = StringUtility::ReplaceAll(text, L"\r", L"");
-	text = StringUtility::ReplaceAll(text, L"\n", L"");
-	text = StringUtility::ReplaceAll(text, L"\t", L"");
-	text = StringUtility::ReplaceAll(text, L"&nbsp;", L" ");
-	text = StringUtility::ReplaceAll(text, L"&quot;", L"\"");
-	text = StringUtility::ReplaceAll(text, L"&osb;", L"[");
-	text = StringUtility::ReplaceAll(text, L"&csb;", L"]");
+	text = StringUtility::ReplaceAll(text, "\r", "");
+	text = StringUtility::ReplaceAll(text, "\n", "");
+	text = StringUtility::ReplaceAll(text, "\t", "");
+	text = StringUtility::ReplaceAll(text, "&nbsp;", " ");
+	text = StringUtility::ReplaceAll(text, "&quot;", "\"");
+	text = StringUtility::ReplaceAll(text, "&osb;", "[");
+	text = StringUtility::ReplaceAll(text, "&csb;", "]");
 	return text;
 }
 
-void DxTextRenderer::_CreateRenderObject(gstd::ref_count_ptr<DxTextRenderObject> objRender, POINT pos, DxFont& dxFont, gstd::ref_count_ptr<DxTextLine> textLine)
+void DxTextRenderer::_CreateRenderObject(std::shared_ptr<DxTextRenderObject> objRender, POINT pos, DxFont& dxFont, std::shared_ptr<DxTextLine> textLine)
 {
 	SetFont(dxFont.GetLogFont());
 	DxCharCacheKey keyFont;
@@ -1211,20 +1219,21 @@ void DxTextRenderer::_CreateRenderObject(gstd::ref_count_ptr<DxTextRenderObject>
 	int countCode = textLine->code_.size();
 	for (int iCode = 0; iCode < countCode; iCode++) {
 		for (; indexTag < countTag;) {
-			gstd::ref_count_ptr<DxTextTag> tag = textLine->GetTag(indexTag);
+			std::shared_ptr<DxTextTag> tag = textLine->GetTag(indexTag);
 			int tagNo = tag->GetTagIndex();
 			if (tagNo != iCode)
 				break;
 			int type = tag->GetTagType();
 			if (type == DxTextTag::TYPE_FONT) {
-				DxTextTag_Font* font = (DxTextTag_Font*)tag.GetPointer();
+				auto font = std::dynamic_pointer_cast<DxTextTag_Font>(tag);
 				dxFont = font->GetFont();
 				keyFont.font_ = dxFont;
-				winFont_.CreateFontIndirect(dxFont.GetLogFont());
+				auto longfont = dxFont.GetLogFont();
+				winFont_.CreateFontIndirect(longfont);
 				indexTag++;
 			} else if (type == DxTextTag::TYPE_RUBY) {
-				DxTextTag_Ruby* ruby = (DxTextTag_Ruby*)tag.GetPointer();
-				ref_count_ptr<DxText> textRuby = ruby->GetRenderText();
+				auto ruby = std::dynamic_pointer_cast<DxTextTag_Ruby>(tag);
+				std::shared_ptr<DxText> textRuby = ruby->GetRenderText();
 
 				RECT margin;
 				ZeroMemory(&margin, sizeof(RECT));
@@ -1237,7 +1246,8 @@ void DxTextRenderer::_CreateRenderObject(gstd::ref_count_ptr<DxTextRenderObject>
 
 				objRender->AddRenderObject(textRuby->CreateRenderObject(), bias);
 
-				SetFont(dxFont.GetLogFont());
+				auto logfont = dxFont.GetLogFont();
+				SetFont(logfont);
 
 				indexTag++;
 			} else
@@ -1250,19 +1260,19 @@ void DxTextRenderer::_CreateRenderObject(gstd::ref_count_ptr<DxTextRenderObject>
 		//キャッシュに存在するか確認
 		keyFont.code_ = code;
 		keyFont.font_ = dxFont;
-		ref_count_ptr<DxChar> dxChar = cache_.GetChar(keyFont);
+		std::shared_ptr<DxChar> dxChar = cache_.GetChar(keyFont);
 		if (dxChar == NULL) {
 			//キャッシュにない場合、作成して追加
-			dxChar = new DxChar();
+			dxChar = std::make_shared<DxChar>();
 			dxChar->Create(code, winFont_, dxFont);
 			cache_.AddChar(keyFont, dxChar);
 		}
 
 		//描画
-		ref_count_ptr<Sprite2D> spriteText = new Sprite2D();
+		std::shared_ptr<Sprite2D> spriteText = std::make_shared<Sprite2D>();
 		int yGap = 0;
 		yRender = pos.y + yGap;
-		ref_count_ptr<Texture> texture = dxChar->GetTexture();
+		std::shared_ptr<Texture> texture = dxChar->GetTexture();
 		spriteText->SetTexture(texture);
 
 		//		int objWidth = texture->GetWidth();//dxChar->GetWidth();
@@ -1279,11 +1289,11 @@ void DxTextRenderer::_CreateRenderObject(gstd::ref_count_ptr<DxTextRenderObject>
 	}
 }
 
-gstd::ref_count_ptr<DxTextRenderObject> DxTextRenderer::CreateRenderObject(DxText* dxText, ref_count_ptr<DxTextInfo> textInfo)
+std::shared_ptr<DxTextRenderObject> DxTextRenderer::CreateRenderObject(std::shared_ptr<DxText> dxText, std::shared_ptr<DxTextInfo> textInfo)
 {
 	{
 		Lock lock(lock_);
-		gstd::ref_count_ptr<DxTextRenderObject> objRender = new DxTextRenderObject();
+		std::shared_ptr<DxTextRenderObject> objRender = std::make_shared <DxTextRenderObject>();
 		objRender->SetPosition(dxText->GetPosition());
 		objRender->SetVertexColor(dxText->GetVertexColor());
 		objRender->SetPermitCamera(dxText->IsPermitCamera());
@@ -1321,7 +1331,7 @@ gstd::ref_count_ptr<DxTextRenderObject> DxTextRenderer::CreateRenderObject(DxTex
 		int lineStart = textInfo->GetValidStartLine() - 1;
 		int lineEnd = textInfo->GetValidEndLine() - 1;
 		for (int iLine = lineStart; iLine <= lineEnd; iLine++) {
-			gstd::ref_count_ptr<DxTextLine> textLine = textInfo->GetTextLine(iLine);
+			std::shared_ptr<DxTextLine> textLine = textInfo->GetTextLine(iLine);
 			pos.x = 0; //dxText->GetPosition().x;
 			if (iLine == 0)
 				pos.x += margin.left;
@@ -1354,29 +1364,29 @@ gstd::ref_count_ptr<DxTextRenderObject> DxTextRenderer::CreateRenderObject(DxTex
 	}
 }
 
-void DxTextRenderer::Render(DxText* dxText)
+void DxTextRenderer::Render(std::shared_ptr<DxText> dxText)
 {
 	{
 		Lock lock(lock_);
-		ref_count_ptr<DxTextInfo> textInfo = GetTextInfo(dxText);
+		std::shared_ptr<DxTextInfo> textInfo = GetTextInfo(dxText);
 		Render(dxText, textInfo);
 	}
 }
-void DxTextRenderer::Render(DxText* dxText, gstd::ref_count_ptr<DxTextInfo> textInfo)
+void DxTextRenderer::Render(std::shared_ptr<DxText> dxText, std::shared_ptr<DxTextInfo> textInfo)
 {
 	{
 		Lock lock(lock_);
-		ref_count_ptr<DxTextRenderObject> objRender = CreateRenderObject(dxText, textInfo);
+		std::shared_ptr<DxTextRenderObject> objRender = CreateRenderObject(dxText, textInfo);
 		objRender->Render();
 	}
 }
-bool DxTextRenderer::AddFontFromFile(std::wstring path)
+bool DxTextRenderer::AddFontFromFile(std::string path)
 {
-	ref_count_ptr<FileReader> reader = FileManager::GetBase()->GetFileReader(path);
+	std::shared_ptr<FileReader> reader = FileManager::GetBase()->GetFileReader(path);
 	if (reader == NULL)
-		throw gstd::wexception(StringUtility::Format(L"フォントファイルが見つかりません(%s)", path.c_str()).c_str());
+		throw std::exception(StringUtility::Format(u8"フォントファイルが見つかりません(%s)", path.c_str()).c_str());
 	if (!reader->Open())
-		throw gstd::wexception(StringUtility::Format(L"フォントファイルを開けません(%s)", path.c_str()).c_str());
+		throw std::exception(StringUtility::Format(u8"フォントファイルを開けません(%s)", path.c_str()).c_str());
 
 	int size = reader->GetFileSize();
 	ByteBuffer buf;
@@ -1386,7 +1396,7 @@ bool DxTextRenderer::AddFontFromFile(std::wstring path)
 	DWORD count = 0;
 	HANDLE handle = ::AddFontMemResourceEx(buf.GetPointer(), size, NULL, &count);
 
-	Logger::WriteTop(L"フォント読み込み：" + path);
+	Logger::WriteTop(u8"フォント読み込み：" + path);
 	return handle != 0;
 }
 
@@ -1447,16 +1457,9 @@ void DxText::Copy(const DxText& src)
 }
 void DxText::SetFontType(const wchar_t* type)
 {
-	LOGFONT info = dxFont_.GetLogFont();
+	LOGFONTW info = dxFont_.GetLogFont();
 	lstrcpy(info.lfFaceName, type);
 	info.lfCharSet = DEFAULT_CHARSET;
-
-	for (int i = 0; i < (int)wcslen(type); i++) {
-		if (!(IsCharAlphaNumeric(type[i]) || type[i] == L' ' || type[i] == L'-')) {
-			info.lfCharSet = SHIFTJIS_CHARSET;
-			break;
-		}
-	}
 	SetFont(info);
 }
 void DxText::Render()
@@ -1465,45 +1468,45 @@ void DxText::Render()
 	{
 		Lock lock(renderer->GetLock());
 		renderer->SetVertexColor(colorVertex_);
-		renderer->Render(this);
+		renderer->Render(std::shared_ptr<DxText>(this));
 	}
 }
-void DxText::Render(gstd::ref_count_ptr<DxTextInfo> textInfo)
+void DxText::Render(std::shared_ptr<DxTextInfo> textInfo)
 {
 	DxTextRenderer* renderer = DxTextRenderer::GetBase();
 	{
 		Lock lock(renderer->GetLock());
 		renderer->SetVertexColor(colorVertex_);
-		renderer->Render(this, textInfo);
+		renderer->Render(std::shared_ptr<DxText>(this), textInfo);
 	}
 }
-gstd::ref_count_ptr<DxTextInfo> DxText::GetTextInfo()
+std::shared_ptr<DxTextInfo> DxText::GetTextInfo()
 {
 	DxTextRenderer* renderer = DxTextRenderer::GetBase();
 	{
 		Lock lock(renderer->GetLock());
 		renderer->SetVertexColor(colorVertex_);
-		return renderer->GetTextInfo(this);
+		return renderer->GetTextInfo(std::shared_ptr<DxText>(this));
 	}
 }
-gstd::ref_count_ptr<DxTextRenderObject> DxText::CreateRenderObject()
+std::shared_ptr<DxTextRenderObject> DxText::CreateRenderObject()
 {
 	DxTextRenderer* renderer = DxTextRenderer::GetBase();
 	{
 		Lock lock(renderer->GetLock());
 		renderer->SetVertexColor(colorVertex_);
-		gstd::ref_count_ptr<DxTextInfo> textInfo = renderer->GetTextInfo(this);
-		gstd::ref_count_ptr<DxTextRenderObject> res = renderer->CreateRenderObject(this, textInfo);
+		std::shared_ptr<DxTextInfo> textInfo = renderer->GetTextInfo(std::shared_ptr<DxText>(this));
+		std::shared_ptr<DxTextRenderObject> res = renderer->CreateRenderObject(std::shared_ptr<DxText>(this), textInfo);
 		return res;
 	}
 }
-gstd::ref_count_ptr<DxTextRenderObject> DxText::CreateRenderObject(gstd::ref_count_ptr<DxTextInfo> textInfo)
+std::shared_ptr<DxTextRenderObject> DxText::CreateRenderObject(std::shared_ptr<DxTextInfo> textInfo)
 {
 	DxTextRenderer* renderer = DxTextRenderer::GetBase();
 	{
 		Lock lock(renderer->GetLock());
 		renderer->SetVertexColor(colorVertex_);
-		gstd::ref_count_ptr<DxTextRenderObject> res = renderer->CreateRenderObject(this, textInfo);
+		std::shared_ptr<DxTextRenderObject> res = renderer->CreateRenderObject(std::shared_ptr<DxText>(this), textInfo);
 		return res;
 	}
 }

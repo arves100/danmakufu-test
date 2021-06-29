@@ -36,7 +36,7 @@ public:
 	void Render(int targetPriority);
 	void RegistIntersectionTarget();
 
-	void AddShot(ref_count_ptr<StgShotObject>::unsync obj) { listObj_.push_back(obj); }
+	void AddShot(std::shared_ptr<StgShotObject>::unsync obj) { listObj_.push_back(obj); }
 
 	StgShotDataList* GetPlayerShotDataList() { return listPlayerShotData_.GetPointer(); }
 	StgShotDataList* GetEnemyShotDataList() { return listEnemyShotData_.GetPointer(); }
@@ -57,9 +57,9 @@ public:
 
 protected:
 	StgStageController* stageController_;
-	ref_count_ptr<StgShotDataList>::unsync listPlayerShotData_;
-	ref_count_ptr<StgShotDataList>::unsync listEnemyShotData_;
-	std::list<ref_count_ptr<StgShotObject>::unsync> listObj_;
+	std::shared_ptr<StgShotDataList>::unsync listPlayerShotData_;
+	std::shared_ptr<StgShotDataList>::unsync listEnemyShotData_;
+	std::list<std::shared_ptr<StgShotObject>::unsync> listObj_;
 
 	std::bitset<BIT_EV_DELETE_COUNT> listDeleteEventEnable_;
 };
@@ -84,23 +84,23 @@ public:
 	virtual ~StgShotDataList();
 
 	int GetTextureCount() { return listTexture_.size(); }
-	ref_count_ptr<Texture> GetTexture(int index) { return listTexture_[index]; }
-	ref_count_ptr<StgShotRenderer>::unsync GetRenderer(int index, int typeRender) { return listRenderer_[typeRender][index]; }
-	std::vector<ref_count_ptr<StgShotRenderer>::unsync>* GetRendererList(int typeRender) { return &listRenderer_[typeRender]; }
+	std::shared_ptr<Texture> GetTexture(int index) { return listTexture_[index]; }
+	std::shared_ptr<StgShotRenderer>::unsync GetRenderer(int index, int typeRender) { return listRenderer_[typeRender][index]; }
+	std::vector<std::shared_ptr<StgShotRenderer>::unsync>* GetRendererList(int typeRender) { return &listRenderer_[typeRender]; }
 
-	ref_count_ptr<StgShotData>::unsync GetData(int id) { return (id >= 0 && id < listData_.size()) ? listData_[id] : NULL; }
+	std::shared_ptr<StgShotData>::unsync GetData(int id) { return (id >= 0 && id < listData_.size()) ? listData_[id] : NULL; }
 
 	bool AddShotDataList(std::wstring path, bool bReload);
 
 private:
-	void _ScanShot(std::vector<ref_count_ptr<StgShotData>::unsync>& listData, Scanner& scanner);
-	void _ScanAnimation(ref_count_ptr<StgShotData>::unsync shotData, Scanner& scanner);
+	void _ScanShot(std::vector<std::shared_ptr<StgShotData>::unsync>& listData, Scanner& scanner);
+	void _ScanAnimation(std::shared_ptr<StgShotData>::unsync shotData, Scanner& scanner);
 	std::vector<std::wstring> _GetArgumentList(Scanner& scanner);
 
 	std::set<std::wstring> listReadPath_;
-	std::vector<ref_count_ptr<Texture>> listTexture_;
-	std::vector<std::vector<ref_count_ptr<StgShotRenderer>::unsync>> listRenderer_;
-	std::vector<ref_count_ptr<StgShotData>::unsync> listData_;
+	std::vector<std::shared_ptr<Texture>> listTexture_;
+	std::vector<std::vector<std::shared_ptr<StgShotRenderer>::unsync>> listRenderer_;
+	std::vector<std::shared_ptr<StgShotData>::unsync> listData_;
 
 	D3DCOLOR defaultDelayColor_;
 };
@@ -128,7 +128,7 @@ public:
 	double GetAngularVelocity_MAX() { return angularVelocityMax_; }
 	bool IsFixedAngle() { return bFixedAngle_; }
 
-	ref_count_ptr<Texture> GetTexture();
+	std::shared_ptr<Texture> GetTexture();
 	StgShotRenderer* GetRenderer();
 	StgShotRenderer* GetRenderer(int type);
 	StgShotRenderer* GetRendererFromGraphicsBlendType(int blendType);
@@ -196,7 +196,7 @@ public:
 	virtual void Activate() {}
 	virtual void RenderOnShotManager(D3DXMATRIX& mat) {}
 	double cssn(double s, double ang);
-	virtual void Intersect(ref_count_ptr<StgIntersectionTarget>::unsync ownTarget, ref_count_ptr<StgIntersectionTarget>::unsync otherTarget);
+	virtual void Intersect(std::shared_ptr<StgIntersectionTarget>::unsync ownTarget, std::shared_ptr<StgIntersectionTarget>::unsync otherTarget);
 	virtual void ClearShotObject() { ClearIntersectionRelativeTarget(); }
 	virtual void RegistIntersectionTarget() = 0;
 
@@ -214,7 +214,7 @@ public:
 	virtual void SetAlpha(int alpha);
 	virtual void SetRenderState() {}
 
-	ref_count_ptr<StgShotObject>::unsync GetOwnObject();
+	std::shared_ptr<StgShotObject>::unsync GetOwnObject();
 	int GetShotDataID() { return idShotData_; }
 	virtual void SetShotDataID(int id) { idShotData_ = id; }
 	int GetOwnerType() { return typeOwner_; }
@@ -267,7 +267,7 @@ protected:
 	bool bEraseShot_; //弾削除機能
 	bool bSpellFactor_; //スペル付加
 	int frameAutoDelete_; //自動削除フレーム
-	ref_count_ptr<ReserveShotList>::unsync listReserveShot_;
+	std::shared_ptr<ReserveShotList>::unsync listReserveShot_;
 
 	bool bUserIntersectionMode_; //ユーザ定義あたり判定モード
 	bool bIntersectionEnable_;
@@ -283,7 +283,7 @@ protected:
 	virtual void _DeleteInAutoDeleteFrame();
 	virtual void _Move();
 	void _AddReservedShotWork();
-	virtual void _AddReservedShot(ref_count_ptr<StgShotObject>::unsync obj, ReserveShotListData* data);
+	virtual void _AddReservedShot(std::shared_ptr<StgShotObject>::unsync obj, ReserveShotListData* data);
 	virtual void _ConvertToItemAndSendEvent() {}
 	virtual void _SendDeleteEvent(int bit);
 };
@@ -324,13 +324,13 @@ public:
 public:
 	ReserveShotList() { frame_ = 0; }
 	virtual ~ReserveShotList() {}
-	ref_count_ptr<ListElement>::unsync GetNextFrameData();
+	std::shared_ptr<ListElement>::unsync GetNextFrameData();
 	void AddData(int frame, int idShot, int radius, int angle);
 	void Clear(StgStageController* stageController);
 
 private:
 	int frame_;
-	std::map<int, ref_count_ptr<ListElement>::unsync> mapData_;
+	std::map<int, std::shared_ptr<ListElement>::unsync> mapData_;
 };
 
 /**********************************************************
@@ -343,10 +343,10 @@ public:
 	virtual void Work();
 	virtual void RenderOnShotManager(D3DXMATRIX& mat);
 	virtual void ClearShotObject();
-	virtual void Intersect(ref_count_ptr<StgIntersectionTarget>::unsync ownTarget, ref_count_ptr<StgIntersectionTarget>::unsync otherTarget);
+	virtual void Intersect(std::shared_ptr<StgIntersectionTarget>::unsync ownTarget, std::shared_ptr<StgIntersectionTarget>::unsync otherTarget);
 
 	virtual void RegistIntersectionTarget();
-	virtual std::vector<ref_count_ptr<StgIntersectionTarget>::unsync> GetIntersectionTargetList();
+	virtual std::vector<std::shared_ptr<StgIntersectionTarget>::unsync> GetIntersectionTargetList();
 	virtual void SetShotDataID(int id);
 
 protected:
@@ -362,7 +362,7 @@ class StgLaserObject : public StgShotObject {
 public:
 	StgLaserObject(StgStageController* stageController);
 	virtual void ClearShotObject();
-	virtual void Intersect(ref_count_ptr<StgIntersectionTarget>::unsync ownTarget, ref_count_ptr<StgIntersectionTarget>::unsync otherTarget);
+	virtual void Intersect(std::shared_ptr<StgIntersectionTarget>::unsync ownTarget, std::shared_ptr<StgIntersectionTarget>::unsync otherTarget);
 
 	int GetLength() { return length_; }
 	void SetLength(int length);
@@ -399,7 +399,7 @@ public:
 	virtual void RenderOnShotManager(D3DXMATRIX& mat);
 
 	virtual void RegistIntersectionTarget();
-	virtual std::vector<ref_count_ptr<StgIntersectionTarget>::unsync> GetIntersectionTargetList();
+	virtual std::vector<std::shared_ptr<StgIntersectionTarget>::unsync> GetIntersectionTargetList();
 	virtual void SetX(double x)
 	{
 		StgShotObject::SetX(x);
@@ -429,7 +429,7 @@ public:
 	virtual void Work();
 	virtual void RenderOnShotManager(D3DXMATRIX& mat);
 	virtual void RegistIntersectionTarget();
-	virtual std::vector<ref_count_ptr<StgIntersectionTarget>::unsync> GetIntersectionTargetList();
+	virtual std::vector<std::shared_ptr<StgIntersectionTarget>::unsync> GetIntersectionTargetList();
 
 	double GetLaserAngle() { return angLaser_; }
 	void SetLaserAngle(double angle) { angLaser_ = angle; }
@@ -443,7 +443,7 @@ public:
 protected:
 	virtual void _DeleteInAutoClip();
 	virtual void _DeleteInAutoDeleteFrame();
-	virtual void _AddReservedShot(ref_count_ptr<StgShotObject>::unsync obj, ReserveShotListData* data);
+	virtual void _AddReservedShot(std::shared_ptr<StgShotObject>::unsync obj, ReserveShotListData* data);
 	virtual void _ConvertToItemAndSendEvent();
 
 	double angLaser_;
@@ -466,7 +466,7 @@ public:
 	virtual void Work();
 	virtual void RenderOnShotManager(D3DXMATRIX& mat);
 	virtual void RegistIntersectionTarget();
-	virtual std::vector<ref_count_ptr<StgIntersectionTarget>::unsync> GetIntersectionTargetList();
+	virtual std::vector<std::shared_ptr<StgIntersectionTarget>::unsync> GetIntersectionTargetList();
 	void SetTipDecrement(double dec) { tipDecrement_ = dec; }
 
 protected:

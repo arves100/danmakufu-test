@@ -27,12 +27,12 @@ public:
 	virtual void Work();
 	virtual void Render();
 	virtual bool IsEnd();
-	void Initialize(int frame, gstd::ref_count_ptr<Texture> texture);
+	void Initialize(int frame, std::shared_ptr<Texture> texture);
 
 protected:
 	double diffAlpha_;
 	double alpha_;
-	gstd::ref_count_ptr<Sprite2D> sprite_;
+	std::shared_ptr<Sprite2D> sprite_;
 };
 
 /**********************************************************
@@ -44,12 +44,12 @@ public:
 	TransitionEffectTask();
 	~TransitionEffectTask();
 
-	void SetTransition(gstd::ref_count_ptr<TransitionEffect> effect);
+	void SetTransition(std::shared_ptr<TransitionEffect> effect);
 	virtual void Work();
 	virtual void Render();
 
 protected:
-	gstd::ref_count_ptr<TransitionEffect> effect_;
+	std::shared_ptr<TransitionEffect> effect_;
 };
 
 } // namespace directx

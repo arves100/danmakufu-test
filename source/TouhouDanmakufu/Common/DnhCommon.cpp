@@ -8,9 +8,9 @@
 **********************************************************/
 const std::wstring ScriptInformation::DEFAULT = L"DEFAULT";
 
-ref_count_ptr<ScriptInformation> ScriptInformation::CreateScriptInformation(std::wstring pathScript, bool bNeedHeader)
+std::shared_ptr<ScriptInformation> ScriptInformation::CreateScriptInformation(std::wstring pathScript, bool bNeedHeader)
 {
-	ref_count_ptr<FileReader> reader = FileManager::GetBase()->GetFileReader(pathScript);
+	std::shared_ptr<FileReader> reader = FileManager::GetBase()->GetFileReader(pathScript);
 	if (reader == NULL || !reader->Open()) {
 		Logger::WriteTop(ErrorUtility::GetFileNotFoundErrorMessage(pathScript));
 		return NULL;
@@ -21,12 +21,12 @@ ref_count_ptr<ScriptInformation> ScriptInformation::CreateScriptInformation(std:
 	source.resize(size);
 	reader->Read(&source[0], size);
 
-	ref_count_ptr<ScriptInformation> res = CreateScriptInformation(pathScript, L"", source, bNeedHeader);
+	std::shared_ptr<ScriptInformation> res = CreateScriptInformation(pathScript, L"", source, bNeedHeader);
 	return res;
 }
-ref_count_ptr<ScriptInformation> ScriptInformation::CreateScriptInformation(std::wstring pathScript, std::wstring pathArchive, std::string source, bool bNeedHeader)
+std::shared_ptr<ScriptInformation> ScriptInformation::CreateScriptInformation(std::wstring pathScript, std::wstring pathArchive, std::string source, bool bNeedHeader)
 {
-	ref_count_ptr<ScriptInformation> res = NULL;
+	std::shared_ptr<ScriptInformation> res = NULL;
 
 	Scanner scanner(source);
 	int encoding = scanner.GetEncoding();
@@ -178,16 +178,16 @@ std::vector<std::wstring> ScriptInformation::_GetStringList(Scanner& scanner)
 	}
 	return res;
 }
-std::vector<ref_count_ptr<ScriptInformation>> ScriptInformation::CreatePlayerScriptInformationList()
+std::vector<std::shared_ptr<ScriptInformation>> ScriptInformation::CreatePlayerScriptInformationList()
 {
-	std::vector<ref_count_ptr<ScriptInformation>> res;
+	std::vector<std::shared_ptr<ScriptInformation>> res;
 	std::vector<std::wstring> listPlayerPath = GetPlayerList();
 	std::wstring dirInfo = PathProperty::GetFileDirectory(GetScriptPath());
 	for (int iPath = 0; iPath < listPlayerPath.size(); iPath++) {
 		std::wstring pathPlayer = listPlayerPath[iPath];
 		std::wstring path = EPathProperty::ExtendRelativeToFull(dirInfo, pathPlayer);
 
-		ref_count_ptr<FileReader> reader = FileManager::GetBase()->GetFileReader(path);
+		std::shared_ptr<FileReader> reader = FileManager::GetBase()->GetFileReader(path);
 		if (reader == NULL || !reader->Open()) {
 			Logger::WriteTop(ErrorUtility::GetFileNotFoundErrorMessage(path));
 			continue;
@@ -198,16 +198,16 @@ std::vector<ref_count_ptr<ScriptInformation>> ScriptInformation::CreatePlayerScr
 		source.resize(size);
 		reader->Read(&source[0], size);
 
-		ref_count_ptr<ScriptInformation> info = ScriptInformation::CreateScriptInformation(path, L"", source);
+		std::shared_ptr<ScriptInformation> info = ScriptInformation::CreateScriptInformation(path, L"", source);
 		if (info != NULL && info->GetType() == ScriptInformation::TYPE_PLAYER) {
 			res.push_back(info);
 		}
 	}
 	return res;
 }
-std::vector<ref_count_ptr<ScriptInformation>> ScriptInformation::CreateScriptInformationList(std::wstring path, bool bNeedHeader)
+std::vector<std::shared_ptr<ScriptInformation>> ScriptInformation::CreateScriptInformationList(std::wstring path, bool bNeedHeader)
 {
-	std::vector<ref_count_ptr<ScriptInformation>> res;
+	std::vector<std::shared_ptr<ScriptInformation>> res;
 	File file(path);
 	if (!file.Open())
 		return res;
@@ -224,11 +224,11 @@ std::vector<ref_count_ptr<ScriptInformation>> ScriptInformation::CreateScriptInf
 		if (!archive.Open())
 			return res;
 
-		std::multimap<std::wstring, ref_count_ptr<ArchiveFileEntry>> mapEntry = archive.GetEntryMap();
-		std::multimap<std::wstring, ref_count_ptr<ArchiveFileEntry>>::iterator itr = mapEntry.begin();
+		std::multimap<std::wstring, std::shared_ptr<ArchiveFileEntry>> mapEntry = archive.GetEntryMap();
+		std::multimap<std::wstring, std::shared_ptr<ArchiveFileEntry>>::iterator itr = mapEntry.begin();
 		for (; itr != mapEntry.end(); itr++) {
 			//明らかに関係なさそうな拡張子は除外
-			ref_count_ptr<ArchiveFileEntry> entry = itr->second;
+			std::shared_ptr<ArchiveFileEntry> entry = itr->second;
 			std::wstring dir = PathProperty::GetFileDirectory(path);
 			std::wstring tPath = dir + entry->GetDirectory() + entry->GetName();
 
@@ -236,13 +236,13 @@ std::vector<ref_count_ptr<ScriptInformation>> ScriptInformation::CreateScriptInf
 			if (ScriptInformation::IsExcludeExtention(ext))
 				continue;
 
-			ref_count_ptr<gstd::ByteBuffer> buffer = ArchiveFile::CreateEntryBuffer(entry);
+			std::shared_ptr<gstd::ByteBuffer> buffer = ArchiveFile::CreateEntryBuffer(entry);
 			std::string source = "";
 			int size = buffer->GetSize();
 			source.resize(size);
 			buffer->Read(&source[0], size);
 
-			ref_count_ptr<ScriptInformation> info = CreateScriptInformation(tPath, path, source, bNeedHeader);
+			std::shared_ptr<ScriptInformation> info = CreateScriptInformation(tPath, path, source, bNeedHeader);
 			if (info != NULL)
 				res.push_back(info);
 		}
@@ -259,16 +259,16 @@ std::vector<ref_count_ptr<ScriptInformation>> ScriptInformation::CreateScriptInf
 		source.resize(size);
 		file.Read(&source[0], size);
 
-		ref_count_ptr<ScriptInformation> info = CreateScriptInformation(path, L"", source, bNeedHeader);
+		std::shared_ptr<ScriptInformation> info = CreateScriptInformation(path, L"", source, bNeedHeader);
 		if (info != NULL)
 			res.push_back(info);
 	}
 
 	return res;
 }
-std::vector<ref_count_ptr<ScriptInformation>> ScriptInformation::FindPlayerScriptInformationList(std::wstring dir)
+std::vector<std::shared_ptr<ScriptInformation>> ScriptInformation::FindPlayerScriptInformationList(std::wstring dir)
 {
-	std::vector<ref_count_ptr<ScriptInformation>> res;
+	std::vector<std::shared_ptr<ScriptInformation>> res;
 	WIN32_FIND_DATA data;
 	HANDLE hFind;
 	std::wstring findDir = dir + L"*.*";
@@ -280,8 +280,8 @@ std::vector<ref_count_ptr<ScriptInformation>> ScriptInformation::FindPlayerScrip
 			std::wstring tDir = dir + name;
 			tDir += L"\\";
 
-			std::vector<ref_count_ptr<ScriptInformation>> list = FindPlayerScriptInformationList(tDir);
-			for (std::vector<ref_count_ptr<ScriptInformation>>::iterator itr = list.begin(); itr != list.end(); itr++) {
+			std::vector<std::shared_ptr<ScriptInformation>> list = FindPlayerScriptInformationList(tDir);
+			for (std::vector<std::shared_ptr<ScriptInformation>>::iterator itr = list.begin(); itr != list.end(); itr++) {
 				res.push_back(*itr);
 			}
 			continue;
@@ -293,9 +293,9 @@ std::vector<ref_count_ptr<ScriptInformation>> ScriptInformation::FindPlayerScrip
 		std::wstring path = dir + name;
 
 		//スクリプト解析
-		std::vector<ref_count_ptr<ScriptInformation>> listInfo = CreateScriptInformationList(path, true);
+		std::vector<std::shared_ptr<ScriptInformation>> listInfo = CreateScriptInformationList(path, true);
 		for (int iInfo = 0; iInfo < listInfo.size(); iInfo++) {
-			ref_count_ptr<ScriptInformation> info = listInfo[iInfo];
+			std::shared_ptr<ScriptInformation> info = listInfo[iInfo];
 			if (info != NULL && info->GetType() == ScriptInformation::TYPE_PLAYER) {
 				res.push_back(info);
 			}
@@ -432,10 +432,10 @@ bool DnhConfiguration::SaveConfigFile()
 	record.SetRecordAsInteger("padIndex", padIndex_);
 	ByteBuffer bufKey;
 	bufKey.WriteInteger(mapKey_.size());
-	std::map<int, ref_count_ptr<VirtualKey>>::iterator itrKey = mapKey_.begin();
+	std::map<int, std::shared_ptr<VirtualKey>>::iterator itrKey = mapKey_.begin();
 	for (; itrKey != mapKey_.end(); itrKey++) {
 		int id = itrKey->first;
-		ref_count_ptr<VirtualKey> vk = itrKey->second;
+		std::shared_ptr<VirtualKey> vk = itrKey->second;
 
 		bufKey.WriteInteger(id);
 		bufKey.WriteInteger(vk->GetKeyCode());
@@ -452,11 +452,11 @@ bool DnhConfiguration::SaveConfigFile()
 	record.WriteToFile(path);
 	return true;
 }
-ref_count_ptr<VirtualKey> DnhConfiguration::GetVirtualKey(int id)
+std::shared_ptr<VirtualKey> DnhConfiguration::GetVirtualKey(int id)
 {
 	if (mapKey_.find(id) == mapKey_.end())
 		return NULL;
 
-	ref_count_ptr<VirtualKey> res = mapKey_[id];
+	std::shared_ptr<VirtualKey> res = mapKey_[id];
 	return res;
 }

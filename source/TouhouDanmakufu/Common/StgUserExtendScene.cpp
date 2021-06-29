@@ -43,18 +43,18 @@ void StgUserExtendScene::_AddRelativeManager()
 {
 	if (scriptManager_ == NULL)
 		return;
-	ref_count_ptr<ScriptManager> scriptManager = scriptManager_;
+	std::shared_ptr<ScriptManager> scriptManager = scriptManager_;
 
 	StgStageController* stageController = systemController_->GetStageController();
 	if (stageController != NULL) {
-		ref_count_ptr<ScriptManager> stageScriptManager = stageController->GetScriptManagerR();
+		std::shared_ptr<ScriptManager> stageScriptManager = stageController->GetScriptManagerR();
 		if (stageScriptManager != NULL)
 			ScriptManager::AddRelativeScriptManagerMutual(scriptManager, stageScriptManager);
 	}
 
 	StgPackageController* packageController = systemController_->GetPackageController();
 	if (packageController != NULL) {
-		ref_count_ptr<ScriptManager> packageScriptManager = packageController->GetScriptManager();
+		std::shared_ptr<ScriptManager> packageScriptManager = packageController->GetScriptManager();
 		if (packageScriptManager != NULL)
 			ScriptManager::AddRelativeScriptManagerMutual(scriptManager, packageScriptManager);
 	}
@@ -101,9 +101,9 @@ void StgUserExtendSceneScriptManager::Render()
 {
 	objectManager_->RenderObject();
 }
-ref_count_ptr<ManagedScript> StgUserExtendSceneScriptManager::Create(int type)
+std::shared_ptr<ManagedScript> StgUserExtendSceneScriptManager::Create(int type)
 {
-	ref_count_ptr<ManagedScript> res;
+	std::shared_ptr<ManagedScript> res;
 	switch (type) {
 	case StgUserExtendSceneScript::TYPE_PAUSE_SCENE:
 		res = new StgPauseSceneScript(systemController_);
@@ -125,9 +125,9 @@ ref_count_ptr<ManagedScript> StgUserExtendSceneScriptManager::Create(int type)
 }
 void StgUserExtendSceneScriptManager::CallScriptFinalizeAll()
 {
-	std::list<ref_count_ptr<ManagedScript>>::iterator itr = listScriptRun_.begin();
+	std::list<std::shared_ptr<ManagedScript>>::iterator itr = listScriptRun_.begin();
 	for (; itr != listScriptRun_.end(); itr++) {
-		ref_count_ptr<ManagedScript> script = (*itr);
+		std::shared_ptr<ManagedScript> script = (*itr);
 		if (script->IsEventExists("Finalize"))
 			script->Run("Finalize");
 	}
@@ -135,9 +135,9 @@ void StgUserExtendSceneScriptManager::CallScriptFinalizeAll()
 gstd::value StgUserExtendSceneScriptManager::GetResultValue()
 {
 	gstd::value res;
-	std::list<ref_count_ptr<ManagedScript>>::iterator itr = listScriptRun_.begin();
+	std::list<std::shared_ptr<ManagedScript>>::iterator itr = listScriptRun_.begin();
 	for (; itr != listScriptRun_.end(); itr++) {
-		ref_count_ptr<ManagedScript> script = (*itr);
+		std::shared_ptr<ManagedScript> script = (*itr);
 		gstd::value v = script->GetResultValue();
 		if (v.has_data()) {
 			res = v;
@@ -150,7 +150,7 @@ bool StgUserExtendSceneScriptManager::IsRealValue(gstd::value val)
 {
 	if (listScriptRun_.size() == 0)
 		return false;
-	ref_count_ptr<ManagedScript> script = *listScriptRun_.begin();
+	std::shared_ptr<ManagedScript> script = *listScriptRun_.begin();
 
 	bool res = script->IsRealValue(val);
 	return res;
@@ -188,8 +188,8 @@ void StgPauseScene::Work()
 		return;
 	_CallScriptMainLoop();
 
-	ref_count_ptr<StgSystemInformation> infoSystem = systemController_->GetSystemInformation();
-	ref_count_ptr<StgStageInformation> infoStage = systemController_->GetStageController()->GetStageInformation();
+	std::shared_ptr<StgSystemInformation> infoSystem = systemController_->GetSystemInformation();
+	std::shared_ptr<StgStageInformation> infoStage = systemController_->GetStageController()->GetStageInformation();
 	gstd::value resValue = scriptManager_->GetResultValue();
 	if (scriptManager_->IsRealValue(resValue)) {
 		int result = (int)resValue.as_real();
@@ -222,7 +222,7 @@ void StgPauseScene::Start()
 	scriptManager_ = NULL;
 	scriptManager_ = new StgUserExtendSceneScriptManager(systemController_);
 	_AddRelativeManager();
-	ref_count_ptr<StgSystemInformation> sysInfo = systemController_->GetSystemInformation();
+	std::shared_ptr<StgSystemInformation> sysInfo = systemController_->GetSystemInformation();
 
 	_InitializeTransitionTexture();
 
@@ -287,7 +287,7 @@ void StgEndScene::Work()
 		return;
 	_CallScriptMainLoop();
 
-	ref_count_ptr<StgSystemInformation> infoSystem = systemController_->GetSystemInformation();
+	std::shared_ptr<StgSystemInformation> infoSystem = systemController_->GetSystemInformation();
 	gstd::value resValue = scriptManager_->GetResultValue();
 	if (scriptManager_->IsRealValue(resValue)) {
 		int result = (int)resValue.as_real();
@@ -310,7 +310,7 @@ void StgEndScene::Start()
 	scriptManager_ = new StgUserExtendSceneScriptManager(systemController_);
 	_AddRelativeManager();
 
-	ref_count_ptr<StgSystemInformation> info = systemController_->GetSystemInformation();
+	std::shared_ptr<StgSystemInformation> info = systemController_->GetSystemInformation();
 
 	_InitializeTransitionTexture();
 
@@ -320,7 +320,7 @@ void StgEndScene::Start()
 }
 void StgEndScene::Finish()
 {
-	ref_count_ptr<StgSystemInformation> info = systemController_->GetSystemInformation();
+	std::shared_ptr<StgSystemInformation> info = systemController_->GetSystemInformation();
 
 	if (scriptManager_ == NULL)
 		return;
@@ -364,7 +364,7 @@ void StgReplaySaveScene::Work()
 		return;
 	_CallScriptMainLoop();
 
-	ref_count_ptr<StgSystemInformation> infoSystem = systemController_->GetSystemInformation();
+	std::shared_ptr<StgSystemInformation> infoSystem = systemController_->GetSystemInformation();
 	gstd::value resValue = scriptManager_->GetResultValue();
 	if (scriptManager_->IsRealValue(resValue)) {
 		int result = (int)resValue.as_real();
@@ -385,7 +385,7 @@ void StgReplaySaveScene::Start()
 	scriptManager_ = new StgUserExtendSceneScriptManager(systemController_);
 	_AddRelativeManager();
 
-	ref_count_ptr<StgSystemInformation> info = systemController_->GetSystemInformation();
+	std::shared_ptr<StgSystemInformation> info = systemController_->GetSystemInformation();
 
 	// _InitializeTransitionTexture();
 
@@ -395,7 +395,7 @@ void StgReplaySaveScene::Start()
 }
 void StgReplaySaveScene::Finish()
 {
-	ref_count_ptr<StgSystemInformation> info = systemController_->GetSystemInformation();
+	std::shared_ptr<StgSystemInformation> info = systemController_->GetSystemInformation();
 
 	if (scriptManager_ == NULL)
 		return;
