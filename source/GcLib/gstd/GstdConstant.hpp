@@ -72,6 +72,7 @@
 
 // Visual C++ memory leak detection
 #if defined(_DEBUG) && defined(_MSC_VER)
+	#define MSCV_LEAK_DETECTION 1
 	#define _CRTDBG_MAP_ALLOC
 	#include <crtdbg.h>
 	#define new ::new (_NORMAL_BLOCK, __FILE__, __LINE__)
@@ -80,6 +81,8 @@
 #else
 
 // POSIX main inclusions
+
+#define MSCV_LEAK_DETECTION 0
 
 #include <unistd.h>
 #include <sys/stat.h>

@@ -3,7 +3,7 @@
 
 #include "../gstd/GstdLib.hpp"
 
-#ifdef _DEBUG
+#if MSCV_LEAK_DETECTION
 #undef new
 #endif
 
@@ -34,7 +34,7 @@
 #include <glm/ext/scalar_constants.hpp> // glm::pi
 #include <glm/ext/quaternion_transform.hpp>
 
-#ifdef _DEBUG
+#if MSCV_LEAK_DETECTION
 #include <crtdbg.h>
 #include <cstdlib>
 #define _CRTDBG_MAP_ALLOC
