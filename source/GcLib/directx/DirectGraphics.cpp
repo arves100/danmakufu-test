@@ -2,6 +2,7 @@
 #include "DxUtility.hpp"
 #include "Shader.hpp"
 #include "Texture.hpp"
+#include "Callback.hpp"
 
 using namespace gstd;
 using namespace directx;
@@ -27,7 +28,7 @@ DirectGraphics* DirectGraphics::thisBase_ = nullptr;
 DirectGraphics::DirectGraphics() : states_(BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A), resetFlags_(0), blendFactor_(0),
 	clearFlags_(BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH), init_(false), matProj_(), matView_(), sh_options_(0.0f, 0.0f, 0.0f, 0.0f),
 	sh_dirlight_direction(0.0f), sh_dirlight_ambient(0.5f, 0.5f, 0.5f, 1.0f), sh_dirlight_diffuse(0.5f, 0.5f, 0.5f, 1.0f),
-	sh_amblight(0.75f, 0.75f, 0.75f, 1.0f), texFilter_(TextureFilterMode::None), texBlend_(BlendMode::None)
+	sh_amblight(0.75f, 0.75f, 0.75f, 1.0f), texFilter_(TextureFilterMode::None), texBlend_(BlendMode::None), callback_(nullptr)
 {
 	camera_ = std::make_unique<DxCamera>();
 	camera2D_ = std::make_unique<DxCamera2D>();
@@ -37,10 +38,16 @@ DirectGraphics::DirectGraphics() : states_(BGFX_STATE_WRITE_RGB | BGFX_STATE_WRI
 	uniforms_[2] = BGFX_INVALID_HANDLE;
 	uniforms_[3] = BGFX_INVALID_HANDLE;
 	uniforms_[4] = BGFX_INVALID_HANDLE;
+
+	callback_ = new BgfxCallback();
 }
 DirectGraphics::~DirectGraphics()
 {
 	Shutdown();
+	if (callback_)
+		delete callback_;
+
+	callback_ = nullptr;
 	thisBase_ = nullptr;
 }
 
@@ -124,6 +131,7 @@ bool DirectGraphics::Initialize(DirectGraphicsConfig& config, void* nwh, void* n
 	
 	init.resolution.reset = resetFlags_;
 	init.type = config.Render;
+	init.callback = callback_;
 
 	init.allocator = DxAllocator::Get();
 

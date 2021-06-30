@@ -31,7 +31,8 @@ Texture.cpp
 Texture.hpp
 TransitionEffect.cpp
 TransitionEffect.hpp
-VertexDecl.hpp)
+VertexDecl.hpp
+Callback.hpp)
 
 add_library(GcLibDx STATIC ${GCLIBDX_SOURCES})
 target_include_directories(GcLibDx PUBLIC ${BGFX_INCLUDE_DIR} ${BIMG_INCLUDE_DIR} ${BX_INCLUDE_DIR})

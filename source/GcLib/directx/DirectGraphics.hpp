@@ -3,6 +3,7 @@
 
 #include "DxConstant.hpp"
 #include "DxUtility.hpp"
+#include "Callback.hpp"
 
 namespace directx {
 
@@ -141,6 +142,7 @@ protected:
 	glm::vec4 sh_amblight;
 	TextureFilterMode texFilter_;
 	BlendMode texBlend_;
+	BgfxCallback* callback_;
 };
 
 // TODO: Migrate to an application specific part
